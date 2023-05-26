@@ -2,26 +2,28 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
+contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     string public poolName;
     IERC20 public token;
     uint256 public startTime;
     uint256 public endTime;
-    uint256 public totalAmount;
-    uint256 public PERIOD;
-    uint256 public DISTRIBUTION_RATE;
-    uint256 immutable public BASE_DIVIDER = 10_000;
-    mapping(address beneficiary => uint256 claimableAmount) public claimableAmounts;
-    mapping(address beneficiary => uint256 claimedAmount) public claimedAmounts;
-    mapping(address beneficiary => uint256 lastClaimTime) public lastClaimTimes;
-    mapping(address beneficiary => uint256 leftAmount) public leftClaimableAmounts;
+    uint256 public periodLength;
+    uint256 public distributionRate;
+    uint256 constant public BASE_DIVIDER = 10_000;
+    mapping(address => uint256) public claimableAmounts;
+    mapping(address => uint256) public claimedAmounts;
+    mapping(address => uint256) public lastClaimTimes;
+    mapping(address => uint256) public leftClaimableAmounts;
 
     event Swept(address receiver, uint256 amount);
     event CanClaim(address indexed beneficiary, uint256 amount);
     event HasClaimed(address indexed beneficiary, uint256 amount);
+    event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount);
 
     function initialize(
         address _owner,
@@ -31,7 +33,8 @@ contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
         uint256 _endTime,
         uint256 _distributionRate,
         uint256 _period
-    ) external payable initializer {
+    ) external initializer {
+        require(BASE_DIVIDER / (distributionRate * periodLength) == endTime - startTime, "initialize: Invalid parameters!");
         require(_startTime < _endTime, "Invalid end time");
 
         _transferOwnership(_owner);
@@ -40,8 +43,13 @@ contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
         token = _token;
         startTime = _startTime;
         endTime = _endTime;
-        DISTRIBUTION_RATE = _distributionRate;
-        PERIOD = _period;
+        distributionRate = _distributionRate;
+        periodLength = _period;
+    }
+
+    modifier isSettable() {
+        require(block.timestamp < startTime, "isSettable: Claim periodLength has started!");
+        _;
     }
 
     /**
@@ -49,37 +57,41 @@ contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
      * @param users List of addresses to set claimable amounts for.
      * @param amounts List of claimable amounts for each address.
      */
-    function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner external {
+    function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner isSettable external {
         uint256 usersLength = users.length;
         require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match!");
         
         uint256 totalClaimableAmount = 0;
         for (uint256 i = 0; i < usersLength; ) {
             address user = users[i];
-            uint256 amount = amounts[i];
-            claimableAmounts[user] = amount;
-            leftClaimableAmounts[user] = amount;
-            lastClaimTimes[user] = startTime;
-            emit CanClaim(user, amount);
-            unchecked {
+
+            if (user != address(0)) {
+                uint256 amount = amounts[i];
+                claimableAmounts[user] = amount;
+                leftClaimableAmounts[user] = amount;
+                lastClaimTimes[user] = startTime;
+                emit CanClaim(user, amount);
+
                 totalClaimableAmount = totalClaimableAmount + amount;
+            }
+            
+            unchecked {
                 i += 1;
             }
         }
 
         require(token.balanceOf(address(this)) >= totalClaimableAmount, "Total claimable amount does not match");
-        totalAmount = totalClaimableAmount;
+        emit SetClaimableAmounts(usersLength, totalClaimableAmount);
     }
 
     /**
      * @dev Claim tokens for the sender.
      */
-    function claim() external returns(bool) {
+    function claim() nonReentrant external returns(bool) {
         address sender = _msgSender();
         uint256 claimableAmount = calculateClaimableAmount(sender);
 
-
-        token.transfer(sender, claimableAmount);
+        SafeERC20.safeTransfer(token, sender, claimableAmount);
         claimedAmounts[sender] = claimedAmounts[sender] + claimableAmount;
 
         lastClaimTimes[sender] = block.timestamp;
@@ -91,27 +103,8 @@ contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
         return true;
     }
 
-    function calculateClaimableAmount(address user) public view returns(uint256) {
-        require(block.timestamp >= startTime, "Distribution has not started yet");
-        require(block.timestamp < endTime, "Distribution has ended");
-        
-        uint256 claimableAmount = _calculateClaimableAmount(user);
-
-        require(claimableAmount > 0, "No tokens to claim");
-        require(leftClaimableAmounts[user] >= claimableAmount, "Not enough tokens left to claim");
-
-        return claimableAmount;
-    }
-
     /**
-    * @dev Get the amount of tokens left to claim for a given address.
-    */
-    function getLeftClaimableAmount(address user) external view returns (uint256) {
-        return leftClaimableAmounts[user];
-    }
-
-    /**
-    * @dev Transfer tokens from the contract to a given address.
+    * @dev Transfer tokens from the contract to owner address.
     */
     function sweep() onlyOwner external {
         require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time!");
@@ -119,9 +112,27 @@ contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
         uint256 leftovers = token.balanceOf(address(this));
         require(leftovers != 0, "TokenDistributor: no leftovers");
 
-        require(token.transfer(owner(), leftovers), "TokenDistributor: fail token transfer");
+        SafeERC20.safeTransfer(token, owner(), leftovers);
 
         emit Swept(owner(), leftovers);
+    }
+
+    function calculateClaimableAmount(address user) public view returns(uint256) {
+        require(block.timestamp >= startTime, "Distribution has not started yet");
+
+        uint256 claimableAmount = 0;
+
+        if (block.timestamp > endTime) {
+            claimableAmount = claimableAmounts[user];
+        } else {
+            require(block.timestamp < endTime, "Distribution has ended");
+            claimableAmount = _calculateClaimableAmount(user);
+        }
+
+        require(claimableAmount > 0, "No tokens to claim");
+        require(leftClaimableAmounts[user] >= claimableAmount, "Not enough tokens left to claim");
+
+        return claimableAmount;
     }
 
     /**
@@ -131,8 +142,8 @@ contract TokenDistributor is Initializable, Ownable2StepUpgradeable {
      */
     function _calculateClaimableAmount(address user) internal view returns (uint256) {
         uint256 initialAmount = claimableAmounts[user];
-        uint256 periodSinceLastClaim = (block.timestamp - lastClaimTimes[user]) * 10 ** 18 / PERIOD;
+        uint256 periodSinceLastClaim = ((block.timestamp - lastClaimTimes[user]) * 10 ** 18) / periodLength;
         
-        return (((initialAmount * DISTRIBUTION_RATE) / BASE_DIVIDER) * periodSinceLastClaim) / 10 ** 18;
+        return (((initialAmount * distributionRate) / BASE_DIVIDER) * periodSinceLastClaim) / 10 ** 18;
     }
 }

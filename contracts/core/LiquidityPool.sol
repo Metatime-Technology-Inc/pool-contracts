@@ -2,9 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract LiquidityPool is Ownable2StepUpgradeable {
+contract LiquidityPool is Ownable2Step {
     IERC20 public token;
 
     event Withdrew(uint256 amount);
@@ -25,7 +26,7 @@ contract LiquidityPool is Ownable2StepUpgradeable {
         uint256 poolBalance = token.balanceOf(address(this));
         require(poolBalance > 0 && _withdrawalAmount <= poolBalance, "No tokens to withdraw!");
 
-        require(token.transfer(_to, _withdrawalAmount), "Unable to transfer!");
+        SafeERC20.safeTransfer(token, _to, _withdrawalAmount);
 
         return true;
     }

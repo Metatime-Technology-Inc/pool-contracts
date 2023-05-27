@@ -61,6 +61,9 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         periodLength = _period;
     }
 
+    /**
+     * @dev Controls settable status of contract while trying to set addresses and their amounts.
+     */
     modifier isSettable() {
         require(block.timestamp < startTime, "isSettable: Claim periodLength has started!");
         _;

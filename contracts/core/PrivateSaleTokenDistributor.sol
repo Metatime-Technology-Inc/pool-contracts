@@ -36,6 +36,9 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
         endTime = _endTime;
     }
 
+    /**
+     * @dev Controls settable status of contract while trying to set addresses and their amounts.
+     */
     modifier isSettable() {
         require(block.timestamp < startTime, "isSettable: Claim period has already started!");
         _;

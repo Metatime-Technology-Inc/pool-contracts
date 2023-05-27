@@ -20,6 +20,10 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
     event Withdrew(uint256 amount);  // Event emitted when tokens are withdrawn from the pool
     event Burned(uint256 amount, bool withFormula);  // Event emitted when tokens are burned from the pool
 
+    /**
+     * Constructor
+     * @param _token The token being burned
+     */
     constructor(ERC20Burnable _token) {
         _transferOwnership(_msgSender());
 

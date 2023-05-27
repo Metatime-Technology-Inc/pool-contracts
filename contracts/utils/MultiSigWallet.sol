@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/**
+ * @title MultiSigWallet
+ * @dev A multi-signature wallet contract for executing transactions with multiple owner confirmations.
+ */
 contract MultiSigWallet {
     event Deposit(address indexed sender, uint256 amount, uint256 balance);
     event SubmitTransaction(

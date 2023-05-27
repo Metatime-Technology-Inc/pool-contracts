@@ -7,24 +7,38 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+/**
+ * @title TokenDistributor
+ * @dev A contract for distributing tokens among users over a specific period of time.
+ */
 contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
-    string public poolName;
-    IERC20 public token;
-    uint256 public startTime;
-    uint256 public endTime;
-    uint256 public periodLength;
-    uint256 public distributionRate;
-    uint256 constant public BASE_DIVIDER = 10_000;
-    mapping(address => uint256) public claimableAmounts;
-    mapping(address => uint256) public claimedAmounts;
-    mapping(address => uint256) public lastClaimTimes;
-    mapping(address => uint256) public leftClaimableAmounts;
+    string public poolName; // The name of the token distribution pool
+    IERC20 public token; // The ERC20 token being distributed
+    uint256 public startTime; // The start time of the distribution period
+    uint256 public endTime; // The end time of the distribution period
+    uint256 public periodLength; // The length of each distribution period (in seconds)
+    uint256 public distributionRate; // The distribution rate (percentage)
+    uint256 constant public BASE_DIVIDER = 10_000; // The base divider used for calculations
+    mapping(address => uint256) public claimableAmounts; // Mapping of user addresses to their claimable amounts
+    mapping(address => uint256) public claimedAmounts; // Mapping of user addresses to their claimed amounts
+    mapping(address => uint256) public lastClaimTimes; // Mapping of user addresses to their last claim times
+    mapping(address => uint256) public leftClaimableAmounts; // Mapping of user addresses to their remaining claimable amounts
 
-    event Swept(address receiver, uint256 amount);
-    event CanClaim(address indexed beneficiary, uint256 amount);
-    event HasClaimed(address indexed beneficiary, uint256 amount);
-    event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount);
+    event Swept(address receiver, uint256 amount); // Event emitted when the contract owner sweeps remaining tokens
+    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim tokens
+    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed tokens
+    event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
 
+    /**
+     * @dev Initializes the TokenDistributor contract.
+     * @param _owner The address of the contract owner
+     * @param _poolName The name of the token distribution pool
+     * @param _token The ERC20 token being distributed
+     * @param _startTime The start time of the distribution period
+     * @param _endTime The end time of the distribution period
+     * @param _distributionRate The distribution rate (percentage)
+     * @param _period The length of each distribution period (in seconds)
+     */
     function initialize(
         address _owner,
         string memory _poolName,
@@ -53,9 +67,10 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Set the claimable amount for each address.
-     * @param users List of addresses to set claimable amounts for.
-     * @param amounts List of claimable amounts for each address.
+     * @dev Sets the claimable amounts for a list of users.
+     * Only the owner can call this function before the claim period starts.
+     * @param users An array of user addresses
+     * @param amounts An array of claimable amounts corresponding to each user
      */
     function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner isSettable external {
         uint256 usersLength = users.length;
@@ -85,7 +100,8 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Claim tokens for the sender.
+     * @dev Allows a user to claim their available tokens.
+     * Tokens can only be claimed during the distribution period.
      */
     function claim() nonReentrant external returns(bool) {
         address sender = _msgSender();
@@ -104,8 +120,9 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-    * @dev Transfer tokens from the contract to owner address.
-    */
+     * @dev Allows the contract owner to sweep any remaining tokens after the claim period ends.
+     * Tokens are transferred to the contract owner's address.
+     */
     function sweep() onlyOwner external {
         require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time!");
 
@@ -117,6 +134,12 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         emit Swept(owner(), leftovers);
     }
 
+    /**
+     * @dev Calculates the claimable amount of tokens for a given user.
+     * The claimable amount depends on the number of days that have passed since the last claim.
+     * @param user The address of the user
+     * @return The claimable amount of tokens for the user
+     */
     function calculateClaimableAmount(address user) public view returns(uint256) {
         require(block.timestamp >= startTime, "Distribution has not started yet");
 
@@ -136,9 +159,10 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Calculate the amount of tokens that can be claimed by a given address
+     * @dev Calculates the amount of tokens that can be claimed by a given address
      * based on the number of days that have passed since the last claim.
-     * The daily claim percentage is 0.4% of the initial claimable amount.
+     * @param user The address of the user
+     * @return The amount of tokens that can be claimed by the user
      */
     function _calculateClaimableAmount(address user) internal view returns (uint256) {
         uint256 initialAmount = claimableAmounts[user];

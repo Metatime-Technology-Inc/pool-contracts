@@ -7,23 +7,39 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+/**
+ * @title Distributor
+ * @notice Holds tokens for users to claim.
+ * @dev A contract for distributing tokens over a specified period of time.
+ */
 contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
-    string public poolName;
-    IERC20 public token;
-    uint256 public startTime;
-    uint256 public endTime;
-    uint256 public periodLength;
-    uint256 public distributionRate;
-    uint256 constant public BASE_DIVIDER = 10_000;
-    uint256 public claimableAmount;
-    uint256 public claimedAmount;
-    uint256 public lastClaimTime;
-    uint256 public leftClaimableAmount;
+    string public poolName;  // Name of the token distribution pool
+    IERC20 public token;  // Token to be distributed
+    uint256 public startTime;  // Start time of the distribution
+    uint256 public endTime;  // End time of the distribution
+    uint256 public periodLength;  // Length of each distribution period
+    uint256 public distributionRate;  // Rate of token distribution per period
+    uint256 constant public BASE_DIVIDER = 10_000;  // Base divider for distribution rate calculation
+    uint256 public claimableAmount;  // Total amount of tokens claimable per period
+    uint256 public claimedAmount;  // Total amount of tokens claimed so far
+    uint256 public lastClaimTime;  // Timestamp of the last token claim
+    uint256 public leftClaimableAmount;  // Remaining amount of tokens available for claiming
 
-    event Swept(address receiver, uint256 amount);
-    event CanClaim(address indexed beneficiary, uint256 amount);
-    event HasClaimed(address indexed beneficiary, uint256 amount);
+    event Swept(address receiver, uint256 amount);  // Event emitted when leftover tokens are swept to the owner
+    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim tokens
+    event HasClaimed(address indexed beneficiary, uint256 amount);  // Event emitted when a beneficiary has claimed tokens
 
+    /**
+     * @dev Initializes the contract with the specified parameters.
+     * @param _owner The address of the contract owner
+     * @param _poolName The name of the token distribution pool
+     * @param _token The token to be distributed
+     * @param _startTime The start time of the distribution
+     * @param _endTime The end time of the distribution
+     * @param _distributionRate The rate of token distribution per period
+     * @param _periodLength The length of each distribution period
+     * @param _claimableAmount The total amount of tokens claimable per period
+     */
     function initialize(
         address _owner,
         string memory _poolName,
@@ -52,6 +68,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
 
     /**
      * @dev Claim tokens for the sender.
+     * @return A boolean indicating whether the claim was successful
      */
     function claim() onlyOwner nonReentrant external returns(bool) {
         uint256 amount = calculateClaimableAmount();
@@ -83,6 +100,10 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         emit Swept(owner(), leftovers);
     }
 
+    /**
+    * @dev Calculates the amount of tokens claimable for the current period.
+    * @return The amount of tokens claimable for the current period
+    */
     function calculateClaimableAmount() public view returns(uint256) {
         require(block.timestamp >= startTime, "Distribution has not started yet");
 
@@ -102,10 +123,9 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Calculate the amount of tokens that can be claimed by a caller address
-     * based on the number of days that have passed since the last claim.
-     * The daily claim percentage is 0.4% of the initial claimable amount.
-     */
+    * @dev Internal function to calculate the amount of tokens claimable for the current period.
+    * @return The amount of tokens claimable for the current period
+    */
     function _calculateClaimableAmount() internal view returns (uint256) {
         uint256 initialAmount = claimableAmount;
         uint256 periodSinceLastClaim = ((block.timestamp - lastClaimTime) * 10 ** 18) / periodLength;

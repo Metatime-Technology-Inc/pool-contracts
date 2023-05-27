@@ -87,8 +87,8 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-    * @dev Transfer tokens from the contract to a owner address.
-    */
+     * @dev Transfer tokens from the contract to a owner address.
+     */
     function sweep() onlyOwner external {
         require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time!");
 
@@ -101,9 +101,9 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-    * @dev Calculates the amount of tokens claimable for the current period.
-    * @return The amount of tokens claimable for the current period
-    */
+     * @dev Calculates the amount of tokens claimable for the current period.
+     * @return The amount of tokens claimable for the current period
+     */
     function calculateClaimableAmount() public view returns(uint256) {
         require(block.timestamp >= startTime, "Distribution has not started yet");
 
@@ -123,9 +123,9 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-    * @dev Internal function to calculate the amount of tokens claimable for the current period.
-    * @return The amount of tokens claimable for the current period
-    */
+     * @dev Internal function to calculate the amount of tokens claimable for the current period.
+     * @return The amount of tokens claimable for the current period
+     */
     function _calculateClaimableAmount() internal view returns (uint256) {
         uint256 initialAmount = claimableAmount;
         uint256 periodSinceLastClaim = ((block.timestamp - lastClaimTime) * 10 ** 18) / periodLength;

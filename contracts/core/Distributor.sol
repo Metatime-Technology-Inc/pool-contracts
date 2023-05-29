@@ -30,6 +30,18 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     event HasClaimed(address indexed beneficiary, uint256 amount);  // Event emitted when a beneficiary has claimed tokens
 
     /**
+     * @dev A modifier that validates pool parameters
+     * @param _startTime Start timestamp of claim period
+     * @param _endTime End timestamp of claim period
+     * @param _distributionRate Distribution rate of each claim
+     * @param _periodLength Distribution duration of each claim
+     */
+    modifier isParamsValid(uint256 _startTime, uint256 _endTime, uint256 _distributionRate, uint256 _periodLength) {
+        require(BASE_DIVIDER / (_distributionRate * _periodLength) == _endTime - _startTime, "isParamsValid: Invalid parameters!");
+        _;
+    }
+
+    /**
      * @dev Initializes the contract with the specified parameters.
      * @param _owner The address of the contract owner
      * @param _poolName The name of the token distribution pool
@@ -49,9 +61,8 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _distributionRate,
         uint256 _periodLength,
         uint256 _claimableAmount
-    ) external initializer {
-        require(BASE_DIVIDER / (distributionRate * periodLength) == endTime - startTime, "initialize: Invalid parameters!");
-        require(_startTime < _endTime, "Invalid end time");
+    ) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength) {
+        require(_startTime < _endTime, "initialize: Invalid end time");
 
         _transferOwnership(_owner);
 
@@ -93,7 +104,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time!");
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "TokenDistributor: no leftovers");
+        require(leftovers != 0, "sweep: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 
@@ -101,23 +112,49 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
+     * @dev Updates pool parameteres before claim period and only callable by contract owner
+     * @param newStartTime New start timestamp of claim period
+     * @param newEndTime New end timestamp of claim period
+     * @param newDistributionRate New distribution rate of each claim
+     * @param newPeriodLength New distribution duration of each claim
+     * @param newClaimableAmount New claimable amount of pool
+     */
+    function updatePoolParams(
+        uint256 newStartTime, 
+        uint256 newEndTime, 
+        uint256 newDistributionRate, 
+        uint256 newPeriodLength,
+        uint256 newClaimableAmount
+    ) onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) external returns(bool) {
+        require(startTime > block.timestamp, "updatePoolParams: Claim period already started.");
+
+        startTime = newStartTime;
+        endTime = newEndTime;
+        distributionRate = newDistributionRate;
+        periodLength = newPeriodLength;
+        claimableAmount = newClaimableAmount;
+
+        return true;
+    }
+
+    /**
      * @dev Calculates the amount of tokens claimable for the current period.
      * @return The amount of tokens claimable for the current period
      */
     function calculateClaimableAmount() public view returns(uint256) {
-        require(block.timestamp >= startTime, "Distribution has not started yet");
+        require(block.timestamp >= startTime, "calculateClaimableAmount: Distribution has not started yet");
 
         uint256 amount = 0;
 
         if (block.timestamp > endTime) {
             amount = claimableAmount;
         } else {
-            require(block.timestamp < endTime, "Distribution has ended");
+            require(block.timestamp < endTime, "calculateClaimableAmount: Distribution has ended");
             amount = _calculateClaimableAmount();
         }
 
-        require(amount > 0, "No tokens to claim");
-        require(leftClaimableAmount >= amount, "Not enough tokens left to claim");
+        require(amount > 0, "calculateClaimableAmount: No tokens to claim");
+        require(leftClaimableAmount >= amount, "calculateClaimableAmount: Not enough tokens left to claim");
 
         return amount;
     }

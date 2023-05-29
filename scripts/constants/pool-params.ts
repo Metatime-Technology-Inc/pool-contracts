@@ -1,13 +1,22 @@
 import { BigNumber } from "ethers";
 import { toWei } from "../helpers";
 
-interface PoolInfo {
+export enum BaseContract {
+    Distributor,
+    LiquidityPool,
+    PrivateSaleTokenDistributor,
+    StrategicPool,
+    TokenDistributor,
+}
+
+export interface PoolInfo {
     poolName: string,
     distributionRate: number,
     periodLength: number,
     lockedAmount: BigNumber,
     vestingDurationInDays: number,
     hasVesting: boolean,
+    baseContract: BaseContract,
 }
 
 interface PoolParams {
@@ -42,6 +51,7 @@ const POOL_PARAMS: PoolParams = {
         lockedAmount: toWei(String(100_000_000)),
         vestingDurationInDays: 250,
         hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Seed Sale 2
@@ -56,6 +66,7 @@ const POOL_PARAMS: PoolParams = {
         lockedAmount: toWei(String(100_000_000)),
         vestingDurationInDays: 250,
         hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Private Sale
@@ -69,7 +80,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: 0,
         lockedAmount: toWei(String(100_000_000)),
         vestingDurationInDays: 0,
-        hasVesting: false
+        hasVesting: false,
+        baseContract: BaseContract.PrivateSaleTokenDistributor
     },
     /**
      * Pool name: Public Sale
@@ -83,7 +95,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(200_000_000)),
         vestingDurationInDays: 100,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Strategic
@@ -97,7 +110,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: 0,
         lockedAmount: toWei(String(4_000_000_000)),
         vestingDurationInDays: 0,
-        hasVesting: false
+        hasVesting: false,
+        baseContract: BaseContract.StrategicPool,
     },
     /**
      * Pool name: Liquidity
@@ -111,7 +125,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: 0,
         lockedAmount: toWei(String(500_000_000)),
         vestingDurationInDays: 0,
-        hasVesting: false
+        hasVesting: false,
+        baseContract: BaseContract.LiquidityPool,
     },
     /**
      * Pool name: Marketing
@@ -125,7 +140,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(800_000_000)),
         vestingDurationInDays: 500,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.Distributor,
     },
     /**
      * Pool name: Airdrop
@@ -139,7 +155,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(200_000_000)),
         vestingDurationInDays: 5_00,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Staking
@@ -153,7 +170,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(500_000_000)),
         vestingDurationInDays: 1_000,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Rewards
@@ -167,7 +185,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(500_000_000)),
         vestingDurationInDays: 5_000,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Miner
@@ -181,7 +200,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(1_000_000_000)),
         vestingDurationInDays: 2_000,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
     },
     /**
      * Pool name: Team
@@ -195,7 +215,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(1_900_000_000)),
         vestingDurationInDays: 1_000,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.Distributor,
     },
     /**
      * Pool name: Charity
@@ -209,7 +230,8 @@ const POOL_PARAMS: PoolParams = {
         periodLength: ONE_DAY_IN_SECS,
         lockedAmount: toWei(String(100_000_000)),
         vestingDurationInDays: 1_000,
-        hasVesting: true
+        hasVesting: true,
+        baseContract: BaseContract.Distributor,
     }
 };
 

@@ -30,6 +30,18 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
 
     /**
+     * @dev A modifier that validates pool parameters
+     * @param _startTime Start timestamp of claim period
+     * @param _endTime End timestamp of claim period
+     * @param _distributionRate Distribution rate of each claim
+     * @param _periodLength Distribution duration of each claim
+     */
+    modifier isParamsValid(uint256 _startTime, uint256 _endTime, uint256 _distributionRate, uint256 _periodLength) {
+        require(BASE_DIVIDER / (_distributionRate * _periodLength) == _endTime - _startTime, "isParamsValid: Invalid parameters!");
+        _;
+    }
+
+    /**
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner
      * @param _poolName The name of the token distribution pool
@@ -48,7 +60,6 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _distributionRate,
         uint256 _period
     ) external initializer {
-        require(BASE_DIVIDER / (distributionRate * periodLength) == endTime - startTime, "initialize: Invalid parameters!");
         require(_startTime < _endTime, "Invalid end time");
 
         _transferOwnership(_owner);
@@ -135,6 +146,29 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         SafeERC20.safeTransfer(token, owner(), leftovers);
 
         emit Swept(owner(), leftovers);
+    }
+
+    /**
+     * @dev Updates pool parameteres before claim period and only callable by contract owner
+     * @param newStartTime New start timestamp of claim period
+     * @param newEndTime New end timestamp of claim period
+     * @param newDistributionRate New distribution rate of each claim
+     * @param newPeriodLength New distribution duration of each claim
+     */
+    function updatePoolParams(
+        uint256 newStartTime, 
+        uint256 newEndTime, 
+        uint256 newDistributionRate, 
+        uint256 newPeriodLength
+    ) onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) external returns(bool) {
+        require(startTime > block.timestamp, "updatePoolParams: Claim period already started.");
+
+        startTime = newStartTime;
+        endTime = newEndTime;
+        distributionRate = newDistributionRate;
+        periodLength = newPeriodLength;
+
+        return true;
     }
 
     /**

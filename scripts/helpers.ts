@@ -2,6 +2,19 @@ import { BigNumber, ethers } from "ethers";
 import { HardhatEthersHelpers } from "hardhat/types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
+type Entry<T> = {
+  [K in keyof T]: [K, T[K]]
+}[keyof T];
+
+function filterObject<T extends object>(
+  obj: T,
+  fn: (entry: Entry<T>, i: number, arr: Entry<T>[]) => boolean
+) {
+  return Object.fromEntries(
+    (Object.entries(obj) as Entry<T>[]).filter(fn)
+  ) as Partial<T>;
+}
+
 const getBlockTimestamp = async (
   ethers: HardhatEthersHelpers
 ): Promise<number> => {
@@ -31,7 +44,7 @@ const callMethod = async (
 const incrementBlocktimestamp = async (
   ethers: HardhatEthersHelpers,
   givenTimeAmount: number
-) : Promise<void> => {
+): Promise<void> => {
   await ethers.provider.send("evm_increaseTime", [givenTimeAmount]);
   await ethers.provider.send("evm_mine", []);
 };
@@ -46,4 +59,5 @@ export {
   callMethod,
   calculateExchangeFee,
   incrementBlocktimestamp,
+  filterObject
 };

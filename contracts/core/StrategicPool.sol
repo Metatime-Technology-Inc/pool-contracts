@@ -17,7 +17,6 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
     int256 public totalBurnedAmount = 0;  // The total amount of tokens burned from the pool
     int256 public constant constantValueFromFormula = 1000;  // A constant value used in the formula
 
-    event Withdrew(uint256 amount);  // Event emitted when tokens are withdrawn from the pool
     event Burned(uint256 amount, bool withFormula);  // Event emitted when tokens are burned from the pool
 
     /**
@@ -28,16 +27,6 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
         _transferOwnership(_msgSender());
 
         token = _token;
-    }
-
-    /**
-     * @dev Withdraws tokens from the pool and transfers them to the owner.
-     * @param withdrawalAmount The amount of tokens to withdraw
-     */
-    function withdraw(uint256 withdrawalAmount) onlyOwner external {
-        _transfer(owner(), withdrawalAmount);
-
-        emit Withdrew(withdrawalAmount);
     }
 
     /**

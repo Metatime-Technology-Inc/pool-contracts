@@ -3,38 +3,26 @@ import fs from "fs";
 import path from "path";
 import { CONTRACTS } from "../scripts/constants";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
+// import { TokenDistributorProxyManager__factory } from "../typechain-types";
 import { toWei } from "../scripts/helpers";
 import util from 'util';
 const exec = util.promisify(require('child_process').exec);
 
 // task(
-//   "flatten-contracts",
-//   async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
-//     try {
-//       for (const contractSection in CONTRACTS) {
-//         const sectionObj = CONTRACTS[contractSection];
-//         const objKeys = Object.keys(sectionObj);
+//     "create-td-proxies",
+//     async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+//         try {
+//             const networkName = hre.network.name;
+//             const { deployer, feeCollector } = await hre.getNamedAccounts();
+//             const deployerSigner = await hre.ethers.getSigner(deployer);
 
-//         for (let i = 0; i < objKeys.length; i++) {
-//           const contractName: string = objKeys[i];
-//           const contractFilePath = path.resolve(
-//             __dirname,
-//             `../contracts/${contractSection}/${contractName}.sol`
-//           );
-//           const targetFilePath = path.resolve(
-//             __dirname,
-//             `../tmp/flatteneds/flattened${contractName}.sol`
-//           );
-//           process.stdout.write(`(${contractSection} - ${i + 1}/${objKeys.length})) ${contractName} flattenning...\r`);
-//           await exec(`npx hardhat flatten ${contractFilePath} > ${targetFilePath}`);
+//             const tdpm = TokenDistributorProxyManager__factory.connect(deployerSigner,);
+
+//             console.log("Task completed!");
+//         } catch (e) {
+//             console.log(e);
 //         }
-//       }
-
-//       console.log("Task completed!");
-//     } catch (e) {
-//       console.log(e);
 //     }
-//   }
 // );
 
 // task(

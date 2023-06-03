@@ -13,14 +13,14 @@ const func: DeployFunction = async ({
 
     const deployerSigner = await ethers.getSigner(deployer);
 
-    const metatimeToken = await deploy(CONTRACTS.core.MetatimeToken, {
-        from: deployer,
-        args: [],
-        log: true,
-        skipIfAlreadyDeployed: true,
-    });
+    // const metatimeToken = await deploy(CONTRACTS.core.MTC, {
+    //     from: deployer,
+    //     args: [],
+    //     log: true,
+    //     skipIfAlreadyDeployed: true,
+    // });
 
-    console.log("Metatime Token deployed at", metatimeToken.address);
+    // console.log("Metatime Token deployed at", metatimeToken.address);
 };
 
 export default func;

@@ -27,10 +27,6 @@ if (!process.env.DEPLOYER)
   throw new Error("DEPLOYER not found. Set DEPLOYER to the .env file");
 const deployer = process.env.DEPLOYER;
 
-if (!process.env.FEE_COLLECTOR)
-  throw new Error("DEPLOYER not found. Set DEPLOYER to the .env file");
-const feeCollector = process.env.FEE_COLLECTOR;
-
 const config: HardhatUserConfig = {
   solidity: "0.8.19",
   // defaultNetwork: "ganache",
@@ -86,10 +82,10 @@ const config: HardhatUserConfig = {
       accounts: [`0x${privateKey}`],
     },
     hardhat: {
-      mining: {
-        interval: 1000,
-      }
-    }
+      // mining: {
+      //   auto: false,
+      // },
+    },
   },
   etherscan: {
     apiKey: {
@@ -97,14 +93,13 @@ const config: HardhatUserConfig = {
       // bscTestnet: process.env.BSCSCAN_API_KEY,
       // ftmTestnet: process.env.FANTOMSCAN_API_KEY,
       // optimisticKovan: process.env.OPTIMISMSCAN_API_KEY,
-      polygonMumbai: process.env.POLYGONSCAN_API_KEY as unknown as string,
+      // polygonMumbai: process.env.POLYGONSCAN_API_KEY as unknown as string,
       // arbitrumTestnet: process.env.ARBITRUMSCAN_API_KEY,
       // avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY,
     },
   },
   namedAccounts: {
     deployer,
-    feeCollector,
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -123,6 +118,9 @@ const config: HardhatUserConfig = {
     disambiguatePaths: false,
     runOnCompile: true,
     strict: true,
+  },
+  mocha: {
+    timeout: 100_000
   },
 };
 

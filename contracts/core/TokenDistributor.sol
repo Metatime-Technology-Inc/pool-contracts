@@ -28,6 +28,12 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim tokens
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed tokens
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
+    event PoolParamsUpdated(
+        uint256 newStartTime, 
+        uint256 newEndTime, 
+        uint256 newDistributionRate, 
+        uint256 newPeriodLength
+    ); // Event emitted when pool params are updated
 
     /**
      * @dev A modifier that validates pool parameters
@@ -37,7 +43,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param _periodLength Distribution duration of each claim
      */
     modifier isParamsValid(uint256 _startTime, uint256 _endTime, uint256 _distributionRate, uint256 _periodLength) {
-        require(BASE_DIVIDER / (_distributionRate * _periodLength) == _endTime - _startTime, "isParamsValid: Invalid parameters!");
+        require(BASE_DIVIDER / _distributionRate * _periodLength == _endTime - _startTime, "isParamsValid: Invalid parameters");
         _;
     }
 
@@ -49,34 +55,34 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param _startTime The start time of the distribution period
      * @param _endTime The end time of the distribution period
      * @param _distributionRate The distribution rate (percentage)
-     * @param _period The length of each distribution period (in seconds)
+     * @param _periodLength The length of each distribution period (in seconds)
      */
     function initialize(
         address _owner,
         string memory _poolName,
-        IERC20 _token,
+        address _token,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _distributionRate,
-        uint256 _period
-    ) external initializer {
-        require(_startTime < _endTime, "Invalid end time");
+        uint256 _periodLength
+    ) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength) {
+        require(_startTime < _endTime, "initialize: Invalid end time");
 
         _transferOwnership(_owner);
 
         poolName = _poolName;
-        token = _token;
+        token = IERC20(_token);
         startTime = _startTime;
         endTime = _endTime;
         distributionRate = _distributionRate;
-        periodLength = _period;
+        periodLength = _periodLength;
     }
 
     /**
      * @dev Controls settable status of contract while trying to set addresses and their amounts.
      */
     modifier isSettable() {
-        require(block.timestamp < startTime, "isSettable: Claim periodLength has started!");
+        require(block.timestamp < startTime, "isSettable: Claim periodLength has started");
         _;
     }
 
@@ -88,7 +94,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      */
     function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner isSettable external {
         uint256 usersLength = users.length;
-        require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match!");
+        require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match");
         
         uint256 totalClaimableAmount = 0;
         for (uint256 i = 0; i < usersLength; ) {
@@ -109,7 +115,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
             }
         }
 
-        require(token.balanceOf(address(this)) >= totalClaimableAmount, "Total claimable amount does not match");
+        require(token.balanceOf(address(this)) >= totalClaimableAmount, "setClaimableAmounts: Total claimable amount does not match");
         emit SetClaimableAmounts(usersLength, totalClaimableAmount);
     }
 
@@ -138,10 +144,10 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * Tokens are transferred to the contract owner's address.
      */
     function sweep() onlyOwner external {
-        require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time!");
+        require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time");
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "TokenDistributor: no leftovers");
+        require(leftovers != 0, "sweep: No leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 
@@ -161,12 +167,14 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 newDistributionRate, 
         uint256 newPeriodLength
     ) onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) external returns(bool) {
-        require(startTime > block.timestamp, "updatePoolParams: Claim period already started.");
+        require(startTime > block.timestamp, "updatePoolParams: Claim period already started");
 
         startTime = newStartTime;
         endTime = newEndTime;
         distributionRate = newDistributionRate;
         periodLength = newPeriodLength;
+
+        emit PoolParamsUpdated(newStartTime, newEndTime, newDistributionRate, newPeriodLength);
 
         return true;
     }
@@ -178,19 +186,19 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @return The claimable amount of tokens for the user
      */
     function calculateClaimableAmount(address user) public view returns(uint256) {
-        require(block.timestamp >= startTime, "Distribution has not started yet");
+        require(block.timestamp >= startTime, "calculateClaimableAmount: Distribution has not started yet");
 
         uint256 claimableAmount = 0;
 
         if (block.timestamp > endTime) {
-            claimableAmount = claimableAmounts[user];
+            claimableAmount = leftClaimableAmounts[user];
         } else {
-            require(block.timestamp < endTime, "Distribution has ended");
+            require(block.timestamp < endTime, "calculateClaimableAmount: Distribution has ended");
             claimableAmount = _calculateClaimableAmount(user);
         }
 
         require(claimableAmount > 0, "No tokens to claim");
-        require(leftClaimableAmounts[user] >= claimableAmount, "Not enough tokens left to claim");
+        require(leftClaimableAmounts[user] >= claimableAmount, "calculateClaimableAmount: Not enough tokens left to claim");
 
         return claimableAmount;
     }

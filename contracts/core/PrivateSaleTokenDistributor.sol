@@ -40,7 +40,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @dev Controls settable status of contract while trying to set addresses and their amounts.
      */
     modifier isSettable() {
-        require(block.timestamp < startTime, "isSettable: Claim period has already started!");
+        require(block.timestamp < startTime, "isSettable: Claim period has already started");
         _;
     }
 
@@ -51,7 +51,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      */
     function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner isSettable external {
         uint256 usersLength = users.length;
-        require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match!");
+        require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match");
         
         uint256 totalClaimableAmount = 0;
         for (uint256 i = 0; i < usersLength; ) {
@@ -70,7 +70,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
             }
         }
 
-        require(token.balanceOf(address(this)) >= totalClaimableAmount, "Total claimable amount does not match");
+        require(token.balanceOf(address(this)) >= totalClaimableAmount, "setClaimableAmounts: Total claimable amount does not match");
         totalAmount = totalClaimableAmount;
 
         emit SetClaimableAmounts(usersLength, totalClaimableAmount);
@@ -80,12 +80,12 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @dev Allows a beneficiary to claim their tokens.
      */
     function claim() nonReentrant external {
-        require(token.balanceOf(address(this)) > 0, "No tokens to claim in the pool!");
-        require(block.timestamp >= startTime, "Tokens cannot be claimed yet");
+        require(token.balanceOf(address(this)) > 0, "No tokens to claim in the pool");
+        require(block.timestamp >= startTime, "claim: Tokens cannot be claimed yet");
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
-        require(claimableAmount > 0, "claim: No tokens to claim!");
+        require(claimableAmount > 0, "claim: No tokens to claim");
 
         SafeERC20.safeTransfer(token, _msgSender(), claimableAmount);
         claimableAmounts[_msgSender()] = 0;
@@ -97,10 +97,10 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @dev Transfers remaining tokens from the contract to the owner.
      */
     function sweep() onlyOwner external {
-        require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time!");
+        require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time");
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "TokenDistributor: no leftovers");
+        require(leftovers != 0, "sweep: No leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 

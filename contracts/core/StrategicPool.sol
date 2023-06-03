@@ -68,19 +68,4 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
         return (((_blocksInTwoMonths * 13 * 1e4 * 1e18) / ((100 * _currentPrice * 1e16) + (constantValueFromFormula * 1e18))) 
             * Trigonometry.cos(uint256((((86 * 1e18) + (totalBurnedAmount * 1e9)) * 3141592653589793238) / (180 * 1e18))) * 2923 * 1e15) / 1e18;
     }
-
-    /**
-     * @dev Internal function to transfer tokens from the pool to a specified address.
-     * @param _to The address to transfer tokens to
-     * @param _withdrawalAmount The amount of tokens to transfer
-     * @return A boolean indicating whether the transfer was successful
-    */
-    function _transfer(address _to, uint256 _withdrawalAmount) internal returns(bool) {
-        uint256 poolBalance = token.balanceOf(address(this));
-        require(poolBalance > 0 && _withdrawalAmount <= poolBalance, "No tokens to withdraw!");
-
-        SafeERC20.safeTransfer(token, _to, _withdrawalAmount);
-
-        return true;
-    }
 }

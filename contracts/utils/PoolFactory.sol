@@ -73,7 +73,7 @@ contract PoolFactory is Ownable2Step {
     ) onlyOwner external returns(uint256) {
         address newDistributorAddress = Clones.clone(distributorImplementation);
         IDistributor newDistributor = IDistributor(newDistributorAddress);
-        newDistributor.initialize(owner(), poolName, IERC20(token), startTime, endTime, distributionRate, periodLength, claimableAmount);
+        newDistributor.initialize(owner(), poolName, token, startTime, endTime, distributionRate, periodLength, claimableAmount);
 
         emit DistributorCreated(owner(), newDistributorAddress, distributorCount);
 
@@ -100,7 +100,7 @@ contract PoolFactory is Ownable2Step {
     ) onlyOwner external returns(uint256) {
         address newTokenDistributorAddress = Clones.clone(tokenDistributorImplementation);
         ITokenDistributor newTokenDistributor = ITokenDistributor(newTokenDistributorAddress);
-        newTokenDistributor.initialize(owner(), poolName, IERC20(token), startTime, endTime, distributionRate, periodLength);
+        newTokenDistributor.initialize(owner(), poolName, token, startTime, endTime, distributionRate, periodLength);
 
         emit TokenDistributorCreated(owner(), newTokenDistributorAddress, tokenDistributorCount);
 

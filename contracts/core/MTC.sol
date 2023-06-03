@@ -12,40 +12,35 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  */
 contract MTC is ERC20, ERC20Burnable, Ownable2Step {
     struct Pool {
-        bytes32 name; // Name of the pool
+        string name; // Name of the pool
         address addr; // Address of the pool
         uint256 lockedAmount; // Locked amount in the pool
     }
 
-    event PoolSubmitted(bytes32 name, address addr, uint256 lockedAmount);
+    event PoolSubmitted(string name, address addr, uint256 lockedAmount);
     
     /**
      * @dev Initializes the MTC contract with initial pools and total supply.
-     * @param _pools The array of Pool structures containing pool information.
      * @param _totalSupply The total supply of the MTC token.
      */
-    constructor(Pool[] memory _pools, uint256 _totalSupply) ERC20("Metatime", "MTC") {
+    constructor(uint256 _totalSupply) ERC20("Metatime", "MTC") {
         _transferOwnership(_msgSender());
-
-        _submitPools(_pools, _totalSupply);
+        _mint(_msgSender(), _totalSupply);
     }
 
     /**
-     * @dev Internal function to submit pools and distribute tokens accordingly.
-     * @param _pools The array of Pool structures containing pool information.
-     * @param _totalSupply The total supply of the MTC token.
+     * @dev A function to submit pools and distribute tokens from owner's balance accordingly.
+     * @param pools The array of Pool structures containing pool information.
      * @return A boolean value indicating whether the pools were successfully submitted.
      */
-    function _submitPools(Pool[] memory _pools, uint256 _totalSupply) internal returns(bool) {
-        uint256 poolsLength = _pools.length;
+    function submitPools(Pool[] memory pools) onlyOwner external returns(bool) {
+        uint256 poolsLength = pools.length;
         
         uint256 totalLockedAmount = 0;
         for (uint256 i = 0; i < poolsLength; ) {
-            Pool memory pool = _pools[i];
-            if (pool.addr == address(0)) {
-                _mint(_msgSender(), pool.lockedAmount);
-            } else {
-                _mint(pool.addr, pool.lockedAmount);
+            Pool memory pool = pools[i];
+            if (pool.addr != address(0)) {
+                transfer(pool.addr, pool.lockedAmount);
                 emit PoolSubmitted(pool.name, pool.addr, pool.lockedAmount);
             }
             unchecked {
@@ -53,8 +48,6 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
                 i += 1;
             }
         }
-
-        require(_totalSupply >= totalLockedAmount, "Total claimable amount does not match");
 
         return true;
     }

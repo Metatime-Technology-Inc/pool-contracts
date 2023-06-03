@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title MTC
- * @dev An ERC20 standard contract that 
+ * @dev An ERC20 standard contract that
  * mints Metatime Token and distributes it to each pool based on Metatime Tokenomics.
  */
 contract MTC is ERC20, ERC20Burnable, Ownable2Step {
@@ -18,7 +18,7 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
     }
 
     event PoolSubmitted(string name, address addr, uint256 lockedAmount);
-    
+
     /**
      * @dev Initializes the MTC contract with initial pools and total supply.
      * @param _totalSupply The total supply of the MTC token.
@@ -33,9 +33,11 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
      * @param pools The array of Pool structures containing pool information.
      * @return A boolean value indicating whether the pools were successfully submitted.
      */
-    function submitPools(Pool[] memory pools) onlyOwner external returns(bool) {
+    function submitPools(
+        Pool[] memory pools
+    ) external onlyOwner returns (bool) {
         uint256 poolsLength = pools.length;
-        
+
         uint256 totalLockedAmount = 0;
         for (uint256 i = 0; i < poolsLength; ) {
             Pool memory pool = pools[i];

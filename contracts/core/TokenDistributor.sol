@@ -18,7 +18,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     uint256 public endTime; // The end time of the distribution period
     uint256 public periodLength; // The length of each distribution period (in seconds)
     uint256 public distributionRate; // The distribution rate (percentage)
-    uint256 constant public BASE_DIVIDER = 10_000; // The base divider used for calculations
+    uint256 public constant BASE_DIVIDER = 10_000; // The base divider used for calculations
     mapping(address => uint256) public claimableAmounts; // Mapping of user addresses to their claimable amounts
     mapping(address => uint256) public claimedAmounts; // Mapping of user addresses to their claimed amounts
     mapping(address => uint256) public lastClaimTimes; // Mapping of user addresses to their last claim times
@@ -29,9 +29,9 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed tokens
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
     event PoolParamsUpdated(
-        uint256 newStartTime, 
-        uint256 newEndTime, 
-        uint256 newDistributionRate, 
+        uint256 newStartTime,
+        uint256 newEndTime,
+        uint256 newDistributionRate,
         uint256 newPeriodLength
     ); // Event emitted when pool params are updated
 
@@ -42,8 +42,17 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param _distributionRate Distribution rate of each claim
      * @param _periodLength Distribution duration of each claim
      */
-    modifier isParamsValid(uint256 _startTime, uint256 _endTime, uint256 _distributionRate, uint256 _periodLength) {
-        require(BASE_DIVIDER / _distributionRate * _periodLength == _endTime - _startTime, "isParamsValid: Invalid parameters");
+    modifier isParamsValid(
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _distributionRate,
+        uint256 _periodLength
+    ) {
+        require(
+            (BASE_DIVIDER / _distributionRate) * _periodLength ==
+                _endTime - _startTime,
+            "isParamsValid: Invalid parameters"
+        );
         _;
     }
 
@@ -65,7 +74,11 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _endTime,
         uint256 _distributionRate,
         uint256 _periodLength
-    ) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength) {
+    )
+        external
+        initializer
+        isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
+    {
         require(_startTime < _endTime, "initialize: Invalid end time");
 
         _transferOwnership(_owner);
@@ -82,7 +95,10 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @dev Controls settable status of contract while trying to set addresses and their amounts.
      */
     modifier isSettable() {
-        require(block.timestamp < startTime, "isSettable: Claim periodLength has started");
+        require(
+            block.timestamp < startTime,
+            "isSettable: Claim periodLength has started"
+        );
         _;
     }
 
@@ -92,10 +108,16 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param users An array of user addresses
      * @param amounts An array of claimable amounts corresponding to each user
      */
-    function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner isSettable external {
+    function setClaimableAmounts(
+        address[] calldata users,
+        uint256[] calldata amounts
+    ) external onlyOwner isSettable {
         uint256 usersLength = users.length;
-        require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match");
-        
+        require(
+            usersLength == amounts.length,
+            "setClaimableAmounts: User and amount list lengths must match"
+        );
+
         uint256 totalClaimableAmount = 0;
         for (uint256 i = 0; i < usersLength; ) {
             address user = users[i];
@@ -109,13 +131,16 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
 
                 totalClaimableAmount = totalClaimableAmount + amount;
             }
-            
+
             unchecked {
                 i += 1;
             }
         }
 
-        require(token.balanceOf(address(this)) >= totalClaimableAmount, "setClaimableAmounts: Total claimable amount does not match");
+        require(
+            token.balanceOf(address(this)) >= totalClaimableAmount,
+            "setClaimableAmounts: Total claimable amount does not match"
+        );
         emit SetClaimableAmounts(usersLength, totalClaimableAmount);
     }
 
@@ -123,7 +148,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @dev Allows a user to claim their available tokens.
      * Tokens can only be claimed during the distribution period.
      */
-    function claim() nonReentrant external returns(bool) {
+    function claim() external nonReentrant returns (bool) {
         address sender = _msgSender();
         uint256 claimableAmount = calculateClaimableAmount(sender);
 
@@ -132,7 +157,9 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
 
         lastClaimTimes[sender] = block.timestamp;
 
-        leftClaimableAmounts[sender] = leftClaimableAmounts[sender] - claimableAmount;
+        leftClaimableAmounts[sender] =
+            leftClaimableAmounts[sender] -
+            claimableAmount;
 
         emit HasClaimed(sender, claimableAmount);
 
@@ -143,8 +170,11 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @dev Allows the contract owner to sweep any remaining tokens after the claim period ends.
      * Tokens are transferred to the contract owner's address.
      */
-    function sweep() onlyOwner external {
-        require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time");
+    function sweep() external onlyOwner {
+        require(
+            block.timestamp > endTime,
+            "sweep: Cannot sweep before claim end time"
+        );
 
         uint256 leftovers = token.balanceOf(address(this));
         require(leftovers != 0, "sweep: No leftovers");
@@ -162,19 +192,37 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param newPeriodLength New distribution duration of each claim
      */
     function updatePoolParams(
-        uint256 newStartTime, 
-        uint256 newEndTime, 
-        uint256 newDistributionRate, 
+        uint256 newStartTime,
+        uint256 newEndTime,
+        uint256 newDistributionRate,
         uint256 newPeriodLength
-    ) onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) external returns(bool) {
-        require(startTime > block.timestamp, "updatePoolParams: Claim period already started");
+    )
+        external
+        onlyOwner
+        isParamsValid(
+            newStartTime,
+            newEndTime,
+            newDistributionRate,
+            newPeriodLength
+        )
+        returns (bool)
+    {
+        require(
+            startTime > block.timestamp,
+            "updatePoolParams: Claim period already started"
+        );
 
         startTime = newStartTime;
         endTime = newEndTime;
         distributionRate = newDistributionRate;
         periodLength = newPeriodLength;
 
-        emit PoolParamsUpdated(newStartTime, newEndTime, newDistributionRate, newPeriodLength);
+        emit PoolParamsUpdated(
+            newStartTime,
+            newEndTime,
+            newDistributionRate,
+            newPeriodLength
+        );
 
         return true;
     }
@@ -185,20 +233,31 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param user The address of the user
      * @return The claimable amount of tokens for the user
      */
-    function calculateClaimableAmount(address user) public view returns(uint256) {
-        require(block.timestamp >= startTime, "calculateClaimableAmount: Distribution has not started yet");
+    function calculateClaimableAmount(
+        address user
+    ) public view returns (uint256) {
+        require(
+            block.timestamp >= startTime,
+            "calculateClaimableAmount: Distribution has not started yet"
+        );
 
         uint256 claimableAmount = 0;
 
         if (block.timestamp > endTime) {
             claimableAmount = leftClaimableAmounts[user];
         } else {
-            require(block.timestamp < endTime, "calculateClaimableAmount: Distribution has ended");
+            require(
+                block.timestamp < endTime,
+                "calculateClaimableAmount: Distribution has ended"
+            );
             claimableAmount = _calculateClaimableAmount(user);
         }
 
         require(claimableAmount > 0, "No tokens to claim");
-        require(leftClaimableAmounts[user] >= claimableAmount, "calculateClaimableAmount: Not enough tokens left to claim");
+        require(
+            leftClaimableAmounts[user] >= claimableAmount,
+            "calculateClaimableAmount: Not enough tokens left to claim"
+        );
 
         return claimableAmount;
     }
@@ -209,10 +268,15 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param user The address of the user
      * @return The amount of tokens that can be claimed by the user
      */
-    function _calculateClaimableAmount(address user) internal view returns (uint256) {
+    function _calculateClaimableAmount(
+        address user
+    ) internal view returns (uint256) {
         uint256 initialAmount = claimableAmounts[user];
-        uint256 periodSinceLastClaim = ((block.timestamp - lastClaimTimes[user]) * 10 ** 18) / periodLength;
-        
-        return (((initialAmount * distributionRate) / BASE_DIVIDER) * periodSinceLastClaim) / 10 ** 18;
+        uint256 periodSinceLastClaim = ((block.timestamp -
+            lastClaimTimes[user]) * 10 ** 18) / periodLength;
+
+        return
+            (((initialAmount * distributionRate) / BASE_DIVIDER) *
+                periodSinceLastClaim) / 10 ** 18;
     }
 }

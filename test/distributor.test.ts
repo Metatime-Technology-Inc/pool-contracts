@@ -2,8 +2,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { CONTRACTS } from "../scripts/constants";
-import POOL_PARAMS, { PoolInfo, BaseContract } from "../scripts/constants/pool-params";
-import { incrementBlocktimestamp, toWei, getBlockTimestamp, filterObject } from "../scripts/helpers";
+import POOL_PARAMS from "../scripts/constants/pool-params";
+import { incrementBlocktimestamp, toWei, getBlockTimestamp } from "../scripts/helpers";
 import { BigNumber } from "ethers";
 
 const METATIME_TOKEN_SUPPLY = 10_000_000_000;
@@ -43,7 +43,7 @@ describe("Distributor", function () {
     }
 
     describe("Create distributors and test claiming period", async () => {
-        it("Initiate Pool factory & create distributor pool", async function () {
+        it("should initiate Pool factory & create distributor pool", async function () {
             const {
                 mtc,
                 poolFactory,
@@ -53,11 +53,6 @@ describe("Distributor", function () {
 
             const currentBlockTimestamp = await getBlockTimestamp(ethers);
             const LISTING_TIMESTAMP = currentBlockTimestamp + 500_000;
-
-            // Pools that is derived from Distributor contract
-            const distributors = filterObject(POOL_PARAMS, ([k, v]) => v.baseContract === BaseContract.Distributor);
-
-            const distributorKeys = Object.keys(distributors);
 
             // *** Test distributor creation
             const testDistributor = POOL_PARAMS.MARKETING_POOL;

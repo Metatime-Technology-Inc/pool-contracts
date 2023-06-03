@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract LiquidityPool is Ownable2Step {
     IERC20 public token; // Token to be distributed
 
-    event Withdrew(uint256 amount);  // Event emitted when tokens are withdrawn from the pool
+    event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
 
     /**
      * @dev Constructor.
@@ -28,7 +28,7 @@ contract LiquidityPool is Ownable2Step {
      * @dev Transfers funds from the liquidity pool to the specified address.
      * @param withdrawalAmount The amount of tokens to withdraw from the pool
      */
-    function transferFunds(uint256 withdrawalAmount) onlyOwner external {
+    function transferFunds(uint256 withdrawalAmount) external onlyOwner {
         _withdraw(owner(), withdrawalAmount);
 
         emit Withdrew(withdrawalAmount);
@@ -40,9 +40,15 @@ contract LiquidityPool is Ownable2Step {
      * @param _withdrawalAmount The amount of tokens to withdraw
      * @return A boolean indicating whether the withdrawal was successful
      */
-    function _withdraw(address _to, uint256 _withdrawalAmount) internal returns(bool) {
+    function _withdraw(
+        address _to,
+        uint256 _withdrawalAmount
+    ) internal returns (bool) {
         uint256 poolBalance = token.balanceOf(address(this));
-        require(poolBalance > 0 && _withdrawalAmount <= poolBalance, "No tokens to withdraw!");
+        require(
+            poolBalance > 0 && _withdrawalAmount <= poolBalance,
+            "_withdraw: No tokens to withdraw"
+        );
 
         SafeERC20.safeTransfer(token, _to, _withdrawalAmount);
 

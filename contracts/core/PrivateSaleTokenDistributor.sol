@@ -11,16 +11,16 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * @dev A contract for distributing tokens during a private sale.
  */
 contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
-    IERC20 public token;  // The token being distributed
-    uint256 public startTime;  // The start time of the claim period
-    uint256 public endTime;  // The end time of the claim period
-    uint256 public totalAmount;  // The total amount of tokens available for distribution
-    mapping (address => uint256) public claimableAmounts;  // Mapping of beneficiary addresses to their claimable amounts
+    IERC20 public token; // The token being distributed
+    uint256 public startTime; // The start time of the claim period
+    uint256 public endTime; // The end time of the claim period
+    uint256 public totalAmount; // The total amount of tokens available for distribution
+    mapping(address => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
-    event CanClaim(address indexed beneficiary, uint256 amount);  // Event emitted when a beneficiary can claim tokens
-    event HasClaimed(address indexed beneficiary, uint256 amount);  // Event emitted when a beneficiary claims tokens
-    event Swept(address receiver, uint256 amount);  // Event emitted when tokens are swept from the contract
-    event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount);  // Event emitted when claimable amounts are set
+    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim tokens
+    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary claims tokens
+    event Swept(address receiver, uint256 amount); // Event emitted when tokens are swept from the contract
+    event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
 
     /**
      * @dev Constructor.
@@ -40,7 +40,10 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @dev Controls settable status of contract while trying to set addresses and their amounts.
      */
     modifier isSettable() {
-        require(block.timestamp < startTime, "isSettable: Claim period has already started");
+        require(
+            block.timestamp < startTime,
+            "isSettable: Claim period has already started"
+        );
         _;
     }
 
@@ -49,10 +52,16 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @param users The list of user addresses
      * @param amounts The list of claimable amounts corresponding to each user
      */
-    function setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) onlyOwner isSettable external {
+    function setClaimableAmounts(
+        address[] calldata users,
+        uint256[] calldata amounts
+    ) external onlyOwner isSettable {
         uint256 usersLength = users.length;
-        require(usersLength == amounts.length, "setClaimableAmounts: User and amount list lengths must match");
-        
+        require(
+            usersLength == amounts.length,
+            "setClaimableAmounts: User and amount list lengths must match"
+        );
+
         uint256 totalClaimableAmount = 0;
         for (uint256 i = 0; i < usersLength; ) {
             address user = users[i];
@@ -64,13 +73,16 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
 
                 totalClaimableAmount = totalClaimableAmount + amount;
             }
-            
+
             unchecked {
                 i += 1;
             }
         }
 
-        require(token.balanceOf(address(this)) >= totalClaimableAmount, "setClaimableAmounts: Total claimable amount does not match");
+        require(
+            token.balanceOf(address(this)) >= totalClaimableAmount,
+            "setClaimableAmounts: Total claimable amount does not match"
+        );
         totalAmount = totalClaimableAmount;
 
         emit SetClaimableAmounts(usersLength, totalClaimableAmount);
@@ -79,9 +91,15 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     /**
      * @dev Allows a beneficiary to claim their tokens.
      */
-    function claim() nonReentrant external {
-        require(token.balanceOf(address(this)) > 0, "No tokens to claim in the pool");
-        require(block.timestamp >= startTime, "claim: Tokens cannot be claimed yet");
+    function claim() external nonReentrant {
+        require(
+            token.balanceOf(address(this)) > 0,
+            "No tokens to claim in the pool"
+        );
+        require(
+            block.timestamp >= startTime,
+            "claim: Tokens cannot be claimed yet"
+        );
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
@@ -96,8 +114,11 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     /**
      * @dev Transfers remaining tokens from the contract to the owner.
      */
-    function sweep() onlyOwner external {
-        require(block.timestamp > endTime, "sweep: Cannot sweep before claim end time");
+    function sweep() external onlyOwner {
+        require(
+            block.timestamp > endTime,
+            "sweep: Cannot sweep before claim end time"
+        );
 
         uint256 leftovers = token.balanceOf(address(this));
         require(leftovers != 0, "sweep: No leftovers");

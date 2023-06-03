@@ -2,14 +2,13 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { CONTRACTS } from "../scripts/constants";
-import POOL_PARAMS, { PoolInfo, BaseContract } from "../scripts/constants/pool-params";
-import { incrementBlocktimestamp, toWei, getBlockTimestamp, filterObject } from "../scripts/helpers";
-import { BigNumber } from "ethers";
+import POOL_PARAMS from "../scripts/constants/pool-params";
+import { incrementBlocktimestamp, toWei, getBlockTimestamp } from "../scripts/helpers";
 
 const METATIME_TOKEN_SUPPLY = 10_000_000_000;
 const SECONDS_IN_A_DAY = 60 * 24 * 60;
 
-describe("Distributor", function () {
+describe("PrivateSaleTokenDistributor", function () {
     async function initiateVariables() {
         const [deployer, user_1, user_2, user_3, user_4, user_5] =
             await ethers.getSigners();
@@ -42,8 +41,8 @@ describe("Distributor", function () {
         };
     }
 
-    describe("Create distributors and test claiming period", async () => {
-        it("Initiate Pool factory & create distributor pool", async function () {
+    describe("Create private sale pool & claim period", async () => {
+        it("should initiate private sale & test claim period", async function () {
             const {
                 mtc,
                 privateSaleTokenDistributor,

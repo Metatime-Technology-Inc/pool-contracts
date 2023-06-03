@@ -31,7 +31,7 @@ contract PoolFactory is Ownable2Step {
     event TokenDistributorCreated(
         address creatorAddress,
         address tokenDistributorAddress,
-        uint256 distributorId
+        uint256 tokenDistributorId
     ); // Event emitted when a TokenDistributor contract is created.
 
     constructor() {

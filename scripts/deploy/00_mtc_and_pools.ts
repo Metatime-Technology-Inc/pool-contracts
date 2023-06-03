@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { CONTRACTS } from "../constants";
+import { CONSTRUCTOR_PARAMS, CONTRACTS } from "../constants";
 
 const func: DeployFunction = async ({
     deployments,
@@ -13,7 +13,7 @@ const func: DeployFunction = async ({
 
     const mtc = await deploy(CONTRACTS.core.MTC, {
         from: deployer,
-        args: [],
+        args: [CONSTRUCTOR_PARAMS.MTC.totalSupply],
         log: true,
         skipIfAlreadyDeployed: true,
     });

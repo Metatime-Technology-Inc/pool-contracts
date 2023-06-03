@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import "../interfaces/IMTC.sol";
 import "../libs/Trigonometry.sol";
 
 /**
@@ -13,7 +13,7 @@ import "../libs/Trigonometry.sol";
  * @dev A contract for managing a strategic pool of tokens.
  */
 contract StrategicPool is Ownable2Step, ReentrancyGuard {
-    ERC20Burnable public token; // The token managed by the pool
+    IMTC public token; // The token managed by the pool
     int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
@@ -23,7 +23,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * Constructor
      * @param _token The token being burned
      */
-    constructor(ERC20Burnable _token) {
+    constructor(IMTC _token) {
         _transferOwnership(_msgSender());
 
         token = _token;

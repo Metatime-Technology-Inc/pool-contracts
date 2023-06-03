@@ -1,6 +1,6 @@
 import { BigNumber, ethers } from "ethers";
-import { HardhatEthersHelpers } from "hardhat/types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
 
 type Entry<T> = {
   [K in keyof T]: [K, T[K]]

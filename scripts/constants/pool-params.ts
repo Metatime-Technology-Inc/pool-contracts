@@ -20,6 +20,7 @@ export interface PoolInfo {
 }
 
 interface PoolParams {
+    [key: string]: PoolInfo;
     SEED_SALE_1_POOL: PoolInfo,
     SEED_SALE_2_POOL: PoolInfo,
     PRIVATE_SALE_POOL: PoolInfo,

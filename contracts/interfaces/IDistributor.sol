@@ -7,7 +7,7 @@ interface IDistributor {
     function initialize(
         address _owner,
         string memory _poolName,
-        IERC20 _token,
+        address _token,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _distributionRate,

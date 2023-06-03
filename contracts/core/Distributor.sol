@@ -28,6 +28,13 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     event Swept(address receiver, uint256 amount);  // Event emitted when leftover tokens are swept to the owner
     event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim tokens
     event HasClaimed(address indexed beneficiary, uint256 amount);  // Event emitted when a beneficiary has claimed tokens
+    event PoolParamsUpdated(
+        uint256 newStartTime, 
+        uint256 newEndTime, 
+        uint256 newDistributionRate, 
+        uint256 newPeriodLength,
+        uint256 newClaimableAmount
+    ); // Event emitted when pool params are updated
 
     /**
      * @dev A modifier that validates pool parameters
@@ -37,25 +44,25 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @param _periodLength Distribution duration of each claim
      */
     modifier isParamsValid(uint256 _startTime, uint256 _endTime, uint256 _distributionRate, uint256 _periodLength) {
-        require(BASE_DIVIDER / (_distributionRate * _periodLength) == _endTime - _startTime, "isParamsValid: Invalid parameters!");
+        require(BASE_DIVIDER / _distributionRate * _periodLength == _endTime - _startTime, "isParamsValid: Invalid parameters!");
         _;
     }
 
-    /**
-     * @dev Initializes the contract with the specified parameters.
-     * @param _owner The address of the contract owner
-     * @param _poolName The name of the token distribution pool
-     * @param _token The token to be distributed
-     * @param _startTime The start time of the distribution
-     * @param _endTime The end time of the distribution
-     * @param _distributionRate The rate of token distribution per period
-     * @param _periodLength The length of each distribution period
-     * @param _claimableAmount The total amount of tokens claimable per period
-     */
+    // /**
+    //  * @dev Initializes the contract with the specified parameters.
+    //  * @param _owner The address of the contract owner
+    //  * @param _poolName The name of the token distribution pool
+    //  * @param _token The token to be distributed
+    //  * @param _startTime The start time of the distribution
+    //  * @param _endTime The end time of the distribution
+    //  * @param _distributionRate The rate of token distribution per period
+    //  * @param _periodLength The length of each distribution period
+    //  * @param _claimableAmount The total amount of tokens claimable per period
+    //  */
     function initialize(
         address _owner,
         string memory _poolName,
-        IERC20 _token,
+        address _token,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _distributionRate,
@@ -67,7 +74,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         _transferOwnership(_owner);
 
         poolName = _poolName;
-        token = _token;
+        token = IERC20(_token);
         startTime = _startTime;
         endTime = _endTime;
         distributionRate = _distributionRate;
@@ -133,6 +140,9 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         distributionRate = newDistributionRate;
         periodLength = newPeriodLength;
         claimableAmount = newClaimableAmount;
+        lastClaimTime = newStartTime;
+
+        emit PoolParamsUpdated(newStartTime, newEndTime, newDistributionRate, newPeriodLength, newClaimableAmount);
 
         return true;
     }
@@ -147,9 +157,8 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 amount = 0;
 
         if (block.timestamp > endTime) {
-            amount = claimableAmount;
+            amount = leftClaimableAmount;
         } else {
-            require(block.timestamp < endTime, "calculateClaimableAmount: Distribution has ended");
             amount = _calculateClaimableAmount();
         }
 

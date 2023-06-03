@@ -13,11 +13,11 @@ import "../libs/Trigonometry.sol";
  * @dev A contract for managing a strategic pool of tokens.
  */
 contract StrategicPool is Ownable2Step, ReentrancyGuard {
-    ERC20Burnable public token;  // The token managed by the pool
-    int256 public totalBurnedAmount = 0;  // The total amount of tokens burned from the pool
-    int256 public constant constantValueFromFormula = 1000;  // A constant value used in the formula
+    ERC20Burnable public token; // The token managed by the pool
+    int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
+    int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
-    event Burned(uint256 amount, bool withFormula);  // Event emitted when tokens are burned from the pool
+    event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
 
     /**
      * Constructor
@@ -34,8 +34,13 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * @param currentPrice The current price used in the burn formula
      * @param blocksInTwoMonths The number of blocks in two months used in the burn formula
      */
-    function burnWithFormula(int256 currentPrice, int256 blocksInTwoMonths) onlyOwner nonReentrant external {
-        uint256 amount = uint256(calculateBurnAmount(currentPrice, blocksInTwoMonths));
+    function burnWithFormula(
+        int256 currentPrice,
+        int256 blocksInTwoMonths
+    ) external onlyOwner nonReentrant {
+        uint256 amount = uint256(
+            calculateBurnAmount(currentPrice, blocksInTwoMonths)
+        );
 
         require(amount > 0, "burnWithFormula: Amount is too less!");
 
@@ -50,7 +55,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * @dev Burns tokens from the pool without using a formula.
      * @param burnAmount The amount of tokens to burn
      */
-    function burn(uint256 burnAmount) onlyOwner nonReentrant external {
+    function burn(uint256 burnAmount) external onlyOwner nonReentrant {
         token.burn(burnAmount);
 
         totalBurnedAmount += int256(burnAmount);
@@ -64,8 +69,21 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * @param _blocksInTwoMonths The number of blocks in two months used in the burn formula
      * @return The amount of tokens to burn
      */
-    function calculateBurnAmount(int256 _currentPrice, int256 _blocksInTwoMonths) public view returns(int256) {
-        return (((_blocksInTwoMonths * 13 * 1e4 * 1e18) / ((100 * _currentPrice * 1e16) + (constantValueFromFormula * 1e18))) 
-            * Trigonometry.cos(uint256((((86 * 1e18) + (totalBurnedAmount * 1e9)) * 3141592653589793238) / (180 * 1e18))) * 2923 * 1e15) / 1e18;
+    function calculateBurnAmount(
+        int256 _currentPrice,
+        int256 _blocksInTwoMonths
+    ) public view returns (int256) {
+        return
+            (((_blocksInTwoMonths * 13 * 1e4 * 1e18) /
+                ((100 * _currentPrice * 1e16) +
+                    (constantValueFromFormula * 1e18))) *
+                Trigonometry.cos(
+                    uint256(
+                        (((86 * 1e18) + (totalBurnedAmount * 1e9)) *
+                            3141592653589793238) / (180 * 1e18)
+                    )
+                ) *
+                2923 *
+                1e15) / 1e18;
     }
 }

@@ -70,7 +70,7 @@ contract PoolFactory is Ownable2Step {
       uint256 distributionRate,
       uint256 periodLength,
       uint256 claimableAmount
-    ) onlyOwner external returns(uint256) {
+    ) external onlyOwner returns(uint256) {
         address newDistributorAddress = Clones.clone(distributorImplementation);
         IDistributor newDistributor = IDistributor(newDistributorAddress);
         newDistributor.initialize(owner(), poolName, token, startTime, endTime, distributionRate, periodLength, claimableAmount);
@@ -97,7 +97,7 @@ contract PoolFactory is Ownable2Step {
       uint256 endTime, 
       uint256 distributionRate,
       uint256 periodLength
-    ) onlyOwner external returns(uint256) {
+    ) external onlyOwner returns(uint256) {
         address newTokenDistributorAddress = Clones.clone(tokenDistributorImplementation);
         ITokenDistributor newTokenDistributor = ITokenDistributor(newTokenDistributorAddress);
         newTokenDistributor.initialize(owner(), poolName, token, startTime, endTime, distributionRate, periodLength);

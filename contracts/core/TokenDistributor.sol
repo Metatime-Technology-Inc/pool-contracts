@@ -214,7 +214,8 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
             "updatePoolParams: Claim period already started"
         );
         require(
-            hasClaimableAmountsSet == false, "updatePoolParams: Claimable amounts were set before"
+            hasClaimableAmountsSet == false,
+            "updatePoolParams: Claimable amounts were set before"
         );
 
         startTime = newStartTime;

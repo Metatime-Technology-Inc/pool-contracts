@@ -8,6 +8,9 @@ interface IContracts {
     StrategicPool: string;
     TokenDistributor: string;
   };
+  lib: {
+    Trigonometry: string;
+  },
   utils: {
     MultiSigWallet: string;
     PoolFactory: string;
@@ -22,6 +25,9 @@ const CONTRACTS: IContracts = {
     PrivateSaleTokenDistributor: "PrivateSaleTokenDistributor",
     StrategicPool: "StrategicPool",
     TokenDistributor: "TokenDistributor",
+  },
+  lib: {
+    Trigonometry: "Trigonometry",
   },
   utils: {
     MultiSigWallet: "MultiSigWallet",

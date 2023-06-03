@@ -42,7 +42,7 @@ contract LiquidityPool is Ownable2Step {
      */
     function _withdraw(address _to, uint256 _withdrawalAmount) internal returns(bool) {
         uint256 poolBalance = token.balanceOf(address(this));
-        require(poolBalance > 0 && _withdrawalAmount <= poolBalance, "No tokens to withdraw!");
+        require(poolBalance > 0 && _withdrawalAmount <= poolBalance, "_withdraw: No tokens to withdraw");
 
         SafeERC20.safeTransfer(token, _to, _withdrawalAmount);
 

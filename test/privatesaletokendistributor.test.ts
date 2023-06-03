@@ -9,7 +9,7 @@ import { BigNumber } from "ethers";
 const METATIME_TOKEN_SUPPLY = 10_000_000_000;
 const SECONDS_IN_A_DAY = 60 * 24 * 60;
 
-describe("Distributor", function () {
+describe("PrivateSaleTokenDistributor", function () {
     async function initiateVariables() {
         const [deployer, user_1, user_2, user_3, user_4, user_5] =
             await ethers.getSigners();

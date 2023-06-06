@@ -48,7 +48,7 @@ task("create-distributor", "Create a new distributor")
             const event = createDistributor.events?.find((event: any) => event.event === "DistributorCreated");
             const [creatorAddress, distributorAddress, distributorId] = event?.args!;
 
-            console.log("NETWORK:",networkName);
+            console.log("NETWORK:", networkName);
             console.log(
                 `[DISTRIBUTOR CREATED]\n
             -> Creator Address: ${creatorAddress}\n
@@ -101,7 +101,7 @@ task("create-token-distributor", "Create a new token distributor")
             const event = createTokenDistributor.events?.find((event: any) => event.event === "TokenDistributorCreated");
             const [creatorAddress, tokenDistributorAddress, tokenDistributorId] = event?.args!;
 
-            console.log("NETWORK:",networkName);
+            console.log("NETWORK:", networkName);
             console.log(
                 `[TOKEN DISTRIBUTOR CREATED]\n
             -> Creator Address: ${creatorAddress}\n
@@ -141,7 +141,7 @@ task("create-private-sale", "Create a private sale pool")
 
             await privateSaleTokenDistributor.deployed();
 
-            console.log("NETWORK:",networkName);
+            console.log("NETWORK:", networkName);
             console.log("PrivateSaleTokenDistributor deployed at", privateSaleTokenDistributor.address);
         } catch (err: any) {
             throw new Error(err);
@@ -205,8 +205,6 @@ task(
         try {
             const networkName = hre.network.name;
 
-            const [deployer] = await hre.ethers.getSigners();
-
             let obj: { [key: string]: string; } = {};
 
             const deploymentsFolder = path.resolve(__dirname, `../tmp/deployments`);
@@ -224,8 +222,15 @@ task(
                 const sectionObj = CONTRACTS[contractSection];
                 const objKeys = Object.keys(sectionObj);
 
+                const excludedContracts =
+                    [CONTRACTS.core.Distributor, CONTRACTS.core.PrivateSaleTokenDistributor, CONTRACTS.core.TokenDistributor, CONTRACTS.lib.Trigonometry];
+
                 for (let i = 0; i < objKeys.length; i++) {
                     const innerSection = objKeys[i];
+                    if (excludedContracts.indexOf(innerSection) === 1) {
+                        continue;
+                    }
+
                     const originFilePath = path.resolve(
                         __dirname,
                         `../deployments/${networkName}/${innerSection}.json`

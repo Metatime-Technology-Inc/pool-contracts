@@ -4,7 +4,6 @@ import path from "path";
 import { CONTRACTS } from "../scripts/constants";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { toWei } from "../scripts/helpers";
-import { PoolFactory__factory } from "../typechain-types";
 import { ethers } from "ethers";
 
 task("create-distributor", "Create a new distributor")
@@ -31,6 +30,8 @@ task("create-distributor", "Create a new distributor")
             const { deployer } = await hre.getNamedAccounts();
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
+            const { PoolFactory__factory } = require("../typechain-types");
+
             const poolFactory = PoolFactory__factory.connect(factoryAddress, deployerSigner);
 
             const createDistributorTx = await poolFactory.createDistributor(
@@ -44,7 +45,7 @@ task("create-distributor", "Create a new distributor")
             );
 
             const createDistributor = await createDistributorTx.wait();
-            const event = createDistributor.events?.find((event) => event.event === "DistributorCreated");
+            const event = createDistributor.events?.find((event: any) => event.event === "DistributorCreated");
             const [creatorAddress, distributorAddress, distributorId] = event?.args!;
 
             console.log("NETWORK:",networkName);
@@ -83,6 +84,8 @@ task("create-token-distributor", "Create a new token distributor")
             const { deployer } = await hre.getNamedAccounts();
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
+            const { PoolFactory__factory } = require("../typechain-types");
+
             const poolFactory = PoolFactory__factory.connect(factoryAddress, deployerSigner);
 
             const createTokenDistributorTx = await poolFactory.createTokenDistributor(
@@ -95,7 +98,7 @@ task("create-token-distributor", "Create a new token distributor")
             );
 
             const createTokenDistributor = await createTokenDistributorTx.wait();
-            const event = createTokenDistributor.events?.find((event) => event.event === "TokenDistributorCreated");
+            const event = createTokenDistributor.events?.find((event: any) => event.event === "TokenDistributorCreated");
             const [creatorAddress, tokenDistributorAddress, tokenDistributorId] = event?.args!;
 
             console.log("NETWORK:",networkName);

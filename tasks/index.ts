@@ -7,6 +7,7 @@ import { toWei } from "../scripts/helpers";
 import { ethers } from "ethers";
 import { MTC, MTC__factory, TokenDistributor__factory } from "../typechain-types";
 
+// creates new Distributor by using PoolFactory for given network
 task("create-distributor", "Create a new distributor")
     .addParam("factory", "address of pool factory")
     .addParam("name", "name of pool")
@@ -62,6 +63,7 @@ task("create-distributor", "Create a new distributor")
         }
     });
 
+// creates new TokenDistributor by using PoolFactory for given network
 task("create-token-distributor", "Create a new token distributor")
     .addParam("factory", "address of pool factory")
     .addParam("name", "name of pool")
@@ -115,6 +117,7 @@ task("create-token-distributor", "Create a new token distributor")
         }
     });
 
+// creates PrivateSaleTokenDistributor for given network
 task("create-private-sale", "Create a private sale pool")
     .addParam("mtc", "address of mtc")
     .addParam("start", "start timestamp of token distribution")
@@ -149,7 +152,7 @@ task("create-private-sale", "Create a private sale pool")
         }
     });
 
-
+// extracts abis for given network
 task(
     "extract-abis",
     async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
@@ -200,6 +203,7 @@ task(
     }
 );
 
+// extracts contract addresses for given network
 task(
     "extract-deployment-addresses",
     async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {

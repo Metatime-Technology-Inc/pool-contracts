@@ -25,6 +25,7 @@ interface PoolParams {
     SEED_SALE_2_POOL: PoolInfo,
     PRIVATE_SALE_POOL: PoolInfo,
     PUBLIC_SALE_POOL: PoolInfo,
+    TRUST_PAD_SALE_POOL: PoolInfo,
     STRATEGIC_POOL: PoolInfo,
     LIQUIDITY_POOL: PoolInfo,
     MARKETING_POOL: PoolInfo,
@@ -44,6 +45,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 1,000,000 MTC
      * Vesting: 250 days linear
      * Distribution rate: 0.4% daily
+     * Cliff: Until exchange listing
      */
     SEED_SALE_1_POOL: {
         poolName: "Seed Sale 1",
@@ -59,6 +61,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 100,000,000 MTC
      * Vesting: 250 days linear
      * Distribution rate: 0.4% daily
+     * Cliff: Until exchange listing
      */
     SEED_SALE_2_POOL: {
         poolName: "Seed Sale 2",
@@ -74,6 +77,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 100,000,000 MTC
      * Vesting: None
      * Distribution rate: 100%
+     * Cliff: Until exchange listing + 10 days
      */
     PRIVATE_SALE_POOL: {
         poolName: "Private Sale",
@@ -86,16 +90,33 @@ const POOL_PARAMS: PoolParams = {
     },
     /**
      * Pool name: Public Sale
-     * Total allocated token amounts: 200,000,000 MTC
+     * Total allocated token amounts: 195,000,000 MTC
      * Vesting: 100 days linear
      * Distribution rate: 1% daily
+     * Cliff: Until exchange listing
      */
     PUBLIC_SALE_POOL: {
         poolName: "Public Sale",
         distributionRate: 100,
         periodLength: ONE_DAY_IN_SECS,
-        lockedAmount: toWei(String(200_000_000)),
+        lockedAmount: toWei(String(195_000_000)),
         vestingDurationInDays: 100,
+        hasVesting: true,
+        baseContract: BaseContract.TokenDistributor,
+    },
+    /**
+     * Pool name: Trust Pad Sale Pool
+     * Total allocated token amounts: 5,000,000 MTC
+     * Vesting: 150 days linear
+     * Distribution rate: 0.66% daily
+     * Cliff: Until exchange listing
+     */
+    TRUST_PAD_SALE_POOL: {
+        poolName: "Trust Pad",
+        distributionRate: 66,
+        periodLength: ONE_DAY_IN_SECS,
+        lockedAmount: toWei(String(5_000_000)),
+        vestingDurationInDays: 150,
         hasVesting: true,
         baseContract: BaseContract.TokenDistributor,
     },
@@ -104,6 +125,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 4,000,000,000 MTC
      * Vesting: None
      * Distribution rate: None
+     * Cliff: Until exhcange listing
      */
     STRATEGIC_POOL: {
         poolName: "Strategic",
@@ -119,6 +141,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 500,000,000 MTC
      * Vesting: None
      * Distribution rate: None
+     * Cliff: Until exchange listing
      */
     LIQUIDITY_POOL: {
         poolName: "Liquidity",
@@ -134,6 +157,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 800,000,000 MTC
      * Vesting: 500 days linear
      * Distribution rate: 0.2% daily
+     * Cliff: Until exchange listing + 6 months cliff
      */
     MARKETING_POOL: {
         poolName: "Marketing",
@@ -149,6 +173,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 200,000,000 MTC
      * Vesting: 500 days linear
      * Distribution rate: 0.2% daily
+     * Cliff: Until 01.01.2024
      */
     AIRDROP_POOL: {
         poolName: "Airdrop",
@@ -164,6 +189,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 500,000,000 MTC
      * Vesting: 1,000 days linear
      * Distribution rate: 0.1% daily
+     * Cliff: Until exchange listing
      */
     STAKING_POOL: {
         poolName: "Staking",
@@ -179,6 +205,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 500,000,000 MTC
      * Vesting: 5,000 days linear
      * Distribution rate: 0.02%
+     * Cliff: Until exchange listing
      */
     REWARDS_POOL: {
         poolName: "Rewards",
@@ -194,6 +221,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 1,000,000,000 MTC
      * Vesting: 2,000 days linear
      * Distribution rate: 0.05%
+     * Cliff: Until 11.11.2023
      */
     MINER_POOL: {
         poolName: "Miner",
@@ -209,6 +237,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 1,900,000,000 MTC
      * Vesting: 1,000 days linear
      * Distribution rate: 0.1%
+     * Cliff: Until exchange listing + 24 months
      */
     TEAM_POOL: {
         poolName: "Team",
@@ -224,6 +253,7 @@ const POOL_PARAMS: PoolParams = {
      * Total allocated token amounts: 100,000,000 MTC
      * Vesting: 1,000 days linear
      * Distribution rate: 0.1%
+     * Cliff: Until exchange listing
      */
     CHARITY_POOL: {
         poolName: "Charity",

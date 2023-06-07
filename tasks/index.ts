@@ -5,6 +5,7 @@ import { CONTRACTS } from "../scripts/constants";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { toWei } from "../scripts/helpers";
 import { ethers } from "ethers";
+import { MTC, MTC__factory, TokenDistributor__factory } from "../typechain-types";
 
 task("create-distributor", "Create a new distributor")
     .addParam("factory", "address of pool factory")
@@ -266,3 +267,153 @@ task(
         }
     }
 );
+
+
+task(
+    "get-timestamp",
+    async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        try {
+            const networkName = hre.network.name;
+
+            const block = await hre.ethers.provider.getBlock("latest");
+            console.log(
+                `-> Network: ${networkName}\n`,
+                `Latest block: ${block.number}\n`,
+                `Latest block timestamp: ${block.timestamp}`
+            );
+        } catch (err: any) {
+            console.log(err);
+        }
+    }
+);
+
+// submit new pool
+task("submit-pool", "Submit new mtc pool")
+    .addParam("mtc", "address of mtc")
+    .addParam("name", "name of the pool")
+    .addParam("addr", "address of the pool")
+    .addParam("amount", "locked amount in the pool")
+    .setAction(async (args, hre) => {
+        try {
+            const { mtc, name, addr, amount } = args;
+
+            if (!mtc || !name || !addr || !amount) {
+                throw new Error("Missing arguments!");
+            }
+
+            const mtcAddress = ethers.utils.getAddress(mtc);
+
+            const networkName = hre.network.name;
+            const { deployer } = await hre.getNamedAccounts();
+            const deployerSigner = await hre.ethers.getSigner(deployer);
+
+            const mtcInstance = MTC__factory.connect(mtcAddress, deployerSigner);
+
+            const poolStruct: MTC.PoolStruct = {
+                name,
+                addr,
+                lockedAmount: toWei(String(amount)),
+            };
+            const submitPoolsTx = await mtcInstance.submitPools([poolStruct]);
+
+            const submitPools = await submitPoolsTx.wait();
+            const event = submitPools.events?.find((event: any) => event.event === "PoolSubmitted");
+            const [poolName, poolAddress, lockedAmount] = event?.args!;
+
+            console.log("NETWORK:", networkName);
+            console.log(
+                `Pool's submitted\n
+                Pool name: ${poolName}\n
+                Pool address: ${poolAddress}\n
+                Locked amount: ${lockedAmount}`);
+        } catch (err: any) {
+            throw new Error(err);
+        }
+    });
+
+// submit addresses and amounts
+task("submit-addresses", "Submit new mtc pool")
+    .addParam("pool", "address of the pool")
+    .addParam("file", "file name of the pool")
+    .setAction(async (args, hre) => {
+        try {
+            const { pool, file } = args;
+
+            if (!pool || !file) {
+                throw new Error("Missing arguments!");
+            }
+
+            const networkName = hre.network.name;
+            const { deployer } = await hre.getNamedAccounts();
+            const deployerSigner = await hre.ethers.getSigner(deployer);
+
+            const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
+            const poolName = await tokenDistributorInstance.poolName();
+
+            console.log(poolName);
+
+            const poolAddressesPath = path.resolve(__dirname, `../data/${file}/addresses.json`);
+            const poolAmountsPath = path.resolve(__dirname, `../data/${file}/amounts.json`);
+
+            if (fs.existsSync(poolAddressesPath) && fs.existsSync(poolAmountsPath)) {
+                const addresses = require(poolAddressesPath);
+                const amounts = require(poolAmountsPath);
+
+                console.log(addresses);
+                console.log(amounts);
+
+                const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addresses, amounts);
+
+                const submitPools = await submitPoolsTx.wait();
+                const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
+                const [usersLength, totalClaimableAmount] = event?.args!;
+
+                console.log("NETWORK:", networkName);
+                console.log(
+                    `Addresses & amounts are submitted\n
+                    Pool name: ${poolName}\n
+                    Pool address: ${pool}\n
+                    Total submitted address length: ${usersLength}\n
+                    Total claimable amount: ${totalClaimableAmount}`);
+
+                return;
+            }
+
+            throw new Error("Files are not existed!");
+        } catch (err: any) {
+            throw new Error(err);
+        }
+    });
+
+
+// transfer ownership of contract
+task("transfer-ownership", "Transfers ownership of contract")
+    .addParam("contract", "address of contract")
+    .addParam("newowner", "new owner address")
+    .setAction(async (args, hre) => {
+        try {
+            const { contract, newowner } = args;
+
+            if (!contract || !newowner) {
+                throw new Error("Missing arguments!");
+            }
+
+            const networkName = hre.network.name;
+            const newOwner = hre.ethers.utils.getAddress(newowner);
+            const { deployer } = await hre.getNamedAccounts();
+            const deployerSigner = await hre.ethers.getSigner(deployer);
+
+            const abi = [
+                "function transferOwnership(address newOwner)",
+            ];
+
+            const contractInstance = new hre.ethers.Contract(contract, abi, deployerSigner);
+
+            await contractInstance.transferOwnership(newOwner);
+
+            console.log("NETWORK:", networkName);
+            console.log(`Ownership request sent to ${newOwner} for the address of ${contract}.`);
+        } catch (err: any) {
+            throw new Error(err);
+        }
+    }); 

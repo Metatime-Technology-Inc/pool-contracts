@@ -12,3 +12,4 @@ artifacts
 resources/ganache-test.txt
 tmp
 deployments
+data

@@ -5,7 +5,7 @@ import { CONTRACTS } from "../scripts/constants";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { toWei } from "../scripts/helpers";
 import { ethers } from "ethers";
-import { MTC, MTC__factory, TokenDistributor__factory } from "../typechain-types";
+import { MTC, MTC__factory, PrivateSaleTokenDistributor__factory, TokenDistributor__factory } from "../typechain-types";
 
 // creates new Distributor by using PoolFactory for given network
 task("create-distributor", "Create a new distributor")
@@ -291,6 +291,18 @@ task(
     }
 );
 
+task(
+    "mine",
+    async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        try {
+            await hre.network.provider.send("evm_increaseTime", [3600]);
+            await hre.network.provider.send("evm_mine", []);
+        } catch (err: any) {
+            console.log(err);
+        }
+    }
+);
+
 // submit new pool
 task("submit-pool", "Submit new mtc pool")
     .addParam("mtc", "address of mtc")
@@ -351,20 +363,36 @@ task("submit-addresses", "Submit new mtc pool")
             const { deployer } = await hre.getNamedAccounts();
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
-            const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
-            const poolName = await tokenDistributorInstance.poolName();
-
-            console.log(poolName);
-
             const poolAddressesPath = path.resolve(__dirname, `../data/${file}/addresses.json`);
             const poolAmountsPath = path.resolve(__dirname, `../data/${file}/amounts.json`);
 
             if (fs.existsSync(poolAddressesPath) && fs.existsSync(poolAmountsPath)) {
-                const addresses = require(poolAddressesPath);
-                const amounts = require(poolAmountsPath);
+                throw new Error("Files are not existed!");
+            }
 
-                console.log(addresses);
-                console.log(amounts);
+            const addresses = require(poolAddressesPath);
+            const amounts = require(poolAmountsPath);
+
+            if (file === "private-sale") {
+                const privateSaleDistributorInstance = PrivateSaleTokenDistributor__factory.connect(pool, deployerSigner);
+
+                const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addresses, amounts);
+
+                const submitPools = await submitPoolsTx.wait();
+                const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
+                const [usersLength, totalClaimableAmount] = event?.args!;
+
+                console.log("NETWORK:", networkName);
+                console.log(
+                    `Addresses & amounts are submitted to PrivateSaleTokenDistributor\n
+                    Private Sale Pool address: ${pool}\n
+                    Total submitted address length: ${usersLength}\n
+                    Total claimable amount: ${totalClaimableAmount}`);
+
+                return;
+            } else {
+                const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
+                const poolName = await tokenDistributorInstance.poolName();
 
                 const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addresses, amounts);
 
@@ -374,7 +402,7 @@ task("submit-addresses", "Submit new mtc pool")
 
                 console.log("NETWORK:", networkName);
                 console.log(
-                    `Addresses & amounts are submitted\n
+                    `Addresses & amounts are submitted to TokenDistributor\n
                     Pool name: ${poolName}\n
                     Pool address: ${pool}\n
                     Total submitted address length: ${usersLength}\n
@@ -382,13 +410,10 @@ task("submit-addresses", "Submit new mtc pool")
 
                 return;
             }
-
-            throw new Error("Files are not existed!");
         } catch (err: any) {
             throw new Error(err);
         }
     });
-
 
 // transfer ownership of contract
 task("transfer-ownership", "Transfers ownership of contract")
@@ -420,4 +445,4 @@ task("transfer-ownership", "Transfers ownership of contract")
         } catch (err: any) {
             throw new Error(err);
         }
-    }); 
+    });

@@ -58,6 +58,8 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _distributionRate,
         uint256 _periodLength
     ) {
+        require(_startTime < _endTime, "Distributor: end time must be bigger than start time");
+
         require(
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
                 _endTime - _startTime,
@@ -102,7 +104,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         initializer
         isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
     {
-        require(_startTime < _endTime, "Distributor: invalid end time");
         require(_token != address(0), "Distributor: invalid token address");
 
         _transferOwnership(_owner);
@@ -181,11 +182,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         )
         returns (bool)
     {
-        require(
-            newEndTime > newStartTime,
-            "Distributor: end time must be bigger than start time"
-        );
-
         startTime = newStartTime;
         endTime = newEndTime;
         distributionRate = newDistributionRate;

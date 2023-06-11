@@ -58,7 +58,10 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _distributionRate,
         uint256 _periodLength
     ) {
-        require(_startTime < _endTime, "Distributor: end time must be bigger than start time");
+        require(
+            _startTime < _endTime,
+            "Distributor: end time must be bigger than start time"
+        );
 
         require(
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
@@ -104,8 +107,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         initializer
         isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
     {
-        require(_token != address(0), "Distributor: invalid token address");
-
         _transferOwnership(_owner);
 
         poolName = _poolName;
@@ -219,10 +220,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         }
 
         require(amount > 0, "calculateClaimableAmount: No tokens to claim");
-        require(
-            leftClaimableAmount >= amount,
-            "Distributor: not enough tokens left to claim"
-        );
 
         return amount;
     }

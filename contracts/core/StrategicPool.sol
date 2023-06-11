@@ -24,7 +24,10 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * @param _token The token being burned
      */
     constructor(IMTC _token) {
-        require(address(_token) != address(0), "StrategicPool: invalid token address");
+        require(
+            address(_token) != address(0),
+            "StrategicPool: invalid token address"
+        );
 
         token = _token;
     }

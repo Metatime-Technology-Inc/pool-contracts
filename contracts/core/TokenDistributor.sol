@@ -113,8 +113,6 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
             _periodLength
         )
     {
-        require(_token != address(0), "TokenDistributor: invalid token address");
-
         _transferOwnership(_owner);
 
         poolName = _poolName;
@@ -146,19 +144,22 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         for (uint256 i = 0; i < usersLength; i++) {
             address user = users[i];
 
-            if (user != address(0)) {
-                uint256 amount = amounts[i];
+            require(
+                user != address(0),
+                "TokenDistributor: cannot set zero address"
+            );
 
-                require(
-                    claimableAmounts[user] == 0,
-                    "TokenDistributor: address already set"
-                );
+            uint256 amount = amounts[i];
 
-                claimableAmounts[user] = amount;
-                leftClaimableAmounts[user] = amount;
-                lastClaimTimes[user] = distributionPeriodStart;
-                emit CanClaim(user, amount);
-            }
+            require(
+                claimableAmounts[user] == 0,
+                "TokenDistributor: address already set"
+            );
+
+            claimableAmounts[user] = amount;
+            leftClaimableAmounts[user] = amount;
+            lastClaimTimes[user] = distributionPeriodStart;
+            emit CanClaim(user, amount);
 
             unchecked {
                 sum += amounts[i];
@@ -172,7 +173,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
 
         totalClaimableAmount = sum;
         hasClaimableAmountsSet = true;
-        
+
         emit SetClaimableAmounts(usersLength, totalClaimableAmount);
     }
 
@@ -271,7 +272,10 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     function calculateClaimableAmount(
         address user
     ) public view returns (uint256) {
-        require(block.timestamp < claimPeriodEnd, "TokenDistributor: claim period ended");
+        require(
+            block.timestamp < claimPeriodEnd,
+            "TokenDistributor: claim period ended"
+        );
 
         require(
             block.timestamp >= distributionPeriodStart,
@@ -289,10 +293,6 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         }
 
         require(claimableAmount > 0, "TokenDistributor: no tokens to claim");
-        require(
-            leftClaimableAmounts[user] >= claimableAmount,
-            "TokenDistributor: not enough tokens left to claim"
-        );
 
         return claimableAmount;
     }

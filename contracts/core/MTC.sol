@@ -44,7 +44,7 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
 
             transfer(pool.addr, pool.lockedAmount);
             emit PoolSubmitted(pool.name, pool.addr, pool.lockedAmount);
-            
+
             unchecked {
                 i += 1;
             }

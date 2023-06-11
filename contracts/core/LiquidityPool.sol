@@ -19,7 +19,10 @@ contract LiquidityPool is Ownable2Step {
      * @param _token The token used in the liquidity pool
      */
     constructor(IERC20 _token) {
-        require(address(_token) != address(0), "LiquidityPool: invalid token address");
+        require(
+            address(_token) != address(0),
+            "LiquidityPool: invalid token address"
+        );
 
         token = _token;
     }

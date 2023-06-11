@@ -184,10 +184,6 @@ describe("PoolFactory", function () {
             expect(await tokenDistributorInstance.periodLength()).to.be.equal(PERIOD_LENGTH);
         });
 
-        // Try to reinitialize proxy contract and expect to be reverted
-
-        // Try to deploy TokenDistributor and initialize and expect to be reverted (disableInitializers)
-
         // Try to setClaimableAmounts after claim period start and expect to be reverted
         it("try to setClaimableAmounts after claim period start and expect to be reverted", async () => {
             const { deployer, mtc, poolFactory, user_1 } = await loadFixture(initiateVariables);
@@ -227,6 +223,7 @@ describe("PoolFactory", function () {
             const tokenDistributorInstance = TokenDistributor__factory.connect(tokenDistributorAddress, deployer);
 
             await expect(tokenDistributorInstance.setClaimableAmounts([user_1.address, user_2.address], [toWei(String(1_000))])).to.be.revertedWith("TokenDistributor: lists' lengths must match");
+            await expect(tokenDistributorInstance.setClaimableAmounts([ethers.constants.AddressZero], [toWei(String(1_000))])).to.be.revertedWith("TokenDistributor: cannot set zero address");
         });
 
         // Try to set a user who was already set and expect to be reverted
@@ -334,8 +331,6 @@ describe("PoolFactory", function () {
             await tokenDistributorInstance.setClaimableAmounts([user_1.address], [CLAIMABLE_AMOUNT]);
             expect(await tokenDistributorInstance.claimableAmounts(user_1.address)).to.be.equal(CLAIMABLE_AMOUNT);
         });
-
-        // Try to claim with reentrancy attack and expect to be reverted
 
         // Try to claim before claim startTime and expect to be reverted
         it("try to claim before claim startTime and expect to be reverted", async () => {
@@ -470,11 +465,11 @@ describe("PoolFactory", function () {
             const claimTx = await tokenDistributorInstance.connect(user_1).claim();
             const claimReceipt = await claimTx.wait();
             const txBlock = await ethers.provider.getBlock(claimReceipt.blockNumber);
-            
+
             const decimals = BigNumber.from(10).pow(18);
             const periodSinceLastClaim = ((BigNumber.from(txBlock.timestamp).sub(lastClaimTime)).mul(decimals)).div(PERIOD_LENGTH);
             const calculatedClaimableAmount = ((CLAIMABLE_AMOUNT.mul(DISTRIBUTION_RATE)).mul(periodSinceLastClaim)).div(10_000).div(decimals);
-            
+
             const event = claimReceipt.events?.find((event: any) => event.event === "HasClaimed");
             const [_, claimableAmount] = event?.args!;
 
@@ -515,20 +510,93 @@ describe("PoolFactory", function () {
             await expect(tokenDistributorInstance.connect(user_1).claim()).to.be.revertedWith("TokenDistributor: claim period ended");
         });
 
-        // Try to sweep successfully
-
         // Try to sweep after there is no funds left in the pool and expect to be reverted
+        it("try to sweep before claim period end and expect to be reverted", async () => {
+            const { deployer, mtc, poolFactory, user_1 } = await loadFixture(initiateVariables);
+
+            await poolFactory.connect(deployer).createTokenDistributor(
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+            );
+
+            const tokenDistributorAddress = await poolFactory.getTokenDistributor(0);
+
+            const pool: MTC.PoolStruct = {
+                addr: tokenDistributorAddress,
+                lockedAmount: LOCKED_AMOUNT,
+                name: POOL_NAME
+            };
+
+            await mtc.connect(deployer).submitPools([pool]);
+
+            const tokenDistributorInstance = TokenDistributor__factory.connect(tokenDistributorAddress, deployer);
+
+            const CLAIMABLE_AMOUNT = toWei(String(50_000));
+
+            await tokenDistributorInstance.setClaimableAmounts([user_1.address], [CLAIMABLE_AMOUNT]);
+
+            await expect(tokenDistributorInstance.connect(deployer).sweep()).to.be.revertedWith("TokenDistributor: cannot sweep before claim period end time");
+
+            await incrementBlocktimestamp(ethers, 500_000 + TWO_DAYS_IN_SECONDS + 86400 * 100);
+
+            const poolBalance = await mtc.balanceOf(tokenDistributorInstance.address);
+            const deployerBalance = await mtc.balanceOf(deployer.address);
+
+            await tokenDistributorInstance.connect(deployer).sweep();
+            expect(await mtc.balanceOf(deployer.address)).to.be.equal(poolBalance.add(deployerBalance));
+
+            await expect(tokenDistributorInstance.connect(deployer).sweep()).to.be.revertedWith("TokenDistributor: no leftovers");
+        });
 
         // Try to update pool params after distribution period start and expect to be reverted
+        it("try to update pool params after distribution period start and expect to be reverted", async () => {
+            const { deployer, mtc, poolFactory, user_1 } = await loadFixture(initiateVariables);
 
-        // Try to update pool params with invalid params and expect to be reverted
+            await poolFactory.connect(deployer).createTokenDistributor(
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+            );
 
-        // Try to update pool params after claimable amounts set and expect to be reverted
+            const tokenDistributorAddress = await poolFactory.getTokenDistributor(0);
 
-        // Try to update pool with the distribution start time bigger than end time and expect to be reverted
+            const pool: MTC.PoolStruct = {
+                addr: tokenDistributorAddress,
+                lockedAmount: LOCKED_AMOUNT,
+                name: POOL_NAME
+            };
 
-        // Try to update pool params with the address of not contract owner and expect to be reverted
+            await mtc.connect(deployer).submitPools([pool]);
 
-        // Try to update pool params successfully
+            const tokenDistributorInstance = TokenDistributor__factory.connect(tokenDistributorAddress, deployer);
+
+            await tokenDistributorInstance.connect(deployer).updatePoolParams(
+                START_TIME + 1,
+                END_TIME + 1,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+            );
+
+            expect(await tokenDistributorInstance.distributionPeriodStart()).to.be.equal(START_TIME + 1);
+            expect(await tokenDistributorInstance.distributionPeriodEnd()).to.be.equal(END_TIME + 1);
+
+            const CLAIMABLE_AMOUNT = toWei(String(50_000));
+
+            await tokenDistributorInstance.setClaimableAmounts([user_1.address], [CLAIMABLE_AMOUNT]);
+
+            await expect(tokenDistributorInstance.connect(deployer).updatePoolParams(
+                START_TIME + 1,
+                END_TIME + 1,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+            )).to.be.revertedWith("TokenDistributor: claimable amounts were set before");
+        });
     });
 });

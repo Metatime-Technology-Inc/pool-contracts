@@ -29,8 +29,14 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @param _endTime The end time of the claim period
      */
     constructor(IERC20 _token, uint256 _startTime, uint256 _endTime) {
-        require(address(_token) != address(0), "PrivateSaleTokenDistributor: invalid token address");
-        require(_endTime > _startTime, "PrivateSaleTokenDistributor: end time must be bigger than start time");
+        require(
+            address(_token) != address(0),
+            "PrivateSaleTokenDistributor: invalid token address"
+        );
+        require(
+            _endTime > _startTime,
+            "PrivateSaleTokenDistributor: end time must be bigger than start time"
+        );
 
         token = _token;
         startTime = _startTime;
@@ -67,13 +73,16 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
         for (uint256 i = 0; i < usersLength; ) {
             address user = users[i];
 
-            if (user != address(0)) {
-                uint256 amount = amounts[i];
-                claimableAmounts[user] = amount;
-                emit CanClaim(user, amount);
+            require(
+                user != address(0),
+                "PrivateSaleTokenDistributor: cannot set zero address"
+            );
 
-                totalClaimableAmount = totalClaimableAmount + amount;
-            }
+            uint256 amount = amounts[i];
+            claimableAmounts[user] = amount;
+            emit CanClaim(user, amount);
+
+            totalClaimableAmount = totalClaimableAmount + amount;
 
             unchecked {
                 i += 1;
@@ -104,7 +113,10 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
-        require(claimableAmount > 0, "PrivateSaleTokenDistributor: no tokens to claim");
+        require(
+            claimableAmount > 0,
+            "PrivateSaleTokenDistributor: no tokens to claim"
+        );
 
         claimableAmounts[_msgSender()] = 0;
 

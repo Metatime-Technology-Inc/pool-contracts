@@ -127,6 +127,8 @@ $ npx hardhat deploy --network ganache
 
 The Distributor contract is responsible for holding tokens that contract owner can claim over a specified period of time. It allows for the distribution of tokens in regular periods based on predefined parameters. Its purpose is distributing tokens for project owner/owners.
 
+![Distributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/distributor-schema.svg)
+
 ## Contract Details
 
 - **SPDX-License-Identifier**: MIT
@@ -269,6 +271,8 @@ function _calculateClaimableAmount() internal view returns (uint256)
 ### Overview
 
 The TokenDistributor contract is designed to distribute tokens among users over a specific period of time. It allows the contract owner to set claimable amounts for users, and users can claim their tokens during the distribution period.
+
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor-schema.svg)
 
 ### Contract Details
 
@@ -499,6 +503,8 @@ The TokenDistributor contract includes the following storage variables:
 
 The `PoolFactory` contract is responsible for creating `Distributor` and `TokenDistributor` contracts. It provides functions to create new instances of these contracts and retrieve their addresses based on their IDs. The contract is also equipped with access control functionality provided by the `Ownable2Step` contract.
 
+![PoolFactory Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/poolfactory-schema.svg)
+
 ## Contract Details
 
 - **SPDX-License-Identifier:** MIT
@@ -657,6 +663,8 @@ The contract also defines the following internal functions:
 
 The `PrivateSaleTokenDistributor` contract is designed to distribute tokens during a private sale. It allows the contract owner to set claimable amounts for a list of users and enables beneficiaries to claim their tokens during a specified claim period. The contract also provides a function to sweep any remaining tokens to the owner after the claim period ends.
 
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
+
 ## Contract Details
 
 ### Contract Metadata
@@ -720,6 +728,8 @@ The LiquidityPool contract is licensed under the MIT License. This license allow
 ## Overview
 
 The LiquidityPool contract is designed to manage a liquidity pool and facilitate the transfer of funds from the pool to a specified address. It utilizes the ERC20 standard for token management and extends the Ownable2Step contract for ownership control.
+
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/liquiditypool-schema.svg)
 
 ## Prerequisites
 
@@ -821,6 +831,8 @@ To use the LiquidityPool contract, follow these steps:
 
 The `StrategicPool` contract is a Solidity contract used for managing a strategic pool of tokens. It allows for burning tokens from the pool using a formula or without using a formula. The contract implements the `Ownable2Step` and `ReentrancyGuard` contracts to handle ownership and prevent reentrancy attacks, respectively.
 
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/strategicpool-schema.svg)
+
 ### Contract Details
 
 - **SPDX-License-Identifier:** MIT
@@ -877,6 +889,8 @@ Trigonometry Library:
 - Thanks for this https://github.com/Sikorkaio/sikorka/blob/master/contracts/trigonometry.sol repository. It makes us to calculate burn formula, easily.
 
 ## MTC Contract:
+
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/mtc-schema.svg)
 
 ### SPDX-License-Identifier: MIT
 
@@ -941,6 +955,8 @@ Certainly! Here's a documentation for the provided Solidity contract:
 
 ## Overview
 The MultiSigWallet contract is a multi-signature wallet contract designed for executing transactions with multiple owner confirmations. It allows a group of owners to collectively control a wallet and ensure that transactions are executed only when a specified number of owners confirm them.
+
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/multisigwallet-schema.svg)
 
 ## Contract Details
 ### Contract Address

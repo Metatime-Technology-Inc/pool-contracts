@@ -280,8 +280,9 @@ The TokenDistributor contract is designed to distribute tokens among users over 
   - `owner`: The address of the contract owner.
   - `poolName`: The name of the token distribution pool.
   - `token`: The ERC20 token being distributed.
-  - `startTime`: The start time of the distribution period.
-  - `endTime`: The end time of the distribution period.
+  - `distributionPeriodStart`: The start time of the distribution period
+  - `distributionPeriodEnd`: The end time of the distribution period
+  - `claimPeriodEnd`: The end time of claim period
   - `distributionRate`: The distribution rate (percentage).
   - `periodLength`: The length of each distribution period (in seconds).
 
@@ -294,8 +295,8 @@ function initialize(
     address _owner,
     string memory _poolName,
     address _token,
-    uint256 _startTime,
-    uint256 _endTime,
+    uint256 _distributionPeriodStart,
+    uint256 _distributionPeriodEnd,
     uint256 _distributionRate,
     uint256 _periodLength
 ) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
@@ -307,8 +308,8 @@ function initialize(
   - `_owner`: The address of the contract owner.
   - `_poolName`: The name of the token distribution pool.
   - `_token`: The ERC20 token being distributed.
-  - `_startTime`: The start time of the distribution period.
-  - `_endTime`: The end time of the distribution period.
+  -  `_distributionPeriodStart` The start time of the distribution period.
+  - `_distributionPeriodEnd`: The end time of the distribution period.
   - `_distributionRate`: The distribution rate (percentage).
   - `_periodLength`: The length of each distribution period (in seconds).
 
@@ -350,8 +351,8 @@ function sweep() external onlyOwner
 
 ```solidity
 function updatePoolParams(
-    uint256 newStartTime,
-    uint256 newEndTime,
+    uint256 newDistributionPeriodStart,
+    uint256 newDistributionPeriodEnd,
     uint256 newDistributionRate,
     uint256 newPeriodLength
 ) external onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) returns (bool)
@@ -360,8 +361,8 @@ function updatePoolParams(
 - Updates the pool parameters before the claim period.
 - Only callable by the contract owner.
 - Parameters:
-  - `newStartTime`: The new start timestamp of the claim period.
-  - `newEndTime`: The new end timestamp of the claim period.
+  - `newDistributionPeriodStart`: The new start timestamp of the claim period.
+  - `newDistributionPeriodEnd`: The new end timestamp of the claim period.
   - `newDistributionRate`: The new distribution rate of each claim.
   - `newPeriodLength`: The new distribution
 
@@ -432,8 +433,8 @@ event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount);
 
 ```solidity
 event PoolParamsUpdated(
-    uint256 newStartTime,
-    uint256 newEndTime,
+    uint256 newDistributionPeriodStart,
+    uint256 newDistributionPeriodEnd,
     uint256 newDistributionRate,
     uint256 newPeriodLength
 );
@@ -441,8 +442,8 @@ event PoolParamsUpdated(
 
 - Emitted when the pool parameters are updated.
 - Parameters:
-  - `newStartTime`: The new start timestamp of the claim period.
-  - `newEndTime`: The new end timestamp of the claim period.
+  - `newDistributionPeriodStart`: The new start timestamp of the claim period.
+  - `newDistributionPeriodEnd`: The new end timestamp of the claim period.
   - `newDistributionRate`: The new distribution rate of each claim.
   - `newPeriodLength`: The new distribution duration of each claim.
 
@@ -452,8 +453,8 @@ event PoolParamsUpdated(
 
 ```solidity
 modifier isParamsValid(
-    uint256 _startTime,
-    uint256 _endTime,
+    uint256 _distributionPeriodStart,
+    uint256 _distributionPeriodEnd,
     uint256 _distributionRate,
     uint256 _periodLength
 )
@@ -462,8 +463,8 @@ modifier isParamsValid(
 - A modifier that validates the pool parameters.
 - It checks if the provided parameters are valid.
 - Parameters:
-  - `_startTime`: Start timestamp of the claim period.
-  - `_endTime`: End timestamp of the claim period.
+  - `_distributionPeriodStart`: Start timestamp of the claim period.
+  - `_distributionPeriodEnd`: End timestamp of the claim period.
   - `_distributionRate`: Distribution rate of each claim.
   - `_periodLength`: Distribution duration of each claim.
 
@@ -486,8 +487,9 @@ The TokenDistributor contract includes the following storage variables:
 
 - `poolName`: The name of the token distribution pool.
 - `token`: The ERC20 token being distributed.
-- `startTime`: The start time of the distribution period.
-- `endTime`: The end time of the distribution period.
+- `distributionPeriodStart`: The start time of the distribution period.
+- `distributionPeriodEnd`: The end time of the distribution period.
+- `claimPeriodEnd`: The end time of claim period.
 - `periodLength`: The length of each distribution period (in seconds).
 - `distributionRate`: The distribution rate (percentage).
 - `claimableAmounts`: A mapping of user addresses to their claimable amounts.

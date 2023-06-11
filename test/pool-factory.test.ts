@@ -2,14 +2,19 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { CONTRACTS } from "../scripts/constants";
-import POOL_PARAMS from "../scripts/constants/pool-params";
 import { incrementBlocktimestamp, toWei, getBlockTimestamp } from "../scripts/helpers";
 import { BigNumber } from "ethers";
-import { Distributor, MTC, PoolFactory, TokenDistributor__factory } from "../typechain-types";
+import { Distributor, Distributor__factory, MTC, PoolFactory, TokenDistributor__factory } from "../typechain-types";
 
 const METATIME_TOKEN_SUPPLY = 10_000_000_000;
 const SECONDS_IN_A_DAY = 60 * 24 * 60;
 const TWO_DAYS_IN_SECONDS = 2 * SECONDS_IN_A_DAY;
+
+function calculateClaimableAmount(blockTimestamp: BigNumber, lastClaimTimestamp: BigNumber, periodLength: number, claimableAmount: BigNumber, distributionRate: number) {
+    const decimals = BigNumber.from(10).pow(18);
+    const periodSinceLastClaim = ((blockTimestamp.sub(lastClaimTimestamp)).mul(decimals)).div(periodLength);
+    return ((claimableAmount.mul(distributionRate)).mul(periodSinceLastClaim)).div(10_000).div(decimals);
+}
 
 describe("PoolFactory", function () {
     async function initiateVariables() {
@@ -50,23 +55,244 @@ describe("PoolFactory", function () {
 
     // Test Distributor
     describe("Create Distributor and test claiming period", async () => {
+        let currentBlockTimestamp: number;
+        const POOL_NAME = "TestDistributor";
+        let START_TIME: number;
+        let END_TIME: number;
+        const DISTRIBUTION_RATE = 5_000;
+        const PERIOD_LENGTH = 86400;
+        const LOCKED_AMOUNT = toWei(String(100_000));
+
+        this.beforeAll(async () => {
+            currentBlockTimestamp = await getBlockTimestamp(ethers);
+            START_TIME = currentBlockTimestamp + 500_000;
+            END_TIME = START_TIME + TWO_DAYS_IN_SECONDS;
+        });
+
+        // Try to create TokenDistributor with address who is not owner of contract and expect revert
+        it("try to create TokenDistributor with address who is not owner of contract and expect revert", async () => {
+            const { user_1, poolFactory } = await loadFixture(initiateVariables);
+
+            await expect(poolFactory.connect(user_1).createDistributor(
+                POOL_NAME,
+                ethers.constants.AddressZero,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            )).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+
         // Try to create with 0x token address and expect to be reverted
+        it("try to create with 0x token address and expect revert", async () => {
+            const { deployer, poolFactory } = await loadFixture(initiateVariables);
+
+            await expect(poolFactory.connect(deployer).createDistributor(
+                POOL_NAME,
+                ethers.constants.AddressZero,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            )).to.be.revertedWith("PoolFactory: invalid token address");
+        });
 
         // Try to initialize implementation and expect to be reverted
+        it("try to initialize implementation and expect to be reverted", async () => {
+            const { deployer, mtc, poolFactory } = await loadFixture(initiateVariables);
 
-        // Try to initalize Distributor with wrong params (isParamsValid) and expect to be reverted
+            const implementationAddress = await poolFactory.distributorImplementation();
+
+            const implementationInstance = Distributor__factory.connect(implementationAddress, deployer);
+
+            await expect(implementationInstance.initialize(
+                deployer.address,
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            )).to.be.revertedWith("Initializable: contract is already initialized");
+        });
 
         // Try to initialize Distributor with start time bigger than end time and expect to be reverted
+        it("try to initialize Distributor with start time bigger than end time and expect to be reverted", async () => {
+            const { deployer, mtc, poolFactory } = await loadFixture(initiateVariables);
+
+            // try with wrong distribution rate
+            await expect(
+                poolFactory.connect(deployer).createDistributor(
+                    POOL_NAME,
+                    mtc.address,
+                    END_TIME,
+                    START_TIME,
+                    DISTRIBUTION_RATE,
+                    PERIOD_LENGTH,
+                    LOCKED_AMOUNT
+                )
+            ).to.be.revertedWith("Distributor: end time must be bigger than start time");
+        });
+
+        // Try to initalize Distributor with wrong params (isParamsValid) and expect to be reverted
+        it("try to initalize Distributor with wrong params (isParamsValid) and expect to be reverted", async () => {
+            const { deployer, mtc, poolFactory } = await loadFixture(initiateVariables);
+
+            // try with wrong distribution rate
+            await expect(
+                poolFactory.connect(deployer).createDistributor(
+                    POOL_NAME,
+                    mtc.address,
+                    START_TIME,
+                    END_TIME,
+                    DISTRIBUTION_RATE + 1000,
+                    PERIOD_LENGTH,
+                    LOCKED_AMOUNT
+                )
+            ).to.be.revertedWith("Distributor: invalid parameters");
+        });
 
         // Try to initialize TokenDistributor with correct params
+        it("try to initialize Distributor with correct params", async () => {
+            const { deployer, mtc, poolFactory } = await loadFixture(initiateVariables);
 
-        // Try to deploy Distributor and initialize and expect to be reverted (disableInitializers)
+            await poolFactory.connect(deployer).createDistributor(
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            );
+
+            const distributorAddress = await poolFactory.getDistributor(0);
+            const distributorInstance = Distributor__factory.connect(distributorAddress, deployer);
+
+            expect(await distributorInstance.poolName()).to.be.equal(POOL_NAME);
+            expect(await distributorInstance.token()).to.be.equal(mtc.address);
+            expect(await distributorInstance.startTime()).to.be.equal(START_TIME);
+            expect(await distributorInstance.endTime()).to.be.equal(END_TIME);
+            expect(await distributorInstance.distributionRate()).to.be.equal(DISTRIBUTION_RATE);
+            expect(await distributorInstance.periodLength()).to.be.equal(PERIOD_LENGTH);
+        });
+
+        // Try to update pool params after distribution period started and expect to be reverted
+        it("try to update pool params after distribution period started and expect to be reverted", async () => {
+            const { deployer, mtc, poolFactory } = await loadFixture(initiateVariables);
+
+            await poolFactory.connect(deployer).createDistributor(
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            );
+
+            const distributorAddress = await poolFactory.getDistributor(0);
+            const distributorInstance = Distributor__factory.connect(distributorAddress, deployer);
+
+            await incrementBlocktimestamp(ethers, 500_000);
+
+            await expect(distributorInstance.updatePoolParams(
+                START_TIME + 1,
+                END_TIME + 1,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            )).to.be.revertedWith("Distributor: claim period has already started");
+        });
+
+        // Try to update pool params successfully
+        it("try to update pool params successfully", async () => {
+            const { deployer, mtc, poolFactory } = await loadFixture(initiateVariables);
+
+            await poolFactory.connect(deployer).createDistributor(
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            );
+
+            const distributorAddress = await poolFactory.getDistributor(0);
+            const distributorInstance = Distributor__factory.connect(distributorAddress, deployer);
+
+            await distributorInstance.updatePoolParams(
+                START_TIME + 1,
+                END_TIME + 1,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            );
+
+            expect(await distributorInstance.startTime()).to.be.equal(START_TIME + 1);
+            expect(await distributorInstance.endTime()).to.be.equal(END_TIME + 1);
+        });
+
+        // Try to claim
+        it("try to claim after distribution started but claim not ended", async () => {
+            const { deployer, user_1, mtc, poolFactory } = await loadFixture(initiateVariables);
+
+            await poolFactory.connect(deployer).createDistributor(
+                POOL_NAME,
+                mtc.address,
+                START_TIME,
+                END_TIME,
+                DISTRIBUTION_RATE,
+                PERIOD_LENGTH,
+                LOCKED_AMOUNT
+            );
+
+            const distributorAddress = await poolFactory.getDistributor(0);
+            const distributorInstance = Distributor__factory.connect(distributorAddress, deployer);
+
+            const pool: MTC.PoolStruct = {
+                addr: distributorAddress,
+                lockedAmount: LOCKED_AMOUNT,
+                name: POOL_NAME
+            };
+
+            await mtc.connect(deployer).submitPools([pool]);
+
+            await expect(distributorInstance.connect(deployer).claim()).to.be.revertedWith("Distributor: distribution has not started yet");
+
+            await incrementBlocktimestamp(ethers, 500_000);
+
+            await expect(distributorInstance.connect(user_1).claim()).to.be.revertedWith("Ownable: caller is not the owner");
+
+            const lastClaimTime = await distributorInstance.lastClaimTime();
+            let deployerBalance = await mtc.balanceOf(deployer.address);
+
+            const claimTx = await distributorInstance.connect(deployer).claim();
+            const claim = await claimTx.wait();
+            const txBlock = await ethers.provider.getBlock(claim.blockNumber);
+
+            const calculatedClaimableAmount = calculateClaimableAmount(BigNumber.from(txBlock.timestamp), lastClaimTime, PERIOD_LENGTH, LOCKED_AMOUNT, DISTRIBUTION_RATE);
+            expect(await mtc.balanceOf(deployer.address)).to.be.equal(deployerBalance.add(calculatedClaimableAmount));
+
+            await incrementBlocktimestamp(ethers, 86400 * 102);
+            const leftClaimableAmount = await distributorInstance.leftClaimableAmount();
+            deployerBalance = await mtc.balanceOf(deployer.address);
+            await distributorInstance.connect(deployer).claim();
+            expect(await mtc.balanceOf(distributorInstance.address)).to.be.equal(0);
+            expect(await mtc.balanceOf(deployer.address)).to.be.equal(leftClaimableAmount.add(deployerBalance));
+
+            await expect(distributorInstance.connect(deployer).claim()).to.be.revertedWith("calculateClaimableAmount: No tokens to claim");
+        });
     });
 
     // Test Token Distributor
     describe("Create TokenDistributor and test claiming period", async () => {
         let currentBlockTimestamp: number;
-        const POOL_NAME = "TestPool";
+        const POOL_NAME = "TestTokenDistributor";
         let START_TIME: number;
         let END_TIME: number;
         const DISTRIBUTION_RATE = 5_000;
@@ -182,6 +408,7 @@ describe("PoolFactory", function () {
             expect(await tokenDistributorInstance.distributionPeriodEnd()).to.be.equal(END_TIME);
             expect(await tokenDistributorInstance.distributionRate()).to.be.equal(DISTRIBUTION_RATE);
             expect(await tokenDistributorInstance.periodLength()).to.be.equal(PERIOD_LENGTH);
+            expect(await tokenDistributorInstance.claimPeriodEnd()).to.be.equal(END_TIME + (86400 * 100));
         });
 
         // Try to setClaimableAmounts after claim period start and expect to be reverted
@@ -466,9 +693,7 @@ describe("PoolFactory", function () {
             const claimReceipt = await claimTx.wait();
             const txBlock = await ethers.provider.getBlock(claimReceipt.blockNumber);
 
-            const decimals = BigNumber.from(10).pow(18);
-            const periodSinceLastClaim = ((BigNumber.from(txBlock.timestamp).sub(lastClaimTime)).mul(decimals)).div(PERIOD_LENGTH);
-            const calculatedClaimableAmount = ((CLAIMABLE_AMOUNT.mul(DISTRIBUTION_RATE)).mul(periodSinceLastClaim)).div(10_000).div(decimals);
+            const calculatedClaimableAmount = calculateClaimableAmount(BigNumber.from(txBlock.timestamp), lastClaimTime, PERIOD_LENGTH, CLAIMABLE_AMOUNT, DISTRIBUTION_RATE);
 
             const event = claimReceipt.events?.find((event: any) => event.event === "HasClaimed");
             const [_, claimableAmount] = event?.args!;

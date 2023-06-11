@@ -25,7 +25,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     uint256 public lastClaimTime; // Timestamp of the last token claim
     uint256 public leftClaimableAmount; // Remaining amount of tokens available for claiming
 
-    event Swept(address receiver, uint256 amount); // Event emitted when leftover tokens are swept to the owner
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
     event PoolParamsUpdated(
         uint256 newStartTime,
@@ -141,23 +140,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Transfer tokens from the contract to a owner address.
-     */
-    function sweep() external onlyOwner {
-        require(
-            block.timestamp > endTime,
-            "Distributor: cannot sweep before claim end time"
-        );
-
-        uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "Distributor: no leftovers");
-
-        SafeERC20.safeTransfer(token, owner(), leftovers);
-
-        emit Swept(owner(), leftovers);
-    }
-
-    /**
      * @dev Updates pool parameteres before claim period and only callable by contract owner
      * @param newStartTime New start timestamp of claim period
      * @param newEndTime New end timestamp of claim period
@@ -212,7 +194,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         );
 
         uint256 amount = 0;
-
         if (block.timestamp > endTime) {
             amount = leftClaimableAmount;
         } else {

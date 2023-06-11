@@ -1,10 +1,134 @@
-# MTC Token & its distribution contracts
+# Metatime Token Pools
+Token pool contracts are smart contracts designed to facilitate the distribution of tokens to participants of token sales or token generation events. In the context of Metatime Token, a token pool contract would serve as a mechanism to allocate and distribute tokens to individuals who participate in the token sale. The purpose of these contracts is to ensure a fair and transparent distribution of tokens, while also providing an efficient way to manage the entire process.
 
-# Distributor Contract:
+# Specifications
+### Project Overview
+The project includes a variable to store the total supply of Metatime Tokens designated for distribution. This supply is determined prior to the token sale and can be specified as a fixed value or as a parameter that can be set during contract deployment.
+
+The project incorporates a distribution logic that determines how tokens are allocated to participants. This logic can be customized based on the specific requirements of the token sale. For example, it may distribute tokens proportionally based on the contribution amount or follow a different allocation mechanism specified by it.
+
+The contract defines the criteria that participants must meet to be eligible to receive Metatime Tokens. This can include factors such as minimum contribution amounts, specific whitelisting requirements, or adherence to certain regulatory compliance measures like KYC procedures.
+
+The project includes provisions for vesting or lock-up periods to govern the release of tokens to participants. This can be implemented using time-based conditions or other specified triggers to gradually distribute tokens over a specific period, promoting long-term commitment and discouraging immediate dumping.
+
+The contract incorporates functionality for participant verification and compliance. This may involve integrating a whitelisting mechanism to ensure only approved participants can receive tokens, and incorporating KYC procedures to gather and verify participant identity information, if necessary.
+
+The project includes mechanism to trigger the token distribution process. This trigger can be automatically triggered based on specific conditions, such as the completion of the token sale or the passage of a predetermined time period.
+
+# Getting Started
+Recommended Node version is 16.0.0 and above.
+
+### Available commands
+
+```bash
+# install dependencies
+$ npm install
+
+# compile contracts
+$ npx hardhat compile
+
+# run tests
+$ npx hardhat test
+
+# compute tests coverage
+$ npm run coverage
+
+# deploy contracts
+$ npm hardhat deploy --network <network-name>
+
+# run prettier formatter
+$ npm run prettier:solidity
+
+# run linter
+$ npm run solhint
+
+# extract deploy addresses
+$ npx hardhat extract-deployment-addresses --network <network-name>
+
+# extract ABIs
+$ npx hardhat extract-abis --network <network-name>
+```
+
+# Project Structure
+
+```
+mtc-pools/
+├── contracts/
+│   ├── core/
+│   │   ├── Distributor.sol
+│   │   ├── LiquidityPool.sol
+│   │   ├── MTC.sol
+│   │   ├── PrivateSaleTokenDistributor.sol
+│   │   ├── StrategicPool.sol
+│   │   └── TokenDistributor.sol
+│   ├── interfaces/
+│   │   ├── IDistributor.sol
+│   │   ├── IMTC.sol
+│   │   └── ITokenDistributor.sol
+│   ├── libs/
+│   │   └── Trigonometry.sol
+│   └── utils/
+│       ├── MultiSigWallet.sol
+│       └── PoolFactory.sol
+├── scripts/
+│   ├── constants/
+│   │   ├── chain-ids.ts
+│   │   ├── constructor-params.ts
+│   │   ├── contracts.ts
+│   │   ├── index.ts
+│   │   └── pool-params.ts
+│   └── deploy/
+│       └── 00_mtc_and_pools.ts
+├── test/
+│   ├── distributor.test.ts
+│   ├── liquidity-pool.test.ts
+│   ├── mtc.test.ts
+│   ├── multi-sig-wallet.test.ts
+│   ├── privatesaletokendistributor.test.ts
+│   ├── strategic-pool.test.ts
+│   └── token-distributor.test.ts
+├── hardhat.config.ts
+├── README.md
+└── package.json
+```
+
+1. `contracts/`: This directory contains the Solidity smart contracts for the Metatime Token project. The primary contracts, such as `Distributor.sol`, `TokenDistributor.sol` and `PoolFactory.sol` are stored here. Additional contracts or libraries can also be included as needed.
+
+3. `scripts/`: This directory contains Typescript scripts that facilitate various tasks related to the project. For example, `deploy/0_mtc_and_pools.ts` script deploys the contracts.
+
+4. `test/`: The test directory is where you write and store your test files. These tests verify the functionality and behavior of the smart contracts. Tests can be written using testing frameworks like Mocha or Hardhat's built-in testing functionality.
+
+5. `hardhat.config.ts`: The Hardhat configuration file specifies the network settings, compilation settings, and other configuration options for the project. It includes information such as the compiler version, network connections, and deployment accounts.
+
+6. `README.md`: The README file provides documentation and instructions for setting up and running the project. It includes information about the project, its purpose, installation steps, and other important details.
+
+7. `package.json`: The package.json file contains metadata and dependencies for the project. It includes information about the project's name, version, dependencies, and scripts.
+
+## Deploy
+Deploy script can be found in the `scripts/deploy` folder.
+
+Rename `./.env.example` to `./.env` in the project root.
+To add the private key of a deployer account, assign the following variables
+```
+DEPLOYER_PRIVATE_KEY=...
+DEPLOYER=...
+GANACHE_URL=
+```
+example:
+```bash
+$ npx hardhat deploy --network ganache
+```
+
+# CONTRACTS
+
+# Distributor Contract
 
 ## Description
 
 The Distributor contract is responsible for holding tokens that contract owner can claim over a specified period of time. It allows for the distribution of tokens in regular periods based on predefined parameters. Its purpose is distributing tokens for project owner/owners.
+
+## Architecture Overview
+![Distributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/distributor-schema.svg)
 
 ## Contract Details
 
@@ -38,7 +162,6 @@ The contract imports the following external libraries and contracts:
 ## Events
 
 - `Swept(address receiver, uint256 amount)`: Emitted when leftover tokens are swept to the owner.
-- `CanClaim(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary can claim tokens.
 - `HasClaimed(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary has claimed tokens.
 - `PoolParamsUpdated(uint256 newStartTime, uint256 newEndTime, uint256 newDistributionRate, uint256 newPeriodLength, uint256 newClaimableAmount)`: Emitted when pool parameters are updated.
 
@@ -139,15 +262,18 @@ function _calculateClaimableAmount() internal view returns (uint256)
 - Internal function to calculate the amount of tokens claimable for the current period.
 - Returns the amount of tokens claimable for the current period.
 
-## TokenDistributor Contract:
+## TokenDistributor Contract
 
 **SPDX-License-Identifier:** MIT
 
-**pragma solidity ^0.8.0;**
+**pragma solidity 0.8.16;**
 
 ### Overview
 
 The TokenDistributor contract is designed to distribute tokens among users over a specific period of time. It allows the contract owner to set claimable amounts for users, and users can claim their tokens during the distribution period.
+
+## Architecture Overview
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor-schema.svg)
 
 ### Contract Details
 
@@ -156,8 +282,9 @@ The TokenDistributor contract is designed to distribute tokens among users over 
   - `owner`: The address of the contract owner.
   - `poolName`: The name of the token distribution pool.
   - `token`: The ERC20 token being distributed.
-  - `startTime`: The start time of the distribution period.
-  - `endTime`: The end time of the distribution period.
+  - `distributionPeriodStart`: The start time of the distribution period
+  - `distributionPeriodEnd`: The end time of the distribution period
+  - `claimPeriodEnd`: The end time of claim period
   - `distributionRate`: The distribution rate (percentage).
   - `periodLength`: The length of each distribution period (in seconds).
 
@@ -170,8 +297,8 @@ function initialize(
     address _owner,
     string memory _poolName,
     address _token,
-    uint256 _startTime,
-    uint256 _endTime,
+    uint256 _distributionPeriodStart,
+    uint256 _distributionPeriodEnd,
     uint256 _distributionRate,
     uint256 _periodLength
 ) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
@@ -183,8 +310,8 @@ function initialize(
   - `_owner`: The address of the contract owner.
   - `_poolName`: The name of the token distribution pool.
   - `_token`: The ERC20 token being distributed.
-  - `_startTime`: The start time of the distribution period.
-  - `_endTime`: The end time of the distribution period.
+  -  `_distributionPeriodStart` The start time of the distribution period.
+  - `_distributionPeriodEnd`: The end time of the distribution period.
   - `_distributionRate`: The distribution rate (percentage).
   - `_periodLength`: The length of each distribution period (in seconds).
 
@@ -226,8 +353,8 @@ function sweep() external onlyOwner
 
 ```solidity
 function updatePoolParams(
-    uint256 newStartTime,
-    uint256 newEndTime,
+    uint256 newDistributionPeriodStart,
+    uint256 newDistributionPeriodEnd,
     uint256 newDistributionRate,
     uint256 newPeriodLength
 ) external onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) returns (bool)
@@ -236,8 +363,8 @@ function updatePoolParams(
 - Updates the pool parameters before the claim period.
 - Only callable by the contract owner.
 - Parameters:
-  - `newStartTime`: The new start timestamp of the claim period.
-  - `newEndTime`: The new end timestamp of the claim period.
+  - `newDistributionPeriodStart`: The new start timestamp of the claim period.
+  - `newDistributionPeriodEnd`: The new end timestamp of the claim period.
   - `newDistributionRate`: The new distribution rate of each claim.
   - `newPeriodLength`: The new distribution
 
@@ -308,8 +435,8 @@ event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount);
 
 ```solidity
 event PoolParamsUpdated(
-    uint256 newStartTime,
-    uint256 newEndTime,
+    uint256 newDistributionPeriodStart,
+    uint256 newDistributionPeriodEnd,
     uint256 newDistributionRate,
     uint256 newPeriodLength
 );
@@ -317,8 +444,8 @@ event PoolParamsUpdated(
 
 - Emitted when the pool parameters are updated.
 - Parameters:
-  - `newStartTime`: The new start timestamp of the claim period.
-  - `newEndTime`: The new end timestamp of the claim period.
+  - `newDistributionPeriodStart`: The new start timestamp of the claim period.
+  - `newDistributionPeriodEnd`: The new end timestamp of the claim period.
   - `newDistributionRate`: The new distribution rate of each claim.
   - `newPeriodLength`: The new distribution duration of each claim.
 
@@ -328,8 +455,8 @@ event PoolParamsUpdated(
 
 ```solidity
 modifier isParamsValid(
-    uint256 _startTime,
-    uint256 _endTime,
+    uint256 _distributionPeriodStart,
+    uint256 _distributionPeriodEnd,
     uint256 _distributionRate,
     uint256 _periodLength
 )
@@ -338,8 +465,8 @@ modifier isParamsValid(
 - A modifier that validates the pool parameters.
 - It checks if the provided parameters are valid.
 - Parameters:
-  - `_startTime`: Start timestamp of the claim period.
-  - `_endTime`: End timestamp of the claim period.
+  - `_distributionPeriodStart`: Start timestamp of the claim period.
+  - `_distributionPeriodEnd`: End timestamp of the claim period.
   - `_distributionRate`: Distribution rate of each claim.
   - `_periodLength`: Distribution duration of each claim.
 
@@ -362,8 +489,9 @@ The TokenDistributor contract includes the following storage variables:
 
 - `poolName`: The name of the token distribution pool.
 - `token`: The ERC20 token being distributed.
-- `startTime`: The start time of the distribution period.
-- `endTime`: The end time of the distribution period.
+- `distributionPeriodStart`: The start time of the distribution period.
+- `distributionPeriodEnd`: The end time of the distribution period.
+- `claimPeriodEnd`: The end time of claim period.
 - `periodLength`: The length of each distribution period (in seconds).
 - `distributionRate`: The distribution rate (percentage).
 - `claimableAmounts`: A mapping of user addresses to their claimable amounts.
@@ -372,11 +500,14 @@ The TokenDistributor contract includes the following storage variables:
 - `leftClaimableAmounts`: A mapping of user addresses to their remaining claimable amounts.
 - `hasClaimableAmountsSet`: A boolean flag used to prevent updating pool parameters.
 
-# PoolFactory Contract:
+# PoolFactory Contract
 
 ## Description
 
 The `PoolFactory` contract is responsible for creating `Distributor` and `TokenDistributor` contracts. It provides functions to create new instances of these contracts and retrieve their addresses based on their IDs. The contract is also equipped with access control functionality provided by the `Ownable2Step` contract.
+
+## Architecture Overview
+![PoolFactory Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/poolfactory-schema.svg)
 
 ## Contract Details
 
@@ -530,11 +661,14 @@ The contract also defines the following internal functions:
 - `_addNewDistributor(address _newDistributorAddress) internal returns (uint256)`: Adds a new `Distributor` contract address to the mapping and returns its ID.
 - `_addNewTokenDistributor(address _newDistributorAddress) internal returns (uint256)`: Adds a new `TokenDistributor` contract address to the mapping and returns its ID.
 
-# PrivateSaleTokenDistributor Contract:
+# PrivateSaleTokenDistributor Contract
 
 ## Contract Overview
 
 The `PrivateSaleTokenDistributor` contract is designed to distribute tokens during a private sale. It allows the contract owner to set claimable amounts for a list of users and enables beneficiaries to claim their tokens during a specified claim period. The contract also provides a function to sweep any remaining tokens to the owner after the claim period ends.
+
+## Architecture Overview
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
 
 ## Contract Details
 
@@ -545,7 +679,7 @@ The `PrivateSaleTokenDistributor` contract is designed to distribute tokens duri
 
 ### Prerequisites
 
-- Solidity Version: ^0.8.0
+- Solidity Version: 0.8.16
 - External Contracts:
   - OpenZeppelin's `IERC20` contract
   - OpenZeppelin's `Ownable2Step` contract
@@ -590,7 +724,7 @@ The following events are emitted by the contract:
 3. Beneficiaries can call the `claim` function to claim their tokens once the claim period has started.
 4. After the claim period ends, the contract owner can call the `sweep` function to transfer any remaining tokens to their address.
 
-# LiquidityPool Contract:
+# LiquidityPool Contract
 
 ## SPDX-License-Identifier: MIT
 
@@ -600,11 +734,14 @@ The LiquidityPool contract is licensed under the MIT License. This license allow
 
 The LiquidityPool contract is designed to manage a liquidity pool and facilitate the transfer of funds from the pool to a specified address. It utilizes the ERC20 standard for token management and extends the Ownable2Step contract for ownership control.
 
+## Architecture Overview
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/liquiditypool-schema.svg)
+
 ## Prerequisites
 
 To use this contract, you need to have the following:
 
-- Solidity compiler version ^0.8.0
+- Solidity compiler version 0.8.16
 - OpenZeppelin contracts library, including:
   - IERC20.sol
   - Ownable2Step.sol
@@ -694,11 +831,14 @@ To use the LiquidityPool contract, follow these steps:
 2. Interact with the contract through the following functions:
    - `transferFunds`: This function allows the owner to transfer funds from the pool to a specified address.
 
-## StrategicPool Contract:
+## StrategicPool Contract
 
 ### Contract Overview
 
 The `StrategicPool` contract is a Solidity contract used for managing a strategic pool of tokens. It allows for burning tokens from the pool using a formula or without using a formula. The contract implements the `Ownable2Step` and `ReentrancyGuard` contracts to handle ownership and prevent reentrancy attacks, respectively.
+
+## Architecture Overview
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/strategicpool-schema.svg)
 
 ### Contract Details
 
@@ -755,7 +895,10 @@ The `StrategicPool` contract is structured as follows:
 Trigonometry Library:
 - Thanks for this https://github.com/Sikorkaio/sikorka/blob/master/contracts/trigonometry.sol repository. It makes us to calculate burn formula, easily.
 
-## MTC Contract:
+## MTC Contract
+
+## Architecture Overview
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/mtc-schema.svg)
 
 ### SPDX-License-Identifier: MIT
 
@@ -763,7 +906,7 @@ This contract is governed by the MIT License, which is a permissive open-source 
 
 ### Pragma
 
-The `pragma solidity ^0.8.0;` statement specifies the Solidity compiler version required to compile this contract. In this case, it requires version 0.8.0 or higher.
+The `pragma solidity 0.8.16;` statement specifies the Solidity compiler version required to compile this contract. In this case, it requires version 0.8.0 or higher.
 
 ### Imports
 
@@ -816,10 +959,13 @@ To use this contract, you need to deploy it with the desired total supply of MTC
 
 Certainly! Here's a documentation for the provided Solidity contract:
 
-# MultiSigWallet Contract:
+# MultiSigWallet Contract
 
 ## Overview
 The MultiSigWallet contract is a multi-signature wallet contract designed for executing transactions with multiple owner confirmations. It allows a group of owners to collectively control a wallet and ensure that transactions are executed only when a specified number of owners confirm them.
+
+## Architecture Overview
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/multisigwallet-schema.svg)
 
 ## Contract Details
 ### Contract Address

@@ -113,6 +113,7 @@ task("create-token-distributor", "Create a new token distributor")
             `
             );
         } catch (err: any) {
+            console.log(err);
             throw new Error(err);
         }
     });
@@ -365,8 +366,8 @@ task("submit-addresses", "Submit new mtc pool")
 
             const poolAddressesPath = path.resolve(__dirname, `../data/${file}/addresses.json`);
             const poolAmountsPath = path.resolve(__dirname, `../data/${file}/amounts.json`);
-
-            if (fs.existsSync(poolAddressesPath) && fs.existsSync(poolAmountsPath)) {
+            
+            if (!fs.existsSync(poolAddressesPath) && !fs.existsSync(poolAmountsPath)) {
                 throw new Error("Files are not existed!");
             }
 
@@ -442,6 +443,54 @@ task("transfer-ownership", "Transfers ownership of contract")
 
             console.log("NETWORK:", networkName);
             console.log(`Ownership request sent to ${newOwner} for the address of ${contract}.`);
+        } catch (err: any) {
+            throw new Error(err);
+        }
+    });
+
+// update pool params
+task("update-pool-params", "Transfers ownership of contract")
+    .addParam("pool", "token distributor address")
+    .addParam("start", "new start time of pool")
+    .addParam("end", "new end time of pool")
+    .addParam("rate", "new distribution rate of pool")
+    .addParam("length", "new period length of pool")
+    .setAction(async (args, hre) => {
+        try {
+            const { pool, start, end, rate, length } = args;
+
+            if (!pool || !start || !end || !rate || !length) {
+                throw new Error("Missing arguments!");
+            }
+
+            const networkName = hre.network.name;
+            const poolAddress = hre.ethers.utils.getAddress(pool);
+            const { deployer } = await hre.getNamedAccounts();
+            const deployerSigner = await hre.ethers.getSigner(deployer);
+
+            const tokenDistributorInstance = TokenDistributor__factory.connect(poolAddress, deployerSigner);
+            const poolName = await tokenDistributorInstance.poolName();
+
+            const updatePoolParamsTx = await tokenDistributorInstance.updatePoolParams(
+                Number(start),
+                Number(end),
+                Number(rate),
+                Number(length),
+            );
+            const updatePoolParams = await updatePoolParamsTx.wait();
+            const event = updatePoolParams.events?.find((event: any) => event.event === "PoolParamsUpdated");
+            const [newStartTime, newEndTime, newDistributionRate, newPeriodLength] = event?.args!;
+
+            console.log("NETWORK:", networkName);
+            console.log(
+                `Pool params updated!\n
+                Pool name: ${poolName}\n
+                Pool address: ${pool}\n
+                New start time ${newStartTime}\n
+                New end time: ${newEndTime}\n
+                New distribution rate: ${newDistributionRate}\n
+                New period length: ${newPeriodLength}\n`
+            );
         } catch (err: any) {
             throw new Error(err);
         }

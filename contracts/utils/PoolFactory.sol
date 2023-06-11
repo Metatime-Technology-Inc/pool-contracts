@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -35,8 +35,6 @@ contract PoolFactory is Ownable2Step {
     ); // Event emitted when a TokenDistributor contract is created.
 
     constructor() {
-        _transferOwnership(_msgSender());
-
         distributorImplementation = address(new Distributor());
         tokenDistributorImplementation = address(new TokenDistributor());
     }
@@ -83,6 +81,8 @@ contract PoolFactory is Ownable2Step {
         uint256 periodLength,
         uint256 claimableAmount
     ) external onlyOwner returns (uint256) {
+        require(token != address(0), "PoolFactory: invalid token address");
+
         address newDistributorAddress = Clones.clone(distributorImplementation);
         IDistributor newDistributor = IDistributor(newDistributorAddress);
         newDistributor.initialize(
@@ -123,6 +123,8 @@ contract PoolFactory is Ownable2Step {
         uint256 distributionRate,
         uint256 periodLength
     ) external onlyOwner returns (uint256) {
+        require(token != address(0), "PoolFactory: invalid token address");
+
         address newTokenDistributorAddress = Clones.clone(
             tokenDistributorImplementation
         );

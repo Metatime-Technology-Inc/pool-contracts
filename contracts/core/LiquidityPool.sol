@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @dev A contract for managing a liquidity pool.
  */
 contract LiquidityPool is Ownable2Step {
-    IERC20 public token; // Token to be distributed
+    IERC20 public immutable token; // Token to be distributed
 
     event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
 
@@ -19,7 +19,7 @@ contract LiquidityPool is Ownable2Step {
      * @param _token The token used in the liquidity pool
      */
     constructor(IERC20 _token) {
-        _transferOwnership(_msgSender());
+        require(address(_token) != address(0), "LiquidityPool: invalid token address");
 
         token = _token;
     }

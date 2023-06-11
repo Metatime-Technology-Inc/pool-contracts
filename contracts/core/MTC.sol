@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -24,7 +24,6 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
      * @param _totalSupply The total supply of the MTC token.
      */
     constructor(uint256 _totalSupply) ERC20("Metatime", "MTC") {
-        _transferOwnership(_msgSender());
         _mint(_msgSender(), _totalSupply);
     }
 
@@ -38,15 +37,15 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
     ) external onlyOwner returns (bool) {
         uint256 poolsLength = pools.length;
 
-        uint256 totalLockedAmount = 0;
         for (uint256 i = 0; i < poolsLength; ) {
             Pool memory pool = pools[i];
-            if (pool.addr != address(0)) {
-                transfer(pool.addr, pool.lockedAmount);
-                emit PoolSubmitted(pool.name, pool.addr, pool.lockedAmount);
-            }
+
+            require(pool.addr != address(0), "MTC: invalid pool address");
+
+            transfer(pool.addr, pool.lockedAmount);
+            emit PoolSubmitted(pool.name, pool.addr, pool.lockedAmount);
+            
             unchecked {
-                totalLockedAmount = totalLockedAmount + pool.lockedAmount;
                 i += 1;
             }
         }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -26,7 +26,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     uint256 public leftClaimableAmount; // Remaining amount of tokens available for claiming
 
     event Swept(address receiver, uint256 amount); // Event emitted when leftover tokens are swept to the owner
-    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim tokens
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
     event PoolParamsUpdated(
         uint256 newStartTime,
@@ -35,6 +34,16 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 newPeriodLength,
         uint256 newClaimableAmount
     ); // Event emitted when pool params are updated
+
+    /**
+     * @dev Constructor function.
+     * It disables the execution of initializers in the contract, as it is not intended to be called directly.
+     * The purpose of this function is to prevent accidental execution of initializers when creating proxy instances of the contract.
+     * It is called internally during the construction of the proxy contract.
+     */
+    constructor() {
+        _disableInitializers();
+    }
 
     /**
      * @dev A modifier that validates pool parameters
@@ -53,6 +62,17 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
                 _endTime - _startTime,
             "isParamsValid: Invalid parameters!"
+        );
+        _;
+    }
+
+    /**
+     * @dev Controls settable status of contract while trying to set addresses and their amounts.
+     */
+    modifier isSettable() {
+        require(
+            block.timestamp < startTime,
+            "isSettable: Claim period has started"
         );
         _;
     }
@@ -83,6 +103,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
     {
         require(_startTime < _endTime, "initialize: Invalid end time");
+        require(_token != address(0), "Distributor: invalid token address");
 
         _transferOwnership(_owner);
 
@@ -104,13 +125,13 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     function claim() external onlyOwner nonReentrant returns (bool) {
         uint256 amount = calculateClaimableAmount();
 
-        SafeERC20.safeTransfer(token, owner(), amount);
-
         claimedAmount += amount;
 
         lastClaimTime = block.timestamp;
 
         leftClaimableAmount -= amount;
+
+        SafeERC20.safeTransfer(token, owner(), amount);
 
         emit HasClaimed(owner(), amount);
 
@@ -151,6 +172,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     )
         external
         onlyOwner
+        isSettable
         isParamsValid(
             newStartTime,
             newEndTime,
@@ -160,8 +182,8 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         returns (bool)
     {
         require(
-            startTime > block.timestamp,
-            "updatePoolParams: Claim period already started."
+            newEndTime > newStartTime,
+            "Distributor: end time must be bigger than start time"
         );
 
         startTime = newStartTime;
@@ -219,7 +241,8 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
             10 ** 18) / periodLength;
 
         return
-            (((initialAmount * distributionRate) / BASE_DIVIDER) *
-                periodSinceLastClaim) / 10 ** 18;
+            (((initialAmount * distributionRate) * periodSinceLastClaim)) /
+            BASE_DIVIDER /
+            10 ** 18;
     }
 }

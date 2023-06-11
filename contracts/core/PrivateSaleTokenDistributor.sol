@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * @dev A contract for distributing tokens during a private sale.
  */
 contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
-    IERC20 public token; // The token being distributed
+    IERC20 public immutable token; // The token being distributed
     uint256 public startTime; // The start time of the claim period
     uint256 public endTime; // The end time of the claim period
     uint256 public totalAmount; // The total amount of tokens available for distribution
@@ -29,7 +29,8 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @param _endTime The end time of the claim period
      */
     constructor(IERC20 _token, uint256 _startTime, uint256 _endTime) {
-        _transferOwnership(_msgSender());
+        require(address(_token) != address(0), "PrivateSaleTokenDistributor: invalid token address");
+        require(_endTime > _startTime, "PrivateSaleTokenDistributor: end time must be bigger than start time");
 
         token = _token;
         startTime = _startTime;
@@ -105,8 +106,9 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
 
         require(claimableAmount > 0, "claim: No tokens to claim");
 
-        SafeERC20.safeTransfer(token, _msgSender(), claimableAmount);
         claimableAmounts[_msgSender()] = 0;
+
+        SafeERC20.safeTransfer(token, _msgSender(), claimableAmount);
 
         emit HasClaimed(_msgSender(), claimableAmount);
     }

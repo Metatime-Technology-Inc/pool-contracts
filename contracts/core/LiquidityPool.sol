@@ -19,7 +19,10 @@ contract LiquidityPool is Ownable2Step {
      * @param _token The token used in the liquidity pool
      */
     constructor(IERC20 _token) {
-        require(address(_token) != address(0), "LiquidityPool: invalid token address");
+        require(
+            address(_token) != address(0),
+            "LiquidityPool: invalid token address"
+        );
 
         token = _token;
     }
@@ -47,7 +50,7 @@ contract LiquidityPool is Ownable2Step {
         uint256 poolBalance = token.balanceOf(address(this));
         require(
             poolBalance > 0 && _withdrawalAmount <= poolBalance,
-            "_withdraw: No tokens to withdraw"
+            "LiquidityPool: no tokens to withdraw"
         );
 
         SafeERC20.safeTransfer(token, _to, _withdrawalAmount);

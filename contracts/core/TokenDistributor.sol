@@ -62,9 +62,14 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _periodLength
     ) {
         require(
+            _distributionPeriodEnd > _distributionPeriodStart,
+            "TokenDistributor: end time must be bigger than start time"
+        );
+
+        require(
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
                 _distributionPeriodEnd - _distributionPeriodStart,
-            "isParamsValid: Invalid parameters"
+            "TokenDistributor: invalid parameters"
         );
         _;
     }
@@ -75,7 +80,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     modifier isSettable() {
         require(
             block.timestamp < distributionPeriodStart,
-            "isSettable: Claim period has started"
+            "TokenDistributor: claim period has already started"
         );
         _;
     }
@@ -108,12 +113,6 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
             _periodLength
         )
     {
-        require(
-            _distributionPeriodStart < _distributionPeriodEnd,
-            "initialize: Invalid end time"
-        );
-        require(_token != address(0), "TokenDistributor: invalid token address");
-
         _transferOwnership(_owner);
 
         poolName = _poolName;
@@ -138,40 +137,44 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
-            "setClaimableAmounts: User and amount list lengths must match"
+            "TokenDistributor: lists' lengths must match"
         );
 
         uint256 sum = totalClaimableAmount;
-        for (uint256 i = 0; i < usersLength; ) {
+        for (uint256 i = 0; i < usersLength; i++) {
             address user = users[i];
 
-            if (user != address(0)) {
-                uint256 amount = amounts[i];
+            require(
+                user != address(0),
+                "TokenDistributor: cannot set zero address"
+            );
 
-                require(
-                    claimableAmounts[user] == 0,
-                    "setClaimableAmounts: Address already set"
-                );
+            uint256 amount = amounts[i];
 
-                claimableAmounts[user] = amount;
-                leftClaimableAmounts[user] = amount;
-                lastClaimTimes[user] = distributionPeriodStart;
-                emit CanClaim(user, amount);
-            }
+            require(
+                claimableAmounts[user] == 0,
+                "TokenDistributor: address already set"
+            );
+
+            claimableAmounts[user] = amount;
+            leftClaimableAmounts[user] = amount;
+            lastClaimTimes[user] = distributionPeriodStart;
+            emit CanClaim(user, amount);
 
             unchecked {
-                i += 1;
                 sum += amounts[i];
             }
         }
 
         require(
-            token.balanceOf(address(this)) >= totalClaimableAmount,
-            "setClaimableAmounts: Total claimable amount does not match"
+            token.balanceOf(address(this)) >= sum,
+            "TokenDistributor: total claimable amount does not match"
         );
-        emit SetClaimableAmounts(usersLength, totalClaimableAmount);
+
         totalClaimableAmount = sum;
         hasClaimableAmountsSet = true;
+
+        emit SetClaimableAmounts(usersLength, totalClaimableAmount);
     }
 
     /**
@@ -204,11 +207,11 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     function sweep() external onlyOwner {
         require(
             block.timestamp > claimPeriodEnd,
-            "sweep: Cannot sweep before claim period end time"
+            "TokenDistributor: cannot sweep before claim period end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "sweep: No leftovers");
+        require(leftovers != 0, "TokenDistributor: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 
@@ -241,11 +244,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     {
         require(
             hasClaimableAmountsSet == false,
-            "updatePoolParams: Claimable amounts were set before"
-        );
-        require(
-            newDistributionPeriodEnd > newDistributionPeriodStart,
-            "TokenDistributor: end time must be bigger than start time"
+            "TokenDistributor: claimable amounts were set before"
         );
 
         distributionPeriodStart = newDistributionPeriodStart;
@@ -274,12 +273,16 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         address user
     ) public view returns (uint256) {
         require(
+            block.timestamp < claimPeriodEnd,
+            "TokenDistributor: claim period ended"
+        );
+
+        require(
             block.timestamp >= distributionPeriodStart,
-            "calculateClaimableAmount: Distribution has not started yet"
+            "TokenDistributor: distribution has not started yet"
         );
 
         uint256 claimableAmount = 0;
-
         if (
             block.timestamp >= distributionPeriodEnd &&
             block.timestamp <= claimPeriodEnd
@@ -289,11 +292,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
             claimableAmount = _calculateClaimableAmount(user);
         }
 
-        require(claimableAmount > 0, "No tokens to claim");
-        require(
-            leftClaimableAmounts[user] >= claimableAmount,
-            "calculateClaimableAmount: Not enough tokens left to claim"
-        );
+        require(claimableAmount > 0, "TokenDistributor: no tokens to claim");
 
         return claimableAmount;
     }

@@ -25,7 +25,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     uint256 public lastClaimTime; // Timestamp of the last token claim
     uint256 public leftClaimableAmount; // Remaining amount of tokens available for claiming
 
-    event Swept(address receiver, uint256 amount); // Event emitted when leftover tokens are swept to the owner
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
     event PoolParamsUpdated(
         uint256 newStartTime,
@@ -59,9 +58,14 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 _periodLength
     ) {
         require(
+            _startTime < _endTime,
+            "Distributor: end time must be bigger than start time"
+        );
+
+        require(
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
                 _endTime - _startTime,
-            "isParamsValid: Invalid parameters!"
+            "Distributor: invalid parameters"
         );
         _;
     }
@@ -72,7 +76,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     modifier isSettable() {
         require(
             block.timestamp < startTime,
-            "isSettable: Claim period has started"
+            "Distributor: claim period has already started"
         );
         _;
     }
@@ -102,9 +106,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         initializer
         isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
     {
-        require(_startTime < _endTime, "initialize: Invalid end time");
-        require(_token != address(0), "Distributor: invalid token address");
-
         _transferOwnership(_owner);
 
         poolName = _poolName;
@@ -139,23 +140,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Transfer tokens from the contract to a owner address.
-     */
-    function sweep() external onlyOwner {
-        require(
-            block.timestamp > endTime,
-            "sweep: Cannot sweep before claim end time!"
-        );
-
-        uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "sweep: no leftovers");
-
-        SafeERC20.safeTransfer(token, owner(), leftovers);
-
-        emit Swept(owner(), leftovers);
-    }
-
-    /**
      * @dev Updates pool parameteres before claim period and only callable by contract owner
      * @param newStartTime New start timestamp of claim period
      * @param newEndTime New end timestamp of claim period
@@ -181,11 +165,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         )
         returns (bool)
     {
-        require(
-            newEndTime > newStartTime,
-            "Distributor: end time must be bigger than start time"
-        );
-
         startTime = newStartTime;
         endTime = newEndTime;
         distributionRate = newDistributionRate;
@@ -211,11 +190,10 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     function calculateClaimableAmount() public view returns (uint256) {
         require(
             block.timestamp >= startTime,
-            "calculateClaimableAmount: Distribution has not started yet"
+            "Distributor: distribution has not started yet"
         );
 
         uint256 amount = 0;
-
         if (block.timestamp > endTime) {
             amount = leftClaimableAmount;
         } else {
@@ -223,10 +201,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         }
 
         require(amount > 0, "calculateClaimableAmount: No tokens to claim");
-        require(
-            leftClaimableAmount >= amount,
-            "calculateClaimableAmount: Not enough tokens left to claim"
-        );
 
         return amount;
     }

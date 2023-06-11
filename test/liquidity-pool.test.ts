@@ -32,6 +32,18 @@ describe("LiquidityPool", function () {
     }
 
     describe("Create liquidity pool", async () => {
+        // try to deploy LiquidityPool with 0x token address
+        it("try to deploy LiquidityPool with 0x token address", async () => {
+            const {
+                deployer,
+            } = await loadFixture(initiateVariables);
+
+            const LiquidityPool = await ethers.getContractFactory(
+                CONTRACTS.core.LiquidityPool
+            );
+            await expect(LiquidityPool.connect(deployer).deploy(ethers.constants.AddressZero)).to.be.revertedWith("LiquidityPool: invalid token address");
+        });
+
         it("should initiate liquidity pool & transfer funds", async function () {
             const {
                 mtc,
@@ -41,7 +53,7 @@ describe("LiquidityPool", function () {
             } = await loadFixture(initiateVariables);
 
             // test transfer funds when no balance in pool
-            await expect(liquidityPool.connect(deployer).transferFunds(toWei(String(1_000_000)))).to.be.revertedWith("_withdraw: No tokens to withdraw");
+            await expect(liquidityPool.connect(deployer).transferFunds(toWei(String(1_000_000)))).to.be.revertedWith('LiquidityPool: no tokens to withdraw');
 
             // send funds to pool
             await mtc.connect(deployer).transfer(liquidityPool.address, POOL_PARAMS.LIQUIDITY_POOL.lockedAmount);

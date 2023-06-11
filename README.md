@@ -11,7 +11,7 @@ The contract defines the criteria that participants must meet to be eligible to 
 
 The project includes provisions for vesting or lock-up periods to govern the release of tokens to participants. This can be implemented using time-based conditions or other specified triggers to gradually distribute tokens over a specific period, promoting long-term commitment and discouraging immediate dumping.
 
-The contract incorporates functionality for participant verification and compliance. This may involve integrating a whitelisting mechanism to ensure only approved participants can receive tokens, and incorporating KYC procedures to gather and verify participant identity information, if necessary.
+The project incorporates functionality for participant verification and compliance. This may involve integrating a whitelisting mechanism to ensure only approved participants can receive tokens, and incorporating KYC procedures to gather and verify participant identity information, if necessary.
 
 The project includes mechanism to trigger the token distribution process. This trigger can be automatically triggered based on specific conditions, such as the completion of the token sale or the passage of a predetermined time period.
 

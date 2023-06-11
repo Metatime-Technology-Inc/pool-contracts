@@ -24,7 +24,10 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * @param _token The token being burned
      */
     constructor(IMTC _token) {
-        require(address(_token) != address(0), "StrategicPool: invalid token address");
+        require(
+            address(_token) != address(0),
+            "StrategicPool: invalid token address"
+        );
 
         token = _token;
     }
@@ -42,7 +45,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
             calculateBurnAmount(currentPrice, blocksInTwoMonths)
         );
 
-        require(amount > 0, "burnWithFormula: Amount is too less!");
+        require(amount > 0, "StrategicPool: amount must be bigger than zero");
 
         totalBurnedAmount += int256(amount);
 

@@ -29,8 +29,14 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @param _endTime The end time of the claim period
      */
     constructor(IERC20 _token, uint256 _startTime, uint256 _endTime) {
-        require(address(_token) != address(0), "PrivateSaleTokenDistributor: invalid token address");
-        require(_endTime > _startTime, "PrivateSaleTokenDistributor: end time must be bigger than start time");
+        require(
+            address(_token) != address(0),
+            "PrivateSaleTokenDistributor: invalid token address"
+        );
+        require(
+            _endTime > _startTime,
+            "PrivateSaleTokenDistributor: end time must be bigger than start time"
+        );
 
         token = _token;
         startTime = _startTime;
@@ -43,7 +49,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     modifier isSettable() {
         require(
             block.timestamp < startTime,
-            "isSettable: Claim period has already started"
+            "PrivateSaleTokenDistributor: claim period has already started"
         );
         _;
     }
@@ -60,20 +66,23 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
-            "setClaimableAmounts: User and amount list lengths must match"
+            "PrivateSaleTokenDistributor: user and amount list lengths must match"
         );
 
         uint256 totalClaimableAmount = 0;
         for (uint256 i = 0; i < usersLength; ) {
             address user = users[i];
 
-            if (user != address(0)) {
-                uint256 amount = amounts[i];
-                claimableAmounts[user] = amount;
-                emit CanClaim(user, amount);
+            require(
+                user != address(0),
+                "PrivateSaleTokenDistributor: cannot set zero address"
+            );
 
-                totalClaimableAmount = totalClaimableAmount + amount;
-            }
+            uint256 amount = amounts[i];
+            claimableAmounts[user] = amount;
+            emit CanClaim(user, amount);
+
+            totalClaimableAmount = totalClaimableAmount + amount;
 
             unchecked {
                 i += 1;
@@ -82,7 +91,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
 
         require(
             token.balanceOf(address(this)) >= totalClaimableAmount,
-            "setClaimableAmounts: Total claimable amount does not match"
+            "PrivateSaleTokenDistributor: total claimable amount does not match"
         );
         totalAmount = totalClaimableAmount;
 
@@ -95,16 +104,19 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     function claim() external nonReentrant {
         require(
             token.balanceOf(address(this)) > 0,
-            "No tokens to claim in the pool"
+            "PrivateSaleTokenDistributor: no tokens to claim"
         );
         require(
             block.timestamp >= startTime,
-            "claim: Tokens cannot be claimed yet"
+            "PrivateSaleTokenDistributor: tokens cannot be claimed yet"
         );
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
-        require(claimableAmount > 0, "claim: No tokens to claim");
+        require(
+            claimableAmount > 0,
+            "PrivateSaleTokenDistributor: no tokens to claim"
+        );
 
         claimableAmounts[_msgSender()] = 0;
 
@@ -119,11 +131,11 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     function sweep() external onlyOwner {
         require(
             block.timestamp > endTime,
-            "sweep: Cannot sweep before claim end time"
+            "PrivateSaleTokenDistributor: cannot sweep before claim end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "sweep: No leftovers");
+        require(leftovers != 0, "PrivateSaleTokenDistributor: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 

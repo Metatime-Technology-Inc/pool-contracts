@@ -1,4 +1,125 @@
-# MTC Token & its distribution contracts
+# Metatime Token Pools
+Token pool contracts are smart contracts designed to facilitate the distribution of tokens to participants of token sales or token generation events. In the context of Metatime Token, a token pool contract would serve as a mechanism to allocate and distribute tokens to individuals who participate in the token sale. The purpose of these contracts is to ensure a fair and transparent distribution of tokens, while also providing an efficient way to manage the entire process.
+
+# Specifications
+### Project Overview
+The project includes a variable to store the total supply of Metatime Tokens designated for distribution. This supply is determined prior to the token sale and can be specified as a fixed value or as a parameter that can be set during contract deployment.
+
+The project incorporates a distribution logic that determines how tokens are allocated to participants. This logic can be customized based on the specific requirements of the token sale. For example, it may distribute tokens proportionally based on the contribution amount or follow a different allocation mechanism specified by it.
+
+The contract defines the criteria that participants must meet to be eligible to receive Metatime Tokens. This can include factors such as minimum contribution amounts, specific whitelisting requirements, or adherence to certain regulatory compliance measures like KYC procedures.
+
+The project includes provisions for vesting or lock-up periods to govern the release of tokens to participants. This can be implemented using time-based conditions or other specified triggers to gradually distribute tokens over a specific period, promoting long-term commitment and discouraging immediate dumping.
+
+The contract incorporates functionality for participant verification and compliance. This may involve integrating a whitelisting mechanism to ensure only approved participants can receive tokens, and incorporating KYC procedures to gather and verify participant identity information, if necessary.
+
+The project includes mechanism to trigger the token distribution process. This trigger can be automatically triggered based on specific conditions, such as the completion of the token sale or the passage of a predetermined time period.
+
+# Getting Started
+Recommended Node version is 16.0.0 and above.
+
+### Available commands
+
+```bash
+# install dependencies
+$ npm install
+
+# compile contracts
+$ npx hardhat compile
+
+# run tests
+$ npx hardhat test
+
+# compute tests coverage
+$ npm run coverage
+
+# deploy contracts
+$ npm hardhat deploy --network <network-name>
+
+# run prettier formatter
+$ npm run prettier:solidity
+
+# run linter
+$ npm run solhint
+
+# extract deploy addresses
+$ npx hardhat extract-deployment-addresses --network <network-name>
+
+# extract ABIs
+$ npx hardhat extract-abis --network <network-name>
+```
+
+# Project Structure
+
+```
+mtc-pools/
+├── contracts/
+│   ├── core/
+│   │   ├── Distributor.sol
+│   │   ├── LiquidityPool.sol
+│   │   ├── MTC.sol
+│   │   ├── PrivateSaleTokenDistributor.sol
+│   │   ├── StrategicPool.sol
+│   │   └── TokenDistributor.sol
+│   ├── interfaces/
+│   │   ├── IDistributor.sol
+│   │   ├── IMTC.sol
+│   │   └── ITokenDistributor.sol
+│   ├── libs/
+│   │   └── Trigonometry.sol
+│   └── utils/
+│       ├── MultiSigWallet.sol
+│       └── PoolFactory.sol
+├── scripts/
+│   ├── constants/
+│   │   ├── chain-ids.ts
+│   │   ├── constructor-params.ts
+│   │   ├── contracts.ts
+│   │   ├── index.ts
+│   │   └── pool-params.ts
+│   └── deploy/
+│       └── 00_mtc_and_pools.ts
+├── test/
+│   ├── distributor.test.ts
+│   ├── liquidity-pool.test.ts
+│   ├── mtc.test.ts
+│   ├── multi-sig-wallet.test.ts
+│   ├── privatesaletokendistributor.test.ts
+│   ├── strategic-pool.test.ts
+│   └── token-distributor.test.ts
+├── hardhat.config.ts
+├── README.md
+└── package.json
+```
+
+1. `contracts/`: This directory contains the Solidity smart contracts for the Metatime Token project. The primary contracts, such as `Distributor.sol`, `TokenDistributor.sol` and `PoolFactory.sol` are stored here. Additional contracts or libraries can also be included as needed.
+
+3. `scripts/`: This directory contains Typescript scripts that facilitate various tasks related to the project. For example, `deploy/0_mtc_and_pools.ts` script deploys the contracts.
+
+4. `test/`: The test directory is where you write and store your test files. These tests verify the functionality and behavior of the smart contracts. Tests can be written using testing frameworks like Mocha or Hardhat's built-in testing functionality.
+
+5. `hardhat.config.ts`: The Hardhat configuration file specifies the network settings, compilation settings, and other configuration options for the project. It includes information such as the compiler version, network connections, and deployment accounts.
+
+6. `README.md`: The README file provides documentation and instructions for setting up and running the project. It includes information about the project, its purpose, installation steps, and other important details.
+
+7. `package.json`: The package.json file contains metadata and dependencies for the project. It includes information about the project's name, version, dependencies, and scripts.
+
+## Deploy
+Deploy script can be found in the `scripts/deploy` folder.
+
+Rename `./.env.example` to `./.env` in the project root.
+To add the private key of a deployer account, assign the following variables
+```
+DEPLOYER_PRIVATE_KEY=...
+DEPLOYER=...
+GANACHE_URL=
+```
+example:
+```bash
+$ npx hardhat deploy --network ganache
+```
+
+# CONTRACTS:
 
 # Distributor Contract:
 

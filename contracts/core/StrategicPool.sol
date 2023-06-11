@@ -42,7 +42,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
             calculateBurnAmount(currentPrice, blocksInTwoMonths)
         );
 
-        require(amount > 0, "burnWithFormula: Amount is too less!");
+        require(amount > 0, "StrategicPool: amount must be bigger than zero");
 
         totalBurnedAmount += int256(amount);
 

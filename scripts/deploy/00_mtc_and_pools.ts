@@ -47,21 +47,6 @@ const func: DeployFunction = async ({
 
     console.log("Pool factory deployed at", poolFactory.address);
 
-    const OWNERS = [
-        "0xEC15f0D43A6873e9A0Faa2AB52555B2d2926AB1e",
-        "0x27bDa908C228f0A90e8c4600cD9205A80c953B69",
-        "0x5be977D7df9e58224fECEf69C7729c9fF56bbbf6",
-    ];
-
-    const multiSigWallet = await deploy(CONTRACTS.utils.MultiSigWallet, {
-        from: deployer,
-        args: [OWNERS, 2],
-        log: true,
-        skipIfAlreadyDeployed: true,
-    });
-
-    console.log("MultiSigWallet deployed at", multiSigWallet.address);
-
     // // Pools that is derived from Distributor contract
     // const distributors = filterObject(POOL_PARAMS, ([k, v]) => v.baseContract === BaseContract.Distributor);
 

@@ -12,7 +12,6 @@ interface IContracts {
     Trigonometry: string;
   },
   utils: {
-    MultiSigWallet: string;
     PoolFactory: string;
   };
 }
@@ -30,7 +29,6 @@ const CONTRACTS: IContracts = {
     Trigonometry: "Trigonometry",
   },
   utils: {
-    MultiSigWallet: "MultiSigWallet",
     PoolFactory: "PoolFactory"
   }
 };

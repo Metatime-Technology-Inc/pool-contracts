@@ -43,7 +43,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     modifier isSettable() {
         require(
             block.timestamp < startTime,
-            "isSettable: Claim period has already started"
+            "PrivateSaleTokenDistributor: claim period has already started"
         );
         _;
     }
@@ -60,7 +60,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
-            "setClaimableAmounts: User and amount list lengths must match"
+            "PrivateSaleTokenDistributor: user and amount list lengths must match"
         );
 
         uint256 totalClaimableAmount = 0;
@@ -82,7 +82,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
 
         require(
             token.balanceOf(address(this)) >= totalClaimableAmount,
-            "setClaimableAmounts: Total claimable amount does not match"
+            "PrivateSaleTokenDistributor: total claimable amount does not match"
         );
         totalAmount = totalClaimableAmount;
 
@@ -95,16 +95,16 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     function claim() external nonReentrant {
         require(
             token.balanceOf(address(this)) > 0,
-            "No tokens to claim in the pool"
+            "PrivateSaleTokenDistributor: no tokens to claim"
         );
         require(
             block.timestamp >= startTime,
-            "claim: Tokens cannot be claimed yet"
+            "PrivateSaleTokenDistributor: tokens cannot be claimed yet"
         );
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
-        require(claimableAmount > 0, "claim: No tokens to claim");
+        require(claimableAmount > 0, "PrivateSaleTokenDistributor: no tokens to claim");
 
         claimableAmounts[_msgSender()] = 0;
 
@@ -119,11 +119,11 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     function sweep() external onlyOwner {
         require(
             block.timestamp > endTime,
-            "sweep: Cannot sweep before claim end time"
+            "PrivateSaleTokenDistributor: cannot sweep before claim end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "sweep: No leftovers");
+        require(leftovers != 0, "PrivateSaleTokenDistributor: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 

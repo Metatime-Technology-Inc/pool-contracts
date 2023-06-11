@@ -64,7 +64,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         require(
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
                 _distributionPeriodEnd - _distributionPeriodStart,
-            "isParamsValid: Invalid parameters"
+            "TokenDistributor: invalid parameters"
         );
         _;
     }
@@ -75,7 +75,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     modifier isSettable() {
         require(
             block.timestamp < distributionPeriodStart,
-            "isSettable: Claim period has started"
+            "TokenDistributor: claim period has already started"
         );
         _;
     }
@@ -110,7 +110,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     {
         require(
             _distributionPeriodStart < _distributionPeriodEnd,
-            "initialize: Invalid end time"
+            "TokenDistributor: invalid end time"
         );
         require(_token != address(0), "TokenDistributor: invalid token address");
 
@@ -138,7 +138,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
-            "setClaimableAmounts: User and amount list lengths must match"
+            "TokenDistributor: lists' lengths must match"
         );
 
         uint256 sum = totalClaimableAmount;
@@ -150,7 +150,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
 
                 require(
                     claimableAmounts[user] == 0,
-                    "setClaimableAmounts: Address already set"
+                    "TokenDistributor: address already set"
                 );
 
                 claimableAmounts[user] = amount;
@@ -167,7 +167,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
 
         require(
             token.balanceOf(address(this)) >= totalClaimableAmount,
-            "setClaimableAmounts: Total claimable amount does not match"
+            "TokenDistributor: total claimable amount does not match"
         );
         emit SetClaimableAmounts(usersLength, totalClaimableAmount);
         totalClaimableAmount = sum;
@@ -204,11 +204,11 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     function sweep() external onlyOwner {
         require(
             block.timestamp > claimPeriodEnd,
-            "sweep: Cannot sweep before claim period end time"
+            "TokenDistributor: cannot sweep before claim period end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "sweep: No leftovers");
+        require(leftovers != 0, "TokenDistributor: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 
@@ -241,7 +241,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     {
         require(
             hasClaimableAmountsSet == false,
-            "updatePoolParams: Claimable amounts were set before"
+            "TokenDistributor: claimable amounts were set before"
         );
         require(
             newDistributionPeriodEnd > newDistributionPeriodStart,
@@ -275,7 +275,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     ) public view returns (uint256) {
         require(
             block.timestamp >= distributionPeriodStart,
-            "calculateClaimableAmount: Distribution has not started yet"
+            "TokenDistributor: distribution has not started yet"
         );
 
         uint256 claimableAmount = 0;
@@ -289,10 +289,10 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
             claimableAmount = _calculateClaimableAmount(user);
         }
 
-        require(claimableAmount > 0, "No tokens to claim");
+        require(claimableAmount > 0, "TokenDistributor: no tokens to claim");
         require(
             leftClaimableAmounts[user] >= claimableAmount,
-            "calculateClaimableAmount: Not enough tokens left to claim"
+            "TokenDistributor: not enough tokens left to claim"
         );
 
         return claimableAmount;

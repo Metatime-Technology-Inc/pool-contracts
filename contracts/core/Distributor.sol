@@ -61,7 +61,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         require(
             (BASE_DIVIDER / _distributionRate) * _periodLength ==
                 _endTime - _startTime,
-            "isParamsValid: Invalid parameters!"
+            "Distributor: invalid parameters"
         );
         _;
     }
@@ -72,7 +72,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     modifier isSettable() {
         require(
             block.timestamp < startTime,
-            "isSettable: Claim period has started"
+            "Distributor: claim period has already started"
         );
         _;
     }
@@ -102,7 +102,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         initializer
         isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
     {
-        require(_startTime < _endTime, "initialize: Invalid end time");
+        require(_startTime < _endTime, "Distributor: invalid end time");
         require(_token != address(0), "Distributor: invalid token address");
 
         _transferOwnership(_owner);
@@ -144,11 +144,11 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     function sweep() external onlyOwner {
         require(
             block.timestamp > endTime,
-            "sweep: Cannot sweep before claim end time!"
+            "Distributor: cannot sweep before claim end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "sweep: no leftovers");
+        require(leftovers != 0, "Distributor: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 
@@ -211,7 +211,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     function calculateClaimableAmount() public view returns (uint256) {
         require(
             block.timestamp >= startTime,
-            "calculateClaimableAmount: Distribution has not started yet"
+            "Distributor: distribution has not started yet"
         );
 
         uint256 amount = 0;
@@ -225,7 +225,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         require(amount > 0, "calculateClaimableAmount: No tokens to claim");
         require(
             leftClaimableAmount >= amount,
-            "calculateClaimableAmount: Not enough tokens left to claim"
+            "Distributor: not enough tokens left to claim"
         );
 
         return amount;

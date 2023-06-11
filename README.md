@@ -119,9 +119,9 @@ example:
 $ npx hardhat deploy --network ganache
 ```
 
-# CONTRACTS:
+# CONTRACTS
 
-# Distributor Contract:
+# Distributor Contract
 
 ## Description
 
@@ -161,7 +161,6 @@ The contract imports the following external libraries and contracts:
 ## Events
 
 - `Swept(address receiver, uint256 amount)`: Emitted when leftover tokens are swept to the owner.
-- `CanClaim(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary can claim tokens.
 - `HasClaimed(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary has claimed tokens.
 - `PoolParamsUpdated(uint256 newStartTime, uint256 newEndTime, uint256 newDistributionRate, uint256 newPeriodLength, uint256 newClaimableAmount)`: Emitted when pool parameters are updated.
 
@@ -262,11 +261,11 @@ function _calculateClaimableAmount() internal view returns (uint256)
 - Internal function to calculate the amount of tokens claimable for the current period.
 - Returns the amount of tokens claimable for the current period.
 
-## TokenDistributor Contract:
+## TokenDistributor Contract
 
 **SPDX-License-Identifier:** MIT
 
-**pragma solidity ^0.8.0;**
+**pragma solidity 0.8.16;**
 
 ### Overview
 
@@ -497,7 +496,7 @@ The TokenDistributor contract includes the following storage variables:
 - `leftClaimableAmounts`: A mapping of user addresses to their remaining claimable amounts.
 - `hasClaimableAmountsSet`: A boolean flag used to prevent updating pool parameters.
 
-# PoolFactory Contract:
+# PoolFactory Contract
 
 ## Description
 
@@ -657,7 +656,7 @@ The contract also defines the following internal functions:
 - `_addNewDistributor(address _newDistributorAddress) internal returns (uint256)`: Adds a new `Distributor` contract address to the mapping and returns its ID.
 - `_addNewTokenDistributor(address _newDistributorAddress) internal returns (uint256)`: Adds a new `TokenDistributor` contract address to the mapping and returns its ID.
 
-# PrivateSaleTokenDistributor Contract:
+# PrivateSaleTokenDistributor Contract
 
 ## Contract Overview
 
@@ -674,7 +673,7 @@ The `PrivateSaleTokenDistributor` contract is designed to distribute tokens duri
 
 ### Prerequisites
 
-- Solidity Version: ^0.8.0
+- Solidity Version: 0.8.16
 - External Contracts:
   - OpenZeppelin's `IERC20` contract
   - OpenZeppelin's `Ownable2Step` contract
@@ -719,7 +718,7 @@ The following events are emitted by the contract:
 3. Beneficiaries can call the `claim` function to claim their tokens once the claim period has started.
 4. After the claim period ends, the contract owner can call the `sweep` function to transfer any remaining tokens to their address.
 
-# LiquidityPool Contract:
+# LiquidityPool Contract
 
 ## SPDX-License-Identifier: MIT
 
@@ -735,7 +734,7 @@ The LiquidityPool contract is designed to manage a liquidity pool and facilitate
 
 To use this contract, you need to have the following:
 
-- Solidity compiler version ^0.8.0
+- Solidity compiler version 0.8.16
 - OpenZeppelin contracts library, including:
   - IERC20.sol
   - Ownable2Step.sol
@@ -825,7 +824,7 @@ To use the LiquidityPool contract, follow these steps:
 2. Interact with the contract through the following functions:
    - `transferFunds`: This function allows the owner to transfer funds from the pool to a specified address.
 
-## StrategicPool Contract:
+## StrategicPool Contract
 
 ### Contract Overview
 
@@ -888,7 +887,7 @@ The `StrategicPool` contract is structured as follows:
 Trigonometry Library:
 - Thanks for this https://github.com/Sikorkaio/sikorka/blob/master/contracts/trigonometry.sol repository. It makes us to calculate burn formula, easily.
 
-## MTC Contract:
+## MTC Contract
 
 ![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/mtc-schema.svg)
 
@@ -898,7 +897,7 @@ This contract is governed by the MIT License, which is a permissive open-source 
 
 ### Pragma
 
-The `pragma solidity ^0.8.0;` statement specifies the Solidity compiler version required to compile this contract. In this case, it requires version 0.8.0 or higher.
+The `pragma solidity 0.8.16;` statement specifies the Solidity compiler version required to compile this contract. In this case, it requires version 0.8.0 or higher.
 
 ### Imports
 
@@ -951,7 +950,7 @@ To use this contract, you need to deploy it with the desired total supply of MTC
 
 Certainly! Here's a documentation for the provided Solidity contract:
 
-# MultiSigWallet Contract:
+# MultiSigWallet Contract
 
 ## Overview
 The MultiSigWallet contract is a multi-signature wallet contract designed for executing transactions with multiple owner confirmations. It allows a group of owners to collectively control a wallet and ensure that transactions are executed only when a specified number of owners confirm them.

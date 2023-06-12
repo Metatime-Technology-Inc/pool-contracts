@@ -12,8 +12,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  */
 contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     IERC20 public immutable token; // The token being distributed
-    uint256 public startTime; // The start time of the claim period
-    uint256 public endTime; // The end time of the claim period
+    uint256 public distributionPeriodStart; // The start time of the distribution period
+    uint256 public distributionPeriodEnd; // The end time of the distribution period
+    uint256 public claimPeriodEnd; // The end time of claim period
     uint256 public totalAmount; // The total amount of tokens available for distribution
     mapping(address => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
@@ -25,22 +26,27 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     /**
      * @dev Constructor.
      * @param _token The token being distributed
-     * @param _startTime The start time of the claim period
-     * @param _endTime The end time of the claim period
+     * @param _distributionPeriodStart The start time of the claim period
+     * @param _distributionPeriodEnd The end time of the claim period
      */
-    constructor(IERC20 _token, uint256 _startTime, uint256 _endTime) {
+    constructor(
+        IERC20 _token,
+        uint256 _distributionPeriodStart,
+        uint256 _distributionPeriodEnd
+    ) {
         require(
             address(_token) != address(0),
             "PrivateSaleTokenDistributor: invalid token address"
         );
         require(
-            _endTime > _startTime,
+            _distributionPeriodEnd > _distributionPeriodStart,
             "PrivateSaleTokenDistributor: end time must be bigger than start time"
         );
 
         token = _token;
-        startTime = _startTime;
-        endTime = _endTime;
+        distributionPeriodStart = _distributionPeriodStart;
+        distributionPeriodEnd = _distributionPeriodEnd;
+        claimPeriodEnd = _distributionPeriodEnd + 100 days;
     }
 
     /**
@@ -48,7 +54,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      */
     modifier isSettable() {
         require(
-            block.timestamp < startTime,
+            block.timestamp < distributionPeriodStart,
             "PrivateSaleTokenDistributor: claim period has already started"
         );
         _;
@@ -69,8 +75,8 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
             "PrivateSaleTokenDistributor: user and amount list lengths must match"
         );
 
-        uint256 totalClaimableAmount = 0;
-        for (uint256 i = 0; i < usersLength; ) {
+        uint256 sum = totalAmount;
+        for (uint256 i = 0; i < usersLength; i++) {
             address user = users[i];
 
             require(
@@ -79,23 +85,27 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
             );
 
             uint256 amount = amounts[i];
+
+            require(
+                claimableAmounts[user] == 0,
+                "PrivateSaleTokenDistributor: address already set"
+            );
+
             claimableAmounts[user] = amount;
             emit CanClaim(user, amount);
 
-            totalClaimableAmount = totalClaimableAmount + amount;
-
             unchecked {
-                i += 1;
+                sum += amounts[i];
             }
         }
 
         require(
-            token.balanceOf(address(this)) >= totalClaimableAmount,
+            token.balanceOf(address(this)) >= sum,
             "PrivateSaleTokenDistributor: total claimable amount does not match"
         );
-        totalAmount = totalClaimableAmount;
+        totalAmount = sum;
 
-        emit SetClaimableAmounts(usersLength, totalClaimableAmount);
+        emit SetClaimableAmounts(usersLength, totalAmount);
     }
 
     /**
@@ -103,12 +113,12 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      */
     function claim() external nonReentrant {
         require(
-            token.balanceOf(address(this)) > 0,
-            "PrivateSaleTokenDistributor: no tokens to claim"
+            block.timestamp >= distributionPeriodStart,
+            "PrivateSaleTokenDistributor: tokens cannot be claimed yet"
         );
         require(
-            block.timestamp >= startTime,
-            "PrivateSaleTokenDistributor: tokens cannot be claimed yet"
+            block.timestamp <= claimPeriodEnd,
+            "PrivateSaleTokenDistributor: claim period has ended"
         );
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
@@ -130,7 +140,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      */
     function sweep() external onlyOwner {
         require(
-            block.timestamp > endTime,
+            block.timestamp > claimPeriodEnd,
             "PrivateSaleTokenDistributor: cannot sweep before claim end time"
         );
 

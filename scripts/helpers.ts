@@ -53,11 +53,18 @@ const calculateExchangeFee = (amount: number, percentage: number) => {
   return (amount * percentage) / 100;
 };
 
+const calculateClaimableAmount = (blockTimestamp: BigNumber, lastClaimTimestamp: BigNumber, periodLength: number, claimableAmount: BigNumber, distributionRate: number) => {
+  const decimals = BigNumber.from(10).pow(18);
+  const periodSinceLastClaim = ((blockTimestamp.sub(lastClaimTimestamp)).mul(decimals)).div(periodLength);
+  return ((claimableAmount.mul(distributionRate)).mul(periodSinceLastClaim)).div(10_000).div(decimals);
+};
+
 export {
   getBlockTimestamp,
   toWei,
   callMethod,
   calculateExchangeFee,
   incrementBlocktimestamp,
-  filterObject
+  filterObject,
+  calculateClaimableAmount
 };

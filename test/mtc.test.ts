@@ -10,7 +10,7 @@ const POOL_NAME = "TestPool";
 const LOCKED_AMOUNT = toWei(String(1_000));
 const TEST_POOL_ADDRESS = "0xbf9fBFf01664500A33080Da5d437028b07DFcC55";
 
-describe("LiquidityPool", function () {
+describe("MTC", function () {
     async function initiateVariables() {
         const [deployer] =
             await ethers.getSigners();
@@ -26,7 +26,7 @@ describe("LiquidityPool", function () {
         };
     }
 
-    describe("Create liquidity pool", async () => {
+    describe("Submit distributor pools", async () => {
         // try to submit pool with 0x pool address
         it("try to submit pool with 0x pool address", async () => {
             const {

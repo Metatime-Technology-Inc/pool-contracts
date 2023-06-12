@@ -5,7 +5,6 @@ import { CONTRACTS } from "../scripts/constants";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { toWei } from "../scripts/helpers";
 import { ethers } from "ethers";
-import { MTC, MTC__factory, PrivateSaleTokenDistributor__factory, TokenDistributor__factory } from "../typechain-types";
 
 // creates new Distributor by using PoolFactory for given network
 task("create-distributor", "Create a new distributor")
@@ -324,9 +323,10 @@ task("submit-pool", "Submit new mtc pool")
             const { deployer } = await hre.getNamedAccounts();
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
+            const { MTC__factory } = require("../typechain-types");
             const mtcInstance = MTC__factory.connect(mtcAddress, deployerSigner);
 
-            const poolStruct: MTC.PoolStruct = {
+            const poolStruct = {
                 name,
                 addr,
                 lockedAmount: toWei(String(amount)),
@@ -375,6 +375,7 @@ task("submit-addresses", "Submit new mtc pool")
             const amounts = require(poolAmountsPath);
 
             if (file === "private-sale") {
+                const { PrivateSaleTokenDistributor__factory } = require("../typechain-types");
                 const privateSaleDistributorInstance = PrivateSaleTokenDistributor__factory.connect(pool, deployerSigner);
 
                 const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addresses, amounts);
@@ -392,6 +393,7 @@ task("submit-addresses", "Submit new mtc pool")
 
                 return;
             } else {
+                const { TokenDistributor__factory } = require("../typechain-types");
                 const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
                 const poolName = await tokenDistributorInstance.poolName();
 
@@ -468,6 +470,7 @@ task("update-pool-params", "Transfers ownership of contract")
             const { deployer } = await hre.getNamedAccounts();
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
+            const { TokenDistributor__factory } = require("../typechain-types");
             const tokenDistributorInstance = TokenDistributor__factory.connect(poolAddress, deployerSigner);
             const poolName = await tokenDistributorInstance.poolName();
 

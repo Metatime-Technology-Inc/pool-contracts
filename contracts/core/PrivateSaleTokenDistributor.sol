@@ -29,7 +29,11 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
      * @param _distributionPeriodStart The start time of the claim period
      * @param _distributionPeriodEnd The end time of the claim period
      */
-    constructor(IERC20 _token, uint256 _distributionPeriodStart, uint256 _distributionPeriodEnd) {
+    constructor(
+        IERC20 _token,
+        uint256 _distributionPeriodStart,
+        uint256 _distributionPeriodEnd
+    ) {
         require(
             address(_token) != address(0),
             "PrivateSaleTokenDistributor: invalid token address"

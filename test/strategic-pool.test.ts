@@ -2,10 +2,12 @@ import { ethers } from "hardhat";
 import { Contract, BigNumber } from "ethers";
 import { expect } from "chai";
 import { CONTRACTS } from "../scripts/constants";
-import { toWei } from "../scripts/helpers";
+import { calculateBurnAmount, findMarginOfDeviation, toWei } from "../scripts/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-const METATIME_TOKEN_SUPPLY = 1_000_000_000;
+const METATIME_TOKEN_SUPPLY = 10_000_000_000;
+const STRATEGIC_POOL_BALANCE = 4_000_000_000;
+const MARGIN_OF_DEVIATION = 0.1;
 
 describe("StrategicPool", function () {
     let pool: Contract;
@@ -25,14 +27,18 @@ describe("StrategicPool", function () {
     });
 
     it("should burn tokens using the formula", async function () {
-        await mtc.connect(deployer).transfer(pool.address, toWei(String(1_500_000)));
+        await mtc.connect(deployer).transfer(pool.address, toWei(String(STRATEGIC_POOL_BALANCE)));
 
-        const currentPrice = BigNumber.from(1000);
-        const blocksInTwoMonths = BigNumber.from(100000);
+        const currentPrice = BigNumber.from(toWei(String(0.07)));
+        const blocksInTwoMonths = BigNumber.from(1036800);
 
         const initialBalance = await mtc.balanceOf(pool.address);
 
         const expectedAmount = await pool.calculateBurnAmount(currentPrice, blocksInTwoMonths);
+        const calculatedBurnAmount = calculateBurnAmount(toWei(String(0.07)), 1036800, 1000, 0);
+
+        // try to compare burn amount and expect margin of deviation should be at most "defined margin of deviation value"
+        expect(findMarginOfDeviation(expectedAmount, calculatedBurnAmount)).at.most(MARGIN_OF_DEVIATION);
 
         await pool.burnWithFormula(currentPrice, blocksInTwoMonths);
 

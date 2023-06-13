@@ -1,6 +1,9 @@
 import { BigNumber, ethers } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
+import { cos, unit } from "mathjs";
+
+const PI = "3141592653589793238";
 
 type Entry<T> = {
   [K in keyof T]: [K, T[K]]
@@ -59,6 +62,27 @@ const calculateClaimableAmount = (blockTimestamp: BigNumber, lastClaimTimestamp:
   return ((claimableAmount.mul(distributionRate)).mul(periodSinceLastClaim)).div(10_000).div(decimals);
 };
 
+const calculateBurnAmount = (currentPrice: BigNumber, blocksInTwoMonths: number, constantValueFromFormula: number, totalBurnedAmount: number) => {
+  const decimals = BigNumber.from(10).pow(18);
+  const a = BigNumber.from(blocksInTwoMonths).mul(BigNumber.from(13).mul(BigNumber.from(10).pow(4))).mul(decimals);
+  const b = (BigNumber.from(100).mul(currentPrice)).add(BigNumber.from(constantValueFromFormula).mul(decimals));
+  const c = (a.div(b)).mul(decimals);
+  const radiant = (((BigNumber.from(totalBurnedAmount).div(BigNumber.from(10).pow(9))).add(BigNumber.from(86).mul(decimals))).mul(BigNumber.from(PI))).div(BigNumber.from(180).mul(decimals));
+  const cosine = toWei(String(cos(Number(ethers.utils.formatEther(radiant)))));
+  const d = (cosine.mul(BigNumber.from(2923))).div(BigNumber.from(10).pow(3));
+
+  return (c.mul(d)).div(decimals);
+};
+
+const findMarginOfDeviation = (V1: BigNumber, V2: BigNumber) => {
+  let absDiff: string | BigNumber | number = V1.sub(V2).abs();
+  let absAverage: string | BigNumber | number = (V1.add(V2)).div(2).abs();
+  absDiff = ethers.utils.formatUnits(absDiff);
+  absAverage = ethers.utils.formatUnits(absAverage);
+
+  return (+absDiff / +absAverage) * 100;
+};
+
 export {
   getBlockTimestamp,
   toWei,
@@ -66,5 +90,7 @@ export {
   calculateExchangeFee,
   incrementBlocktimestamp,
   filterObject,
-  calculateClaimableAmount
+  calculateClaimableAmount,
+  calculateBurnAmount,
+  findMarginOfDeviation
 };

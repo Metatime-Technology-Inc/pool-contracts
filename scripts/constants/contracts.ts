@@ -10,6 +10,7 @@ interface IContracts {
   };
   lib: {
     Trigonometry: string;
+    MockTrigonometry: string;
   },
   utils: {
     PoolFactory: string;
@@ -27,6 +28,7 @@ const CONTRACTS: IContracts = {
   },
   lib: {
     Trigonometry: "Trigonometry",
+    MockTrigonometry: "MockTrigonometry",
   },
   utils: {
     PoolFactory: "PoolFactory"

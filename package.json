@@ -24,6 +24,7 @@
     "dotenv": "^16.0.2",
     "hardhat": "^2.9.9",
     "hardhat-contract-sizer": "^2.6.1",
+    "mathjs": "^11.8.1",
     "solhint-plugin-prettier": "^0.0.5"
   },
   "devDependencies": {

@@ -15,6 +15,7 @@ import "../libs/Trigonometry.sol";
 contract StrategicPool is Ownable2Step, ReentrancyGuard {
     IMTC public immutable token; // The token managed by the pool
     int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
+    int256 public lastBurnedAmount = 0;
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
@@ -48,6 +49,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
         require(amount > 0, "StrategicPool: amount must be bigger than zero");
 
         totalBurnedAmount += int256(amount);
+        lastBurnedAmount = int256(amount);
 
         token.burn(amount);
 
@@ -77,16 +79,14 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
         int256 _blocksInTwoMonths
     ) public view returns (int256) {
         return
-            (((_blocksInTwoMonths * 13 * 1e4 * 1e18) /
-                ((100 * _currentPrice * 1e16) +
-                    (constantValueFromFormula * 1e18))) *
-                Trigonometry.cos(
+            (((((_blocksInTwoMonths * (13 * 1e4)) * 1e18) /
+                ((100 * _currentPrice) + (constantValueFromFormula * 1e18))) *
+                1e18) *
+                ((Trigonometry.cos(
                     uint256(
-                        (((86 * 1e18) + (totalBurnedAmount * 1e9)) *
-                            3141592653589793238) / (180 * 1e18)
+                        (((totalBurnedAmount / 1e9) + (86 * 1e18)) *
+                            int256(Trigonometry.PI)) / (180 * 1e18)
                     )
-                ) *
-                2923 *
-                1e15) / 1e18;
+                ) * 2923) / 1e3)) / 1e18;
     }
 }

@@ -7,8 +7,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title MTC
- * @dev An ERC20 standard contract that
- * mints Metatime Token and distributes it to each pool based on Metatime Tokenomics.
+ * @dev An ERC20 standard contract that mints Metatime Token and distributes it to each pool based on Metatime Tokenomics.
  */
 contract MTC is ERC20, ERC20Burnable, Ownable2Step {
     struct Pool {
@@ -28,7 +27,7 @@ contract MTC is ERC20, ERC20Burnable, Ownable2Step {
     }
 
     /**
-     * @dev A function to submit pools and distribute tokens from owner's balance accordingly.
+     * @dev A function to submit pools and distribute tokens from the owner's balance accordingly.
      * @param pools The array of Pool structures containing pool information.
      * @return A boolean value indicating whether the pools were successfully submitted.
      */

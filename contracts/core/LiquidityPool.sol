@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @dev A contract for managing a liquidity pool.
  */
 contract LiquidityPool is Ownable2Step {
-    IERC20 public immutable token; // Token to be distributed
+    IERC20 public immutable token; // Token used in the liquidity pool
 
     event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
 

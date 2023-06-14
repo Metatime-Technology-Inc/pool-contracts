@@ -66,9 +66,9 @@ mtc-pools/
 │   │   ├── IMTC.sol
 │   │   └── ITokenDistributor.sol
 │   ├── libs/
+│   │   ├── MockTrigonometry.sol
 │   │   └── Trigonometry.sol
 │   └── utils/
-│       ├── MultiSigWallet.sol
 │       └── PoolFactory.sol
 ├── scripts/
 │   ├── constants/
@@ -83,10 +83,10 @@ mtc-pools/
 │   ├── distributor.test.ts
 │   ├── liquidity-pool.test.ts
 │   ├── mtc.test.ts
-│   ├── multi-sig-wallet.test.ts
 │   ├── privatesaletokendistributor.test.ts
 │   ├── strategic-pool.test.ts
-│   └── token-distributor.test.ts
+│   ├── token-distributor.test.ts
+│   └── trigonometry.test.ts
 ├── hardhat.config.ts
 ├── README.md
 └── package.json
@@ -123,974 +123,414 @@ $ npx hardhat deploy --network ganache
 
 # Distributor Contract
 
-## Description
+The Distributor contract is designed to facilitate the distribution of tokens over a specified period of time. It allows users to claim their share of tokens based on the distribution rate and period length. This document provides a comprehensive overview of the contract's functionality, including its structure, functions, modifiers, and events.
 
-The Distributor contract is responsible for holding tokens that contract owner can claim over a specified period of time. It allows for the distribution of tokens in regular periods based on predefined parameters. Its purpose is distributing tokens for project owner/owners.
+## Contract Structure
+
+The Distributor contract is implemented in Solidity and follows the ERC-20 token standard. It utilizes the OpenZeppelin library to leverage existing functionality and ensure security best practices. The contract uses the `Ownable2Step` and `ReentrancyGuard` contracts from OpenZeppelin for access control and protection against reentrancy attacks, respectively.
 
 ## Architecture Overview
+
 ![Distributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/distributor-schema.svg)
 
-## Contract Details
+## Contract Initialization
 
-- **SPDX-License-Identifier**: MIT
-- **Solidity Version**: 0.8.0
-
-## Imports
-
-The contract imports the following external libraries and contracts:
-
-- `IERC20` from "@openzeppelin/contracts/token/ERC20/IERC20.sol": The interface for ERC20 tokens.
-- `Ownable2Step` from "@openzeppelin/contracts/access/Ownable2Step.sol": A contract that provides ownership control with a two-step process.
-- `Initializable` from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol": A contract that allows for contract initialization.
-- `SafeERC20` from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol": A library for safely handling ERC20 token transfers.
-- `ReentrancyGuard` from "@openzeppelin/contracts/security/ReentrancyGuard.sol": A contract that provides protection against reentrancy attacks.
-
-## State Variables
-
-- `poolName`: The name of the token distribution pool.
-- `token`: The ERC20 token to be distributed.
-- `startTime`: The start time of the distribution.
-- `endTime`: The end time of the distribution.
-- `periodLength`: The length of each distribution period.
-- `distributionRate`: The rate of token distribution per period.
-- `BASE_DIVIDER`: A constant representing the base divider for distribution rate calculation.
-- `claimableAmount`: The total amount of tokens claimable per period.
-- `claimedAmount`: The total amount of tokens claimed so far.
-- `lastClaimTime`: The timestamp of the last token claim.
-- `leftClaimableAmount`: The remaining amount of tokens available for claiming.
-
-## Events
-
-- `Swept(address receiver, uint256 amount)`: Emitted when leftover tokens are swept to the owner.
-- `HasClaimed(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary has claimed tokens.
-- `PoolParamsUpdated(uint256 newStartTime, uint256 newEndTime, uint256 newDistributionRate, uint256 newPeriodLength, uint256 newClaimableAmount)`: Emitted when pool parameters are updated.
+The contract can be initialized by calling the `initialize` function. This function sets up the contract with the specified parameters, including the contract owner, token distribution pool name, token address, start and end times of the distribution, distribution rate per period, period length, and claimable amount per period. The initialization function is invoked only once during contract deployment and requires valid parameter values. This function is `external` and can be called by anyone.
 
 ## Modifiers
 
-- `isParamsValid(uint256 _startTime, uint256 _endTime, uint256 _distributionRate, uint256 _periodLength)`: A modifier that validates the pool parameters.
+The contract defines two modifiers to enforce validation and control the settable status of the contract:
 
-## Functions
+1. `isParamsValid`: This modifier validates the pool parameters provided during contract initialization or parameter updates. It ensures that the start time is earlier than the end time and verifies that the distribution rate, period length, and total distribution time are consistent.
 
-### `initialize`
+2. `isSettable`: This modifier controls the settable status of the contract during parameter updates. It ensures that the contract is not in an active claim period, allowing the contract owner to modify the pool parameters only before the distribution starts. This modifier prevents any modifications once the claim period has begun.
 
-```solidity
-function initialize(
-    address _owner,
-    string memory _poolName,
-    address _token,
-    uint256 _startTime,
-    uint256 _endTime,
-    uint256 _distributionRate,
-    uint256 _periodLength,
-    uint256 _claimableAmount
-) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
+## Claiming Tokens
+
+Users can claim their tokens by calling the `claim` function. Only the contract owner can execute this function. When invoked, the function calculates the amount of tokens claimable based on the current period and distribution parameters. It updates the claimed amount, last claim time, and the remaining claimable amount. Finally, it transfers the claimed tokens to the contract owner's address. This function utilizes the `SafeERC20` library to perform the token transfer safely. The function is protected against reentrancy attacks using the `nonReentrant` modifier from the `ReentrancyGuard` contract.
+
+## Updating Pool Parameters
+
+The contract owner can update the pool parameters by calling the `updatePoolParams` function. This function allows modifications to the start time, end time, distribution rate, period length, and claimable amount of the pool. The `isSettable` modifier ensures that the contract is in a modifiable state, and the `isParamsValid` modifier validates the provided parameter values. Upon successful validation, the function updates the pool parameters, resets the last claim time to the new start time, and emits a `PoolParamsUpdated` event.
+
+## Claim Calculation
+
+The `calculateClaimableAmount` function determines the amount of tokens claimable for the current period. It is a public view function that calculates the claimable amount based on the current timestamp, start time, end time, and remaining claimable amount. If the current timestamp is greater than the end time, the function returns the remaining claimable amount. Otherwise, it delegates the calculation to the `_calculateClaimableAmount` internal function.
+
+## Internal Claim Calculation
+
+The `_calculateClaimableAmount` internal function is responsible for the actual calculation of the claimable amount. It uses the distribution rate, initial claimable amount, period length, and the period since the last claim to determine the claimable amount. The calculation is based on the formula:
+
+```
+claimableAmount = ((initialAmount * distribution
+
+Rate) * periodSinceLastClaim) / BASE_DIVIDER / 10 ** 18
 ```
 
-- Initializes the contract with the specified parameters.
-- Must be called after the contract is deployed and before any other functions are called.
-- Parameters:
-  - `_owner`: The address of the contract owner.
-  - `_poolName`: The name of the token distribution pool.
-  - `_token`: The address of the ERC20 token to be distributed.
-  - `_startTime`: The start time of the distribution.
-  - `_endTime`: The end time of the distribution.
-  - `_distributionRate`: The rate of token distribution per period.
-  - `_periodLength`:
-
- The length of each distribution period.
-  - `_claimableAmount`: The total amount of tokens claimable per period.
-
-### `claim`
-
-```solidity
-function claim() external onlyOwner nonReentrant returns (bool)
-```
-
-- Claims tokens for the contract owner.
-- Transfers the calculated claimable amount of tokens to the owner.
-- Emits a `HasClaimed` event.
-- Returns a boolean indicating the success of the claim.
-
-### `sweep`
-
-```solidity
-function sweep() external onlyOwner
-```
-
-- Transfers any leftover tokens in the contract to the owner.
-- Can only be called by the contract owner.
-- Emits a `Swept` event.
-
-### `updatePoolParams`
-
-```solidity
-function updatePoolParams(
-    uint256 newStartTime,
-    uint256 newEndTime,
-    uint256 newDistributionRate,
-    uint256 newPeriodLength,
-    uint256 newClaimableAmount
-) external onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) returns (bool)
-```
-
-- Updates the pool parameters before the claim period.
-- Only callable by the contract owner.
-- Parameters:
-  - `newStartTime`: The new start timestamp of the claim period.
-  - `newEndTime`: The new end timestamp of the claim period.
-  - `newDistributionRate`: The new distribution rate of each claim.
-  - `newPeriodLength`: The new distribution duration of each claim.
-  - `newClaimableAmount`: The new claimable amount of the pool.
-- Emits a `PoolParamsUpdated` event.
-- Returns a boolean indicating the success of the parameter update.
-
-### `calculateClaimableAmount`
-
-```solidity
-function calculateClaimableAmount() public view returns (uint256)
-```
-
-- Calculates the amount of tokens claimable for the current period.
-- Returns the amount of tokens claimable for the current period.
-
-### `_calculateClaimableAmount`
-
-```solidity
-function _calculateClaimableAmount() internal view returns (uint256)
-```
-
-- Internal function to calculate the amount of tokens claimable for the current period.
-- Returns the amount of tokens claimable for the current period.
-
-## TokenDistributor Contract
-
-**SPDX-License-Identifier:** MIT
-
-**pragma solidity 0.8.16;**
-
-### Overview
-
-The TokenDistributor contract is designed to distribute tokens among users over a specific period of time. It allows the contract owner to set claimable amounts for users, and users can claim their tokens during the distribution period.
-
-## Architecture Overview
-![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor-schema.svg)
-
-### Contract Details
-
-- The contract utilizes the OpenZeppelin library and imports various contracts such as `IERC20`, `Ownable2Step`, `SafeERC20`, `Initializable`, and `ReentrancyGuard`.
-- The contract is initialized with the following parameters:
-  - `owner`: The address of the contract owner.
-  - `poolName`: The name of the token distribution pool.
-  - `token`: The ERC20 token being distributed.
-  - `distributionPeriodStart`: The start time of the distribution period
-  - `distributionPeriodEnd`: The end time of the distribution period
-  - `claimPeriodEnd`: The end time of claim period
-  - `distributionRate`: The distribution rate (percentage).
-  - `periodLength`: The length of each distribution period (in seconds).
-
-### Contract Functions
-
-#### `initialize`
-
-```solidity
-function initialize(
-    address _owner,
-    string memory _poolName,
-    address _token,
-    uint256 _distributionPeriodStart,
-    uint256 _distributionPeriodEnd,
-    uint256 _distributionRate,
-    uint256 _periodLength
-) external initializer isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
-```
-
-- Initializes the TokenDistributor contract with the provided parameters.
-- It is an initializer function and can only be called once during contract deployment.
-- Parameters:
-  - `_owner`: The address of the contract owner.
-  - `_poolName`: The name of the token distribution pool.
-  - `_token`: The ERC20 token being distributed.
-  -  `_distributionPeriodStart` The start time of the distribution period.
-  - `_distributionPeriodEnd`: The end time of the distribution period.
-  - `_distributionRate`: The distribution rate (percentage).
-  - `_periodLength`: The length of each distribution period (in seconds).
-
-#### `setClaimableAmounts`
-
-```solidity
-function setClaimableAmounts(
-    address[] calldata users,
-    uint256[] calldata amounts
-) external onlyOwner isSettable
-```
-
-- Sets the claimable amounts for a list of users.
-- Only the contract owner can call this function before the claim period starts.
-- Parameters:
-  - `users`: An array of user addresses.
-  - `amounts`: An array of claimable amounts corresponding to each user.
-
-#### `claim`
-
-```solidity
-function claim() external nonReentrant returns (bool)
-```
-
-- Allows a user to claim their available tokens.
-- Tokens can only be claimed during the distribution period.
-- Returns a boolean indicating the success of the claim.
-
-#### `sweep`
-
-```solidity
-function sweep() external onlyOwner
-```
-
-- Allows the contract owner to sweep any remaining tokens after the claim period ends.
-- Tokens are transferred to the contract owner's address.
-
-#### `updatePoolParams`
-
-```solidity
-function updatePoolParams(
-    uint256 newDistributionPeriodStart,
-    uint256 newDistributionPeriodEnd,
-    uint256 newDistributionRate,
-    uint256 newPeriodLength
-) external onlyOwner isParamsValid(newStartTime, newEndTime, newDistributionRate, newPeriodLength) returns (bool)
-```
-
-- Updates the pool parameters before the claim period.
-- Only callable by the contract owner.
-- Parameters:
-  - `newDistributionPeriodStart`: The new start timestamp of the claim period.
-  - `newDistributionPeriodEnd`: The new end timestamp of the claim period.
-  - `newDistributionRate`: The new distribution rate of each claim.
-  - `newPeriodLength`: The new distribution
-
- duration of each claim.
-- Returns a boolean indicating the success of the update.
-
-#### `calculateClaimableAmount`
-
-```solidity
-function calculateClaimableAmount(address user) public view returns (uint256)
-```
-
-- Calculates the claimable amount of tokens for a given user.
-- The claimable amount depends on the number of days that have passed since the last claim.
-- Parameters:
-  - `user`: The address of the user.
-- Returns the claimable amount of tokens for the user.
-
-### Events
-
-The TokenDistributor contract emits the following events:
-
-#### `Swept`
-
-```solidity
-event Swept(address receiver, uint256 amount);
-```
-
-- Emitted when the contract owner sweeps remaining tokens.
-- Parameters:
-  - `receiver`: The address of the receiver (contract owner).
-  - `amount`: The amount of tokens swept.
-
-#### `CanClaim`
-
-```solidity
-event CanClaim(address indexed beneficiary, uint256 amount);
-```
-
-- Emitted when a user can claim tokens.
-- Parameters:
-  - `beneficiary`: The address of the user.
-  - `amount`: The amount of tokens that can be claimed.
-
-#### `HasClaimed`
-
-```solidity
-event HasClaimed(address indexed beneficiary, uint256 amount);
-```
-
-- Emitted when a user has claimed tokens.
-- Parameters:
-  - `beneficiary`: The address of the user.
-  - `amount`: The amount of tokens claimed.
-
-#### `SetClaimableAmounts`
-
-```solidity
-event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount);
-```
-
-- Emitted when claimable amounts are set for users.
-- Parameters:
-  - `usersLength`: The number of users.
-  - `totalAmount`: The total claimable amount set.
-
-#### `PoolParamsUpdated`
-
-```solidity
-event PoolParamsUpdated(
-    uint256 newDistributionPeriodStart,
-    uint256 newDistributionPeriodEnd,
-    uint256 newDistributionRate,
-    uint256 newPeriodLength
-);
-```
-
-- Emitted when the pool parameters are updated.
-- Parameters:
-  - `newDistributionPeriodStart`: The new start timestamp of the claim period.
-  - `newDistributionPeriodEnd`: The new end timestamp of the claim period.
-  - `newDistributionRate`: The new distribution rate of each claim.
-  - `newPeriodLength`: The new distribution duration of each claim.
-
-### Modifiers
-
-#### `isParamsValid`
-
-```solidity
-modifier isParamsValid(
-    uint256 _distributionPeriodStart,
-    uint256 _distributionPeriodEnd,
-    uint256 _distributionRate,
-    uint256 _periodLength
-)
-```
-
-- A modifier that validates the pool parameters.
-- It checks if the provided parameters are valid.
-- Parameters:
-  - `_distributionPeriodStart`: Start timestamp of the claim period.
-  - `_distributionPeriodEnd`: End timestamp of the claim period.
-  - `_distributionRate`: Distribution rate of each claim.
-  - `_periodLength`: Distribution duration of each claim.
-
-#### `isSettable`
-
-```solidity
-modifier isSettable()
-```
-
-- A modifier that controls the settable status of the contract while setting addresses and their amounts.
-- It prevents updates to the pool parameters once the claim period has started.
-
-### Constants
-
-- `BASE_DIVIDER`: The base divider used for calculations. It is set to `10_000`.
-
-### Storage
-
-The TokenDistributor contract includes the following storage variables:
-
-- `poolName`: The name of the token distribution pool.
-- `token`: The ERC20 token being distributed.
-- `distributionPeriodStart`: The start time of the distribution period.
-- `distributionPeriodEnd`: The end time of the distribution period.
-- `claimPeriodEnd`: The end time of claim period.
-- `periodLength`: The length of each distribution period (in seconds).
-- `distributionRate`: The distribution rate (percentage).
-- `claimableAmounts`: A mapping of user addresses to their claimable amounts.
-- `claimedAmounts`: A mapping of user addresses to their claimed amounts.
-- `lastClaimTimes`: A mapping of user addresses to their last claim times.
-- `leftClaimableAmounts`: A mapping of user addresses to their remaining claimable amounts.
-- `hasClaimableAmountsSet`: A boolean flag used to prevent updating pool parameters.
-
-# PoolFactory Contract
-
-## Description
-
-The `PoolFactory` contract is responsible for creating `Distributor` and `TokenDistributor` contracts. It provides functions to create new instances of these contracts and retrieve their addresses based on their IDs. The contract is also equipped with access control functionality provided by the `Ownable2Step` contract.
-
-## Architecture Overview
-![PoolFactory Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/poolfactory-schema.svg)
-
-## Contract Details
-
-- **SPDX-License-Identifier:** MIT
-- **Solidity Version:** 0.8.0
-
-## Dependencies
-
-The contract imports the following external contracts:
-
-- `Ownable2Step.sol` from the OpenZeppelin library: A contract that implements multi-step ownership transfer functionality.
-- `Clones.sol` from the OpenZeppelin library: A contract that facilitates the creation of clone contracts.
-
-The contract also imports the following local contracts:
-
-- `Distributor.sol`: The implementation contract for the `Distributor` contracts.
-- `TokenDistributor.sol`: The implementation contract for the `TokenDistributor` contracts.
-
-## State Variables
-
-- `distributorCount` (uint256): A counter for the number of created `Distributor` contracts.
-- `tokenDistributorCount` (uint256): A counter for the number of created `TokenDistributor` contracts.
-- `_distributors` (mapping(uint256 => address)): A mapping to store `Distributor` contract addresses by their IDs.
-- `_tokenDistributors` (mapping(uint256 => address)): A mapping to store `TokenDistributor` contract addresses by their IDs.
-- `distributorImplementation` (address): The address of the implementation contract for `Distributor` contracts.
-- `tokenDistributorImplementation` (address): The address of the implementation contract for `TokenDistributor` contracts.
+The function converts the time values to fixed-point decimals (18 decimal places) to ensure accurate calculations. It then returns the calculated claimable amount.
 
 ## Events
 
-The contract emits the following events:
+The contract emits two events to provide transparency and facilitate monitoring:
 
-- `DistributorCreated(address creatorAddress, address distributorAddress, uint256 distributorId)`: Emitted when a `Distributor` contract is created.
-- `TokenDistributorCreated(address creatorAddress, address tokenDistributorAddress, uint256 tokenDistributorId)`: Emitted when a `TokenDistributor` contract is created.
+1. `HasClaimed`: This event is emitted when a beneficiary (the contract owner) successfully claims tokens. It includes the beneficiary's address and the amount of tokens claimed.
 
-## Modifiers
+2. `PoolParamsUpdated`: This event is emitted when the pool parameters are updated. It includes the new start time, end time, distribution rate, period length, and claimable amount.
 
-The contract defines the following modifier:
+## License
 
-- `onlyOwner`: Restricts access to functions with the contract owner.
+The contract is licensed under the MIT license, as indicated by the `SPDX-License-Identifier` statement at the beginning of the source code.
 
-## Functions
+## LiquidityPool Contract
 
-### Constructor
-
-The constructor initializes the contract by transferring ownership to the deployer and setting the addresses for the implementation contracts of `Distributor` and `TokenDistributor`.
-
-```solidity
-constructor()
-```
-
-#### Parameters
-
-None.
-
-### getDistributor
-
-A view function that returns the address of a `Distributor` contract based on the distributor ID.
-
-```solidity
-function getDistributor(uint256 distributorId) external view returns (address)
-```
-
-#### Parameters
-
-- `distributorId` (uint256): The ID of the `Distributor` contract.
-
-#### Returns
-
-- `address`: The address of the `Distributor` contract.
-
-### getTokenDistributor
-
-A view function that returns the address of a `TokenDistributor` contract based on the tokenDistributor ID.
-
-```solidity
-function getTokenDistributor(uint256 tokenDistributorId) external view returns (address)
-```
-
-#### Parameters
-
-- `tokenDistributorId` (uint256): The ID of the `TokenDistributor` contract.
-
-#### Returns
-
-- `address`: The address of the `TokenDistributor` contract.
-
-### createDistributor
-
-Creates a new `Distributor` contract.
-
-```solidity
-function createDistributor(
-    string memory poolName,
-    address token,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 distributionRate,
-    uint256 periodLength,
-    uint256 claimableAmount
-) external onlyOwner returns (uint256)
-```
-
-#### Parameters
-
-- `pool
-
-Name` (string): The name of the pool.
-- `token` (address): The address of the token contract.
-- `startTime` (uint256): The start time of the distribution.
-- `endTime` (uint256): The end time of the distribution.
-- `distributionRate` (uint256): The distribution rate.
-- `periodLength` (uint256): The length of each distribution period.
-- `claimableAmount` (uint256): The total amount claimable per period.
-
-#### Returns
-
-- `uint256`: The ID of the created `Distributor` contract.
-
-### createTokenDistributor
-
-Creates a new `TokenDistributor` contract.
-
-```solidity
-function createTokenDistributor(
-    string memory poolName,
-    address token,
-    uint256 startTime,
-    uint256 endTime,
-    uint256 distributionRate,
-    uint256 periodLength
-) external onlyOwner returns (uint256)
-```
-
-#### Parameters
-
-- `poolName` (string): The name of the pool.
-- `token` (address): The address of the token contract.
-- `startTime` (uint256): The start time of the distribution.
-- `endTime` (uint256): The end time of the distribution.
-- `distributionRate` (uint256): The distribution rate.
-- `periodLength` (uint256): The length of each distribution period.
-
-#### Returns
-
-- `uint256`: The ID of the created `TokenDistributor` contract.
-
-### Internal Functions
-
-The contract also defines the following internal functions:
-
-- `_addNewDistributor(address _newDistributorAddress) internal returns (uint256)`: Adds a new `Distributor` contract address to the mapping and returns its ID.
-- `_addNewTokenDistributor(address _newDistributorAddress) internal returns (uint256)`: Adds a new `TokenDistributor` contract address to the mapping and returns its ID.
-
-# PrivateSaleTokenDistributor Contract
-
-## Contract Overview
-
-The `PrivateSaleTokenDistributor` contract is designed to distribute tokens during a private sale. It allows the contract owner to set claimable amounts for a list of users and enables beneficiaries to claim their tokens during a specified claim period. The contract also provides a function to sweep any remaining tokens to the owner after the claim period ends.
-
-## Architecture Overview
-![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
-
-## Contract Details
-
-### Contract Metadata
-
-- **Contract Name**: PrivateSaleTokenDistributor
-- **SPDX License Identifier**: MIT
-
-### Prerequisites
-
-- Solidity Version: 0.8.16
-- External Contracts:
-  - OpenZeppelin's `IERC20` contract
-  - OpenZeppelin's `Ownable2Step` contract
-  - OpenZeppelin's `SafeERC20` library
-  - OpenZeppelin's `ReentrancyGuard` contract
-
-### Contract Variables
-
-- `token` (IERC20): The token being distributed.
-- `startTime` (uint256): The start time of the claim period.
-- `endTime` (uint256): The end time of the claim period.
-- `totalAmount` (uint256): The total amount of tokens available for distribution.
-- `claimableAmounts` (mapping(address => uint256)): Mapping of beneficiary addresses to their claimable amounts.
-
-### Events
-
-The following events are emitted by the contract:
-
-- `CanClaim(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary can claim tokens.
-- `HasClaimed(address indexed beneficiary, uint256 amount)`: Emitted when a beneficiary claims tokens.
-- `Swept(address receiver, uint256 amount)`: Emitted when tokens are swept from the contract.
-- `SetClaimableAmounts(uint256 usersLength, uint256 totalAmount)`: Emitted when claimable amounts are set.
-
-### Modifiers
-
-- `isSettable()`: Controls the settable status of the contract while trying to set addresses and their amounts. It ensures that the claim period has not already started.
-
-### Contract Functions
-
-1. `constructor(IERC20 _token, uint256 _startTime, uint256 _endTime)`: Initializes the contract by setting the token, start time, and end time of the claim period.
-
-2. `setClaimableAmounts(address[] calldata users, uint256[] calldata amounts) external onlyOwner isSettable`: Allows the contract owner to set the claimable amounts for a list of users. It takes an array of user addresses and an array of corresponding claimable amounts.
-
-3. `claim() external nonReentrant`: Allows a beneficiary to claim their tokens. Tokens can only be claimed once the claim period has started. The function transfers the claimable amount of tokens to the beneficiary.
-
-4. `sweep() external onlyOwner`: Transfers any remaining tokens from the contract to the owner. This function can only be called after the claim period has ended.
-
-## Usage
-
-1. Deploy the `PrivateSaleTokenDistributor` contract, providing the token, start time, and end time for the claim period.
-2. Call the `setClaimableAmounts` function, passing the list of user addresses and their corresponding claimable amounts. This can only be done before the claim period starts.
-3. Beneficiaries can call the `claim` function to claim their tokens once the claim period has started.
-4. After the claim period ends, the contract owner can call the `sweep` function to transfer any remaining tokens to their address.
-
-# LiquidityPool Contract
-
-## SPDX-License-Identifier: MIT
-
-The LiquidityPool contract is licensed under the MIT License. This license allows you to freely use, modify, and distribute the contract, subject to certain conditions. You should review the full text of the MIT License to understand your rights and responsibilities.
-
-## Overview
-
-The LiquidityPool contract is designed to manage a liquidity pool and facilitate the transfer of funds from the pool to a specified address. It utilizes the ERC20 standard for token management and extends the Ownable2Step contract for ownership control.
-
-## Architecture Overview
-![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/liquiditypool-schema.svg)
-
-## Prerequisites
-
-To use this contract, you need to have the following:
-
-- Solidity compiler version 0.8.16
-- OpenZeppelin contracts library, including:
-  - IERC20.sol
-  - Ownable2Step.sol
-  - SafeERC20.sol
-
-You can import these dependencies from the appropriate locations:
-
-```solidity
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-```
-
-## Contract Details
-
-### Contract Declaration
-
-```solidity
-contract LiquidityPool is Ownable2Step {
-    IERC20 public token; // Token to be distributed
-
-    event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
-
-    // ...
-}
-```
-
-The LiquidityPool contract inherits from the Ownable2Step contract, which provides a two-step ownership transfer mechanism. It declares a public variable `token` of type IERC20 to represent the token used in the liquidity pool. The `Withdrew` event is emitted when tokens are withdrawn from the pool.
-
-### Constructor
-
-```solidity
-constructor(IERC20 _token) {
-    _transferOwnership(_msgSender());
-
-    token = _token;
-}
-```
-
-The constructor initializes the contract by transferring ownership to the deployer and setting the `token` variable to the specified `_token` value.
-
-### Transfer Funds
-
-```solidity
-function transferFunds(uint256 withdrawalAmount) external onlyOwner {
-    _withdraw(owner(), withdrawalAmount);
-
-    emit Withdrew(withdrawalAmount);
-}
-```
-
-The `transferFunds` function allows the contract owner to transfer funds from the liquidity pool to a specified address. It calls the internal `_withdraw` function with the owner's address and the specified `withdrawalAmount`. After the successful withdrawal, it emits the `Withdrew` event.
-
-### Internal Withdrawal Function
-
-```solidity
-function _withdraw(address _to, uint256 _withdrawalAmount) internal returns (bool) {
-    uint256 poolBalance = token.balanceOf(address(this));
-    require(poolBalance > 0 && _withdrawalAmount <= poolBalance, "_withdraw: No tokens to withdraw");
-
-    SafeERC20.safeTransfer(token, _to, _withdrawalAmount);
-
-    return true;
-}
-```
-
-The `_withdraw` function performs the actual withdrawal of tokens from the pool. It first checks the balance of the pool and ensures that it has sufficient tokens to fulfill the withdrawal request. If the conditions are met, it uses the `SafeERC20` library to safely transfer the specified `_withdrawalAmount` of tokens to the `_to` address. The function returns `true` if the withdrawal is successful.
-
-## Events
-
-### Withdrew
-
-```solidity
-event Withdrew(uint256 amount);
-```
-
-The `Withdrew` event is emitted when tokens are successfully withdrawn from the liquidity pool. The `amount` parameter indicates the number of tokens that were withdrawn.
-
-## Usage
-
-To use the LiquidityPool contract, follow these steps:
-
-1. Deploy the
-
- contract, passing the desired ERC20 token as the `_token` parameter in the constructor.
-
-2. Interact with the contract through the following functions:
-   - `transferFunds`: This function allows the owner to transfer funds from the pool to a specified address.
-
-## StrategicPool Contract
+The LiquidityPool contract is a smart contract used for managing a liquidity pool. It allows the owner to deposit tokens into the pool and withdraw them as needed. It is designed to work with any ERC20-compliant token.
 
 ### Contract Overview
+The LiquidityPool contract provides the following functionality:
 
-The `StrategicPool` contract is a Solidity contract used for managing a strategic pool of tokens. It allows for burning tokens from the pool using a formula or without using a formula. The contract implements the `Ownable2Step` and `ReentrancyGuard` contracts to handle ownership and prevent reentrancy attacks, respectively.
+- **Constructor**: Initializes the contract by setting the token used in the liquidity pool.
+- **TransferFunds**: Allows the owner to transfer funds from the liquidity pool to a specified address.
+- **_withdraw**: Internal function to withdraw tokens from the pool.
 
 ## Architecture Overview
-![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/strategicpool-schema.svg)
+
+![LiquidityPool Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/liquiditypool-schema.svg)
 
 ### Contract Details
 
-- **SPDX-License-Identifier:** MIT
-- **Solidity Version:** 0.8.0
-
-### Dependencies
-
-The contract imports the following dependencies:
-
-- `Ownable2Step.sol` from the OpenZeppelin library: This contract provides a two-step ownership transfer mechanism.
-- `SafeERC20.sol` from the OpenZeppelin library: This contract provides safe ERC20 token transfer functions.
-- `ReentrancyGuard.sol` from the OpenZeppelin library: This contract prevents reentrancy attacks.
-- `IMTC.sol`: This is an interface contract for the token managed by the pool.
-- `Trigonometry.sol`: This is a library contract that provides trigonometric functions.
-
-### Contract Structure
-
-The `StrategicPool` contract is structured as follows:
-
 #### State Variables
-
-- `token` (type: `IMTC`): The token managed by the pool.
-- `totalBurnedAmount` (type: `int256`): The total amount of tokens burned from the pool.
-- `constantValueFromFormula` (type: `int256`): A constant value used in the burn formula.
+- **token**: An immutable variable representing the ERC20 token used in the liquidity pool.
 
 #### Events
-
-- `Burned(uint256 amount, bool withFormula)`: Event emitted when tokens are burned from the pool. It provides information about the burned amount and whether the formula was used.
+- **Withdrew**: Event emitted when tokens are withdrawn from the liquidity pool. It includes the amount of tokens that were withdrawn.
 
 #### Constructor
+The constructor function is called when deploying the contract and initializes the LiquidityPool contract by setting the token used in the liquidity pool. It requires a valid token address to be provided.
 
-- `constructor(IMTC _token)`: The constructor function accepts an `IMTC` token parameter and sets the token and owner of the contract.
+#### TransferFunds
+The `transferFunds` function allows the owner of the contract to transfer funds from the liquidity pool to a specified address. It takes in the `withdrawalAmount` parameter, which specifies the amount of tokens to be withdrawn. Only the owner can call this function.
 
-#### External Functions
+The function internally calls the `_withdraw` function, passing the owner's address and the withdrawal amount. After successful withdrawal, it emits the `Withdrew` event.
 
-- `burnWithFormula(int256 currentPrice, int256 blocksInTwoMonths)`: Burns tokens from the pool using a formula. It takes the current price and the number of blocks in two months as parameters. This function can only be called by the owner of the contract and is non-reentrant.
+#### _withdraw
+The `_withdraw` function is an internal function that performs the actual transfer of tokens from the liquidity pool to a specified address. It takes in the `_to` parameter, which represents the address to which the tokens will be transferred, and the `_withdrawalAmount` parameter, which specifies the amount of tokens to be withdrawn.
 
-### Note: 
-- Burn formula: https://metatime.com/assets/en/whitepaper.pdf at page 48.
+The function first checks the current balance of the liquidity pool to ensure that it has sufficient tokens for withdrawal. It requires that the pool has a positive balance and that the withdrawal amount does not exceed the pool balance. If these conditions are met, the function transfers the tokens to the specified address using the `SafeERC20.safeTransfer` function from the OpenZeppelin library.
 
-- `burn(uint256 burnAmount)`: Burns tokens from the pool without using a formula. It takes the amount of tokens to burn as a parameter. This function can only be called by the owner of the contract and is non-reentrant.
-
-#### Public Functions
-
-- `calculateBurnAmount(int256 _currentPrice, int256 _blocksInTwoMonths)`: Calculates the amount of tokens to burn using a formula. It takes the current price and the number of blocks in two months as parameters and returns the amount of tokens to burn. This function is view-only and does not modify the contract state.
+The function returns a boolean value indicating the success of the withdrawal.
 
 ### Usage
+To use the LiquidityPool contract, follow these steps:
+1. Deploy the contract, passing the ERC20 token address as a constructor argument.
+2. Deposit tokens into the liquidity pool by transferring them to the contract address.
+3. When needed, call the `transferFunds` function to transfer tokens from the liquidity pool to a specified address.
 
-1. Deploy the `StrategicPool` contract, providing the address of the token to be managed by the pool as a constructor parameter.
-2. Call the `burnWithFormula` function to burn tokens from the pool using the provided formula, passing the current price and the number of blocks in two months as parameters.
-3. Alternatively, call the `burn` function to burn tokens from the pool without using the formula, passing the amount of tokens to burn as a parameter.
-
-Trigonometry Library:
-- Thanks for this https://github.com/Sikorkaio/sikorka/blob/master/contracts/trigonometry.sol repository. It makes us to calculate burn formula, easily.
+It's important to note that only the owner of the contract can transfer funds from the liquidity pool.
 
 ## MTC Contract
 
+The MTC (Metatime Token) contract is an ERC20-compliant token contract that mints and distributes Metatime Tokens to different pools based on Metatime Tokenomics. It supports features such as token burning and pool submission.
+
+### Contract Overview
+The MTC contract provides the following functionality:
+
+- **Constructor**: Initializes the contract by minting the total supply of Metatime Tokens and assigning it to the contract deployer.
+- **submitPools**: Allows the contract owner to submit pools and distribute tokens from the owner's balance to each pool.
+
 ## Architecture Overview
-![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/mtc-schema.svg)
 
-### SPDX-License-Identifier: MIT
+![MTC Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/mtc-schema.svg)
 
-This contract is governed by the MIT License, which is a permissive open-source license. It allows users to freely use, modify, and distribute the contract with limited restrictions. 
+### Contract Details
 
-### Pragma
-
-The `pragma solidity 0.8.16;` statement specifies the Solidity compiler version required to compile this contract. In this case, it requires version 0.8.0 or higher.
-
-### Imports
-
-The contract imports various Solidity files from the OpenZeppelin library:
-
-- `ERC20.sol`: This file implements the ERC20 token standard, providing basic functionality for managing a fungible token.
-- `ERC20Burnable.sol`: This file extends the ERC20 contract and adds the ability to burn (destroy) tokens.
-- `Ownable2Step.sol`: This file provides an implementation of the ownable pattern, allowing for ownership control with a two-step process.
-
-### Contract: MTC
-
-The `MTC` contract is an ERC20 token contract that mints and distributes Metatime Tokens to different pools based on Metatime Tokenomics.
-
-#### Struct: Pool
-
-The `Pool` struct represents a pool and contains the following properties:
-
-- `name`: A string representing the name of the pool.
-- `addr`: The address of the pool.
-- `lockedAmount`: The amount of tokens locked in the pool.
-
-#### Events
-
-- `PoolSubmitted`: This event is emitted when a pool is submitted, indicating the name, address, and locked amount of the pool.
+#### State Variables
+- **Pool**: A struct representing a pool, which includes the pool name, address, and locked amount of tokens.
+- **event PoolSubmitted**: An event emitted when a pool is submitted, providing information about the pool name, address, and locked amount.
 
 #### Constructor
+The constructor function is called when deploying the contract and initializes the MTC contract. It takes in the `_totalSupply` parameter, which represents the total supply of the Metatime Token. The constructor then calls the ERC20 constructor from the OpenZeppelin library to initialize the token with the name "Metatime" and the symbol "MTC". It mints the total supply of tokens and assigns them to the contract deployer.
 
-The constructor function initializes the MTC contract. It takes the total supply of the MTC token as an argument and performs the following actions:
+#### submitPools
+The `submitPools` function allows the contract owner to submit pools and distribute tokens from the owner's balance to each pool. It takes in an array of `Pool` structures as a parameter, which contains the information about each pool including the pool name, address, and locked amount of tokens.
 
-- Calls the `ERC20` constructor to set the name and symbol of the token.
-- Transfers the ownership of the contract to the deployer by calling the `_transferOwnership` function.
-- Mints the specified `_totalSupply` amount of tokens to the deployer by calling the `_mint` function.
+The function iterates over the array of pools and performs the following steps for each pool:
+1. Checks that the pool address is valid (not equal to address(0)).
+2. Transfers the specified locked amount of tokens from the owner's balance to the pool address using the `transfer` function inherited from ERC20.
+3. Emits the `PoolSubmitted` event, providing the pool name, address, and locked amount.
 
-#### Function: submitPools
-
-The `submitPools` function allows the contract owner to submit pools and distribute tokens from the owner's balance accordingly. It takes an array of `Pool` structures as an argument and returns a boolean value indicating whether the pools were successfully submitted.
-
-The function performs the following actions:
-
-- Iterates over the `pools` array.
-- Checks if the pool address is not the zero address.
-- Transfers the specified `lockedAmount` of tokens from the owner's balance to the pool address using the `transfer` function inherited from `ERC20`.
-- Emits the `PoolSubmitted` event with the pool name, address, and locked amount.
-- Updates the `totalLockedAmount` by adding the `lockedAmount` of the current pool.
-- Returns `true` indicating successful pool submission.
+After successfully processing all pools, the function returns a boolean value indicating the success of pool submission.
 
 ### Usage
+To use the MTC contract, follow these steps:
+1. Deploy the contract, providing the total supply of Metatime Tokens as a constructor argument.
+2. As the contract owner, call the `submitPools` function to submit pools and distribute tokens from your balance to each pool. Pass an array of `Pool` structures containing the pool information, including the pool name, address, and locked amount of tokens.
 
-To use this contract, you need to deploy it with the desired total supply of MTC tokens. After deployment, the contract owner can submit pools using the `submitPools` function, specifying the pool name, address, and locked amount. The tokens will be transferred from the owner's balance to the pool addresses. The `PoolSubmitted` event will be emitted for each pool submission.
+It's important to note that only the contract owner can submit pools and distribute tokens from their balance.
 
-Certainly! Here's a documentation for the provided Solidity contract:
+## PrivateSaleTokenDistributor Contract
 
-# MultiSigWallet Contract
+The PrivateSaleTokenDistributor contract is designed for distributing tokens during a private sale. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
 
-## Overview
-The MultiSigWallet contract is a multi-signature wallet contract designed for executing transactions with multiple owner confirmations. It allows a group of owners to collectively control a wallet and ensure that transactions are executed only when a specified number of owners confirm them.
+### Contract Overview
+The PrivateSaleTokenDistributor contract provides the following functionality:
+
+- **Constructor**: Initializes the contract by setting the token being distributed, the start and end times of the distribution period, and the end time of the claim period.
+- **setClaimableAmounts**: Allows the contract owner to set the claimable amounts for a list of users.
+- **claim**: Enables a beneficiary to claim their tokens during the claim period.
+- **sweep**: Allows the contract owner to transfer any remaining tokens from the contract to their address after the claim period ends.
 
 ## Architecture Overview
-![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/multisigwallet-schema.svg)
 
-## Contract Details
-### Contract Address
-The contract can be deployed at a specific address on the Ethereum blockchain.
+![PrivateSaleTokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
 
-### License
-This contract is licensed under the MIT License.
+### Contract Details
 
-### Prerequisites
-- Solidity compiler version 0.8.0 or higher is required.
+#### State Variables
+- **token**: An immutable variable representing the token being distributed.
+- **distributionPeriodStart**: The start time of the distribution period.
+- **distributionPeriodEnd**: The end time of the distribution period.
+- **claimPeriodEnd**: The end time of the claim period.
+- **totalAmount**: The total amount of tokens available for distribution.
+- **claimableAmounts**: A mapping of beneficiary addresses to their claimable amounts.
 
-### Events
-The following events are emitted by the contract:
+#### Constructor
+The constructor function initializes the PrivateSaleTokenDistributor contract. It takes the following parameters:
+- `_token`: The token being distributed.
+- `_distributionPeriodStart`: The start time of the claim period.
+- `_distributionPeriodEnd`: The end time of the claim period.
 
-1. `Deposit(address indexed sender, uint256 amount, uint256 balance)`: Emitted when funds are deposited into the contract.
-    - `sender`: Address of the account that sent the funds.
-    - `amount`: The amount of funds deposited.
-    - `balance`: The updated balance of the contract after the deposit.
+The constructor validates that the token address is valid and that the distribution period end time is greater than the start time. It sets the respective state variables accordingly.
 
-2. `SubmitTransaction(address indexed owner, uint256 indexed txIndex, address indexed to, uint256 value, bytes data)`: Emitted when a new transaction is submitted.
-    - `owner`: Address of the owner who submitted the transaction.
-    - `txIndex`: Index of the transaction in the `transactions` array.
-    - `to`: Address of the recipient of the transaction.
-    - `value`: The value (in wei) to be sent with the transaction.
-    - `data`: Additional data to be included in the transaction.
+#### setClaimableAmounts
+The `setClaimableAmounts` function allows the contract owner to set the claimable amounts for a list of users. It takes the following parameters:
+- `users`: An array of user addresses.
+- `amounts`: An array of claimable amounts corresponding to each user.
 
-3. `ConfirmTransaction(address indexed owner, uint256 indexed txIndex)`: Emitted when an owner confirms a transaction.
-    - `owner`: Address of the owner who confirmed the transaction.
-    - `txIndex`: Index of the confirmed transaction in the `transactions` array.
+The function performs the following steps:
+1. Validates that the lengths of the `users` and `amounts` arrays match.
+2. Iterates over the users and amounts arrays, setting the claimable amount for each user in the `claimableAmounts` mapping.
+3. Emits the `CanClaim` event for each user, indicating the amount they can claim.
+4. Calculates the new total claimable amount by summing the existing total amount and the amounts being set.
+5. Validates that the contract holds enough tokens to cover the total claimable amount.
+6. Updates the `totalAmount` state variable with the new total claimable amount.
+7. Emits the `SetClaimableAmounts` event, indicating the number of users and the total claimable amount.
 
-4. `RevokeConfirmation(address indexed owner, uint256 indexed txIndex)`: Emitted when an owner revokes their confirmation for a transaction.
-    - `owner`: Address of the owner who revoked the confirmation.
-    - `txIndex`: Index of the transaction in the `transactions` array.
+#### claim
+The `claim` function allows a beneficiary to claim their tokens during the claim period. It can be called by any address that has claimable tokens. The function performs the following steps:
+1. Validates that the current timestamp is within the distribution period.
+2. Validates that the claim period has not ended.
+3. Retrieves the claimable amount for the caller.
+4. Validates that there are tokens to claim.
+5. Sets the claimable amount for the caller to zero.
+6. Transfers the claimed tokens from the contract to the caller using the `safeTransfer` function from the SafeERC20 library.
+7. Emits the `HasClaimed` event, indicating the beneficiary and the amount claimed.
 
-5. `ExecuteTransaction(address indexed owner, uint256 indexed txIndex)`: Emitted when a transaction is successfully executed.
-    - `owner`: Address of the owner who executed the transaction.
-    - `txIndex`: Index of the executed transaction in the `transactions` array.
+#### sweep
+The `sweep` function allows the contract owner to transfer any remaining tokens from the contract to their address after the claim period ends.
 
-### State Variables
-1. `address[] public owners`: An array containing the addresses of all owners of the wallet.
-2. `mapping(address => bool) public isOwner`: A mapping to check if an address is an owner.
-3. `uint256 public numConfirmationsRequired`: The number of owner confirmations required for executing a transaction.
-4. `struct Transaction`: A structure representing a transaction.
-    - `address to`: Address of the recipient of the transaction.
-    - `uint256 value`: The value (in wei) to be sent with the transaction.
-    - `bytes data`: Additional data to be included in the transaction.
-    - `bool executed`: Flag indicating if the transaction has been executed.
-    - `uint256 numConfirmations`: The number of owner confirmations received for the transaction.
-5. `mapping(uint256 => mapping(address => bool)) public isConfirmed`: A mapping to check if an owner has confirmed a transaction.
-6. `Transaction[] public transactions`: An array containing all the transactions.
+ It performs the following steps:
+1. Validates that the current timestamp is past the claim period end time.
+2. Retrieves the remaining tokens balance in the contract.
+3. Validates that there are remaining tokens to sweep.
+4. Transfers the remaining tokens from the contract to the owner using the `safeTransfer` function from the SafeERC20 library.
+5. Emits the `Swept` event, indicating the receiver (owner) and the amount swept.
 
-### Modifiers
-1. `modifier onlyOwner()`: A modifier that restricts the execution of a function to only the owners of the wallet.
-2. `modifier txExists(uint256 _txIndex)`: A modifier that checks if a transaction with the given index exists.
-3. `modifier notExecuted(uint256 _
+### Usage
+To use the PrivateSaleTokenDistributor contract, follow these steps:
+1. Deploy the contract, providing the token being distributed, the start time of the distribution period, and the end time of the distribution period as constructor arguments.
+2. As the contract owner, call the `setClaimableAmounts` function to set the claimable amounts for a list of users. Pass the array of user addresses and the corresponding array of claimable amounts.
+3. Users can call the `claim` function during the claim period to claim their tokens if they have any claimable amount.
+4. After the claim period ends, the contract owner can call the `sweep` function to transfer any remaining tokens from the contract to their address.
 
-txIndex)`: A modifier that checks if a transaction with the given index has not been executed.
-4. `modifier notConfirmed(uint256 _txIndex)`: A modifier that checks if the sender has not confirmed the transaction with the given index.
+Note that the contract owner has additional control and can manage the claimable amounts and the token distribution process.
 
-### Constructor
-The constructor of the contract accepts two parameters:
-1. `address[] memory _owners`: An array of addresses representing the initial owners of the wallet.
-2. `uint256 _numConfirmationsRequired`: The number of owner confirmations required for executing a transaction.
+## StrategicPool Contract
 
-### Fallback Function
-The contract defines a fallback function that allows it to receive Ether. It emits the `Deposit` event when funds are deposited.
+The StrategicPool contract is designed for managing a strategic pool of tokens. It allows the owner of the contract to burn tokens from the pool using a formula or without using a formula.
 
-### Public and External Functions
+### Contract Overview
+The StrategicPool contract provides the following functionality:
 
-1. `submitTransaction(address _to, uint256 _value, bytes memory _data)`: Submits a new transaction to the contract.
-    - Requires: The function can only be called by one of the owners.
-    - Parameters:
-        - `_to`: Address of the recipient of the transaction.
-        - `_value`: The value (in wei) to be sent with the transaction.
-        - `_data`: Additional data to be included in the transaction.
-    - Emits: `SubmitTransaction` event.
+- **Constructor**: Initializes the contract by setting the token managed by the pool.
+- **burnWithFormula**: Allows the owner to burn tokens from the pool using a formula. The burn amount is calculated based on the current price and the number of blocks in two months.
+- **burn**: Allows the owner to burn tokens from the pool without using a formula.
+- **calculateBurnAmount**: Calculates the amount of tokens to burn using a formula based on the current price and the number of blocks in two months.
 
-2. `confirmTransaction(uint256 _txIndex)`: Confirms a transaction.
-    - Requires: The function can only be called by one of the owners.
-    - Parameters:
-        - `_txIndex`: Index of the transaction to confirm.
-    - Modifiers:
-        - `txExists`: Checks if a transaction with the given index exists.
-        - `notExecuted`: Checks if the transaction has not been executed.
-        - `notConfirmed`: Checks if the sender has not confirmed the transaction.
-    - Emits: `ConfirmTransaction` event.
+## Architecture Overview
 
-3. `executeTransaction(uint256 _txIndex)`: Executes a transaction.
-    - Requires: The function can only be called by one of the owners.
-    - Parameters:
-        - `_txIndex`: Index of the transaction to execute.
-    - Modifiers:
-        - `txExists`: Checks if a transaction with the given index exists.
-        - `notExecuted`: Checks if the transaction has not been executed.
-    - Emits: `ExecuteTransaction` event.
+![StrategicPool Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/strategicpool-schema.svg)
 
-4. `revokeConfirmation(uint256 _txIndex)`: Revokes the confirmation for a transaction.
-    - Requires: The function can only be called by one of the owners.
-    - Parameters:
-        - `_txIndex`: Index of the transaction to revoke the confirmation.
-    - Modifiers:
-        - `txExists`: Checks if a transaction with the given index exists.
-        - `notExecuted`: Checks if the transaction has not been executed.
-    - Emits: `RevokeConfirmation` event.
+### Contract Details
 
-5. `getOwners() external view returns (address[] memory)`: Returns the array of wallet owners.
+#### State Variables
+- **token**: An immutable variable representing the token managed by the pool.
+- **totalBurnedAmount**: The total amount of tokens burned from the pool.
+- **lastBurnedAmount**: The amount of tokens burned in the last burn transaction.
+- **constantValueFromFormula**: A constant value used in the burn formula.
 
-6. `getTransactionCount() external view returns (uint256)`: Returns the total number of transactions.
+#### Constructor
+The constructor function initializes the StrategicPool contract. It takes the following parameter:
+- `_token`: The token being burned.
 
-7. `getTransaction(uint256 _txIndex) external view returns (address to, uint256 value, bytes memory data, bool executed, uint256 numConfirmations)`: Returns the details of a specific transaction.
-    - Parameters:
-        - `_txIndex`: Index of the transaction to fetch.
-    - Returns:
-        - `to`: Address of the recipient of the transaction.
-        - `value`: The value (in wei) sent with the transaction.
-        - `data`: Additional data included in the transaction.
-        - `executed`: Flag indicating if the transaction has been executed.
-        - `numConfirmations`: The number of owner confirmations received for the transaction.
+The constructor validates that the token address is valid and sets the `token` state variable accordingly.
 
-## Usage
-1. Deploy the contract to an Ethereum network using Solidity compiler version 0.8.0 or higher.
-2. Pass an array of initial owners' addresses and the required number of confirmations to the constructor.
-3. Owners can deposit Ether into the contract by sending funds to its address.
-4. Owners can submit transactions using the `submitTransaction` function.
-5. Other owners can confirm the submitted transactions using the `confirmTransaction` function.
-6. Once the required number of confirmations is reached for a transaction, any owner can execute it using the `executeTransaction` function.
-7. Owners can revoke their confirmations using the `revokeConfirmation` function.
-8. Use the provided getter functions (`getOwners`, `getTransactionCount`, `getTransaction`) to retrieve information about the wallet and transactions.
+#### burnWithFormula
+The `burnWithFormula` function allows the contract owner to burn tokens from the pool using a formula. It takes the following parameters:
+- `currentPrice`: The current price used in the burn formula.
+- `blocksInTwoMonths`: The number of blocks in two months used in the burn formula.
+
+The function performs the following steps:
+1. Calculates the burn amount using the `calculateBurnAmount` function based on the current price and the number of blocks in two months.
+2. Validates that the burn amount is greater than zero.
+3. Updates the `totalBurnedAmount` and `lastBurnedAmount` state variables with the burn amount.
+4. Calls the `burn` function of the token contract to burn the tokens.
+5. Emits the `Burned` event, indicating the amount burned and that the burn was done using the formula.
+
+#### burn
+The `burn` function allows the contract owner to burn tokens from the pool without using a formula. It takes the following parameter:
+- `burnAmount`: The amount of tokens to burn.
+
+The function performs the following steps:
+1. Updates the `totalBurnedAmount` state variable with the burn amount.
+2. Calls the `burn` function of the token contract to burn the tokens.
+3. Emits the `Burned` event, indicating the amount burned and that the burn was done without using the formula.
+
+#### calculateBurnAmount
+The `calculateBurnAmount` function calculates the amount of tokens to burn using a formula. It takes the following parameters:
+- `_currentPrice`: The current price used in the burn formula.
+- `_blocksInTwoMonths`: The number of blocks in two months used in the burn formula.
+
+The function performs a complex calculation to determine the burn amount based on the provided parameters and the `totalBurnedAmount`. The calculation involves trigonometric functions and mathematical operations. The result is returned as an `int256` value.
+
+### Usage
+To use the StrategicPool contract, follow these steps:
+1. Deploy the contract, providing the token address as the constructor argument.
+2. As the contract owner, you can choose to burn tokens from the pool using either the `burnWithFormula` function or the `burn` function.
+   - If using `burnWithFormula`, provide the current price and the number of blocks in two months as function arguments.
+   - If using `burn`, provide
+
+ the amount of tokens to burn as the function argument.
+3. The tokens will be burned from the pool, and the `Burned` event will be emitted to indicate the burned amount and whether the burn was done using the formula or not.
+
+Note: Ensure that you have the required permissions to burn tokens from the pool and that you provide valid inputs for the burn calculations.
+
+# TokenDistributor Contract Technical Documentation
+
+The TokenDistributor contract is a Solidity smart contract designed for distributing tokens among users over a specific period of time. It allows the contract owner to set claimable amounts for users before the claim period starts and enables users to claim their tokens during the distribution period. Any remaining tokens after the claim period can be swept by the contract owner.
+
+## Contract Overview
+
+The TokenDistributor contract includes the following main features:
+
+1. **Initialization:** The contract is initialized with the necessary parameters, including the contract owner, pool name, token address, distribution period start and end times, distribution rate, and period length.
+
+2. **Claimable Amounts:** The contract owner can set the claimable amounts for a list of users before the claim period starts. The claimable amounts are stored in the `claimableAmounts` mapping, and the remaining claimable amounts are stored in the `leftClaimableAmounts` mapping. Each user can claim their available tokens during the distribution period.
+
+3. **Claiming Tokens:** Users can claim their available tokens by calling the `claim()` function. The function calculates the claimable amount based on the number of days that have passed since the user's last claim. The claimed tokens are transferred to the user's address.
+
+4. **Sweeping Remaining Tokens:** After the claim period ends, the contract owner can sweep any remaining tokens by calling the `sweep()` function. The remaining tokens are transferred to the contract owner's address.
+
+5. **Updating Pool Parameters:** Before the claim period starts, the contract owner can update the pool parameters, including the distribution period start and end times, distribution rate, and period length. This allows flexibility in adjusting the distribution parameters if needed.
+
+## Architecture Overview
+
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor-schema.svg)
+
+## Contract Structure
+
+The TokenDistributor contract is structured as follows:
+
+1. **Imports:** The contract imports required dependencies from the OpenZeppelin library, including `IERC20`, `Ownable2Step`, `SafeERC20`, `Initializable`, and `ReentrancyGuard`.
+
+2. **State Variables:**
+
+   - `poolName`: A string variable that represents the name of the token distribution pool.
+   - `token`: An instance of the `IERC20` interface representing the ERC20 token being distributed.
+   - `distributionPeriodStart`: An unsigned integer representing the start time of the distribution period.
+   - `distributionPeriodEnd`: An unsigned integer representing the end time of the distribution period.
+   - `claimPeriodEnd`: An unsigned integer representing the end time of the claim period.
+   - `periodLength`: An unsigned integer representing the length of each distribution period in seconds.
+   - `distributionRate`: An unsigned integer representing the distribution rate as a percentage.
+   - `totalClaimableAmount`: An unsigned integer representing the total claimable amount that participants can claim.
+   - `claimableAmounts`: A mapping that associates user addresses with their claimable amounts.
+   - `claimedAmounts`: A mapping that associates user addresses with their claimed amounts.
+   - `lastClaimTimes`: A mapping that associates user addresses with their last claim times.
+   - `leftClaimableAmounts`: A mapping that associates user addresses with their remaining claimable amounts.
+   - `hasClaimableAmountsSet`: A boolean flag used to prevent updating pool parameters after the claimable amounts have been set.
+
+3. **Events:**
+
+   - `Swept`: An event emitted when the contract owner sweeps remaining tokens. It includes the receiver's address and the amount of tokens swept.
+   - `CanClaim`: An event emitted when a user can claim tokens. It includes the beneficiary's address and the claimable amount.
+   - `HasClaimed`: An event emitted when a user has claimed tokens. It includes
+
+ the beneficiary's address and the claimed amount.
+   - `SetClaimableAmounts`: An event emitted when claimable amounts are set. It includes the number of users and the total claimable amount.
+   - `PoolParamsUpdated`: An event emitted when pool parameters are updated. It includes the new distribution period start and end times, distribution rate, and period length.
+
+4. **Modifiers:**
+
+   - `isParamsValid`: A modifier that validates the pool parameters, ensuring that the end time is after the start time and the calculated distribution duration matches the given parameters.
+   - `isSettable`: A modifier that ensures that the contract is in a settable state, allowing the owner to set claimable amounts and update pool parameters before the claim period starts.
+
+5. **Constructor Function:**
+
+   - The constructor function initializes the contract by disabling the execution of initializers and preventing accidental execution when creating proxy instances of the contract.
+
+6. **Initialization Function:**
+
+   - The `initialize` function initializes the TokenDistributor contract with the required parameters. It sets the contract owner, pool name, token address, distribution period start and end times, distribution rate, and period length.
+
+7. **Set Claimable Amounts Function:**
+
+   - The `setClaimableAmounts` function allows the contract owner to set the claimable amounts for a list of users before the claim period starts. It verifies that the provided lists of users and amounts have matching lengths and assigns the claimable amounts to the users. The function also updates the total claimable amount and emits the `SetClaimableAmounts` event.
+
+8. **Claim Function:**
+
+   - The `claim` function allows a user to claim their available tokens during the distribution period. It calculates the claimable amount based on the number of days that have passed since the user's last claim. The function updates the claimed amount, last claim time, and remaining claimable amount for the user. It also transfers the claimed tokens to the user's address and emits the `HasClaimed` event.
+
+9. **Sweep Function:**
+
+   - The `sweep` function allows the contract owner to sweep any remaining tokens after the claim period ends. It verifies that the claim period has ended and transfers the remaining tokens to the contract owner's address. The function emits the `Swept` event.
+
+10. **Update Pool Parameters Function:**
+
+    - The `updatePoolParams` function allows the contract owner to update the pool parameters before the claim period starts. It verifies that the claimable amounts have not been set before and updates the distribution period start and end times, claim period end time, distribution rate, and period length. The function emits the `PoolParamsUpdated` event.
+
+11. **Claimable Amount Calculation Functions:**
+
+    - The `calculateClaimableAmount` function calculates the claimable amount of tokens for a given user. It verifies that the claim period has not ended and the distribution period has started. The function calls the `_calculateClaimableAmount` internal function to perform the actual calculation based on the user's initial claimable amount and the number of days since their last claim.
+
+    - The `_calculateClaimableAmount` internal function calculates the amount of tokens that can be claimed by a given address. It uses the user's initial claimable amount, the distribution rate, the number of days since their last claim, and the base divider for calculations.
+
+## Usage and Workflow
+
+1. Contract Deployment:
+   - Deploy the TokenDistributor contract on the Ethereum network.
+   - Provide the necessary parameters for initialization, including the contract owner, pool name, token address, distribution period start and end times, distribution rate, and period length.
+
+2. Setting Claimable Amounts:
+   - Before the claim period starts
+
+, call the `setClaimableAmounts` function as the contract owner.
+   - Provide an array of user addresses and corresponding claimable amounts.
+   - Ensure that the provided lists have matching lengths.
+   - The function assigns the claimable amounts to the users, updates the total claimable amount, and emits the `SetClaimableAmounts` event.
+
+3. Claiming Tokens:
+   - During the distribution period, users can call the `claim` function to claim their available tokens.
+   - The function calculates the claimable amount based on the number of days that have passed since the user's last claim.
+   - It updates the claimed amount, last claim time, and remaining claimable amount for the user.
+   - The claimed tokens are transferred to the user's address, and the `HasClaimed` event is emitted.
+
+4. Sweeping Remaining Tokens:
+   - After the claim period ends, the contract owner can call the `sweep` function to transfer any remaining tokens to their address.
+   - The function verifies that the claim period has ended and emits the `Swept` event.
+
+5. Updating Pool Parameters:
+   - Before the claim period starts, the contract owner can call the `updatePoolParams` function to update the pool parameters.
+   - Provide the new distribution period start and end times, distribution rate, and period length.
+   - The function verifies that the claimable amounts have not been set before and updates the parameters accordingly.
+   - The `PoolParamsUpdated` event is emitted.
+
+Note: It is important to follow the contract's usage guidelines and ensure that the contract owner performs necessary actions within the appropriate timeframes.

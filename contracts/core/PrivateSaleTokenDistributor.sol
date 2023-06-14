@@ -14,7 +14,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     IERC20 public immutable token; // The token being distributed
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
-    uint256 public claimPeriodEnd; // The end time of claim period
+    uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public totalAmount; // The total amount of tokens available for distribution
     mapping(address => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
@@ -50,7 +50,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Controls settable status of contract while trying to set addresses and their amounts.
+     * @dev Controls settable status of the contract while trying to set addresses and their amounts.
      */
     modifier isSettable() {
         require(

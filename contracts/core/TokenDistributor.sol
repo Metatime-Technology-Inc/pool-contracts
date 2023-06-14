@@ -16,7 +16,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     IERC20 public token; // The ERC20 token being distributed
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
-    uint256 public claimPeriodEnd; // The end time of claim period
+    uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public periodLength; // The length of each distribution period (in seconds)
     uint256 public distributionRate; // The distribution rate (percentage)
     uint256 public totalClaimableAmount; // The total claimable amount that participants can claim
@@ -219,7 +219,7 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Updates pool parameteres before claim period and only callable by contract owner
+     * @dev Updates pool parameters before claim period and only callable by contract owner
      * @param newDistributionPeriodStart New start timestamp of distribution period
      * @param newDistributionPeriodEnd New end timestamp of distribution period
      * @param newDistributionRate New distribution rate of each claim

@@ -45,11 +45,11 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev A modifier that validates pool parameters
-     * @param _startTime Start timestamp of claim period
-     * @param _endTime End timestamp of claim period
-     * @param _distributionRate Distribution rate of each claim
-     * @param _periodLength Distribution duration of each claim
+     * @dev A modifier that validates pool parameters.
+     * @param _startTime Start timestamp of claim period.
+     * @param _endTime End timestamp of claim period.
+     * @param _distributionRate Distribution rate of each claim.
+     * @param _periodLength Distribution duration of each claim.
      */
     modifier isParamsValid(
         uint256 _startTime,
@@ -81,17 +81,17 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         _;
     }
 
-    // /**
-    //  * @dev Initializes the contract with the specified parameters.
-    //  * @param _owner The address of the contract owner
-    //  * @param _poolName The name of the token distribution pool
-    //  * @param _token The token to be distributed
-    //  * @param _startTime The start time of the distribution
-    //  * @param _endTime The end time of the distribution
-    //  * @param _distributionRate The rate of token distribution per period
-    //  * @param _periodLength The length of each distribution period
-    //  * @param _claimableAmount The total amount of tokens claimable per period
-    //  */
+    /**
+     * @dev Initializes the contract with the specified parameters.
+     * @param _owner The address of the contract owner.
+     * @param _poolName The name of the token distribution pool.
+     * @param _token The token to be distributed.
+     * @param _startTime The start time of the distribution.
+     * @param _endTime The end time of the distribution.
+     * @param _distributionRate The rate of token distribution per period.
+     * @param _periodLength The length of each distribution period.
+     * @param _claimableAmount The total amount of tokens claimable per period.
+     */
     function initialize(
         address _owner,
         string memory _poolName,
@@ -114,14 +114,14 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
         endTime = _endTime;
         distributionRate = _distributionRate;
         periodLength = _periodLength;
-        lastClaimTime = startTime;
+        lastClaimTime = _startTime;
         claimableAmount = _claimableAmount;
         leftClaimableAmount = _claimableAmount;
     }
 
     /**
      * @dev Claim tokens for the sender.
-     * @return A boolean indicating whether the claim was successful
+     * @return A boolean indicating whether the claim was successful.
      */
     function claim() external onlyOwner nonReentrant returns (bool) {
         uint256 amount = calculateClaimableAmount();
@@ -140,12 +140,12 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @dev Updates pool parameteres before claim period and only callable by contract owner
-     * @param newStartTime New start timestamp of claim period
-     * @param newEndTime New end timestamp of claim period
-     * @param newDistributionRate New distribution rate of each claim
-     * @param newPeriodLength New distribution duration of each claim
-     * @param newClaimableAmount New claimable amount of pool
+     * @dev Updates pool parameters before the claim period and only callable by the contract owner.
+     * @param newStartTime New start timestamp of the claim period.
+     * @param newEndTime New end timestamp of the claim period.
+     * @param newDistributionRate New distribution rate of each claim.
+     * @param newPeriodLength New distribution duration of each claim.
+     * @param newClaimableAmount New claimable amount of the pool.
      */
     function updatePoolParams(
         uint256 newStartTime,
@@ -185,7 +185,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
 
     /**
      * @dev Calculates the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period
+     * @return The amount of tokens claimable for the current period.
      */
     function calculateClaimableAmount() public view returns (uint256) {
         require(
@@ -207,7 +207,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
 
     /**
      * @dev Internal function to calculate the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period
+     * @return The amount of tokens claimable for the current period.
      */
     function _calculateClaimableAmount() internal view returns (uint256) {
         uint256 initialAmount = claimableAmount;

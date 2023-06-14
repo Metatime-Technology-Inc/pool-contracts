@@ -281,7 +281,7 @@ The PrivateSaleTokenDistributor contract provides the following functionality:
 
 ## Architecture Overview
 
-![PrivateSaleTokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
+![LiquidityPool Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
 
 ### Contract Details
 
@@ -378,6 +378,16 @@ The constructor validates that the token address is valid and sets the `token` s
 The `burnWithFormula` function allows the contract owner to burn tokens from the pool using a formula. It takes the following parameters:
 - `currentPrice`: The current price used in the burn formula.
 - `blocksInTwoMonths`: The number of blocks in two months used in the burn formula.
+
+`burnWithFormula` is a function implemented in our smart contract project that facilitates the burning of funds by calculating the burn amount using a specific formula. The purpose of burning funds is to permanently remove them from circulation, typically to manage token supply or to provide an incentive for holding or using the token.
+
+We are currently in the process of developing our own blockchain, which includes various functionalities such as smart contracts. However, while the development of our blockchain is ongoing, we need to deploy the burn contract on an existing blockchain network.
+
+By deploying the burn contract on another chain, we can leverage the existing infrastructure and functionalities of that chain to facilitate the burning process. This allows us to burn funds according to the specified formula until the development of our own chain is complete.
+
+The burnWithFormula function takes into account the parameters specified by the formula to calculate the amount of funds that need to be burned. The exact details of the formula will depend on the specific requirements of your project and the logic you have implemented in the function.
+
+Burning Formula: https://metatime.com/assets/tr/whitepaper.pdf at page 48.
 
 The function performs the following steps:
 1. Calculates the burn amount using the `calculateBurnAmount` function based on the current price and the number of blocks in two months.

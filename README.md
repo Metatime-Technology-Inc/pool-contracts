@@ -129,6 +129,10 @@ The Distributor contract is designed to facilitate the distribution of tokens ov
 
 The Distributor contract is implemented in Solidity and follows the ERC-20 token standard. It utilizes the OpenZeppelin library to leverage existing functionality and ensure security best practices. The contract uses the `Ownable2Step` and `ReentrancyGuard` contracts from OpenZeppelin for access control and protection against reentrancy attacks, respectively.
 
+## Architecture Overview
+
+![Distributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/distributor-schema.svg)
+
 ## Contract Initialization
 
 The contract can be initialized by calling the `initialize` function. This function sets up the contract with the specified parameters, including the contract owner, token distribution pool name, token address, start and end times of the distribution, distribution rate per period, period length, and claimable amount per period. The initialization function is invoked only once during contract deployment and requires valid parameter values. This function is `external` and can be called by anyone.
@@ -188,6 +192,10 @@ The LiquidityPool contract provides the following functionality:
 - **TransferFunds**: Allows the owner to transfer funds from the liquidity pool to a specified address.
 - **_withdraw**: Internal function to withdraw tokens from the pool.
 
+## Architecture Overview
+
+![LiquidityPool Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/liquiditypool-schema.svg)
+
 ### Contract Details
 
 #### State Variables
@@ -229,6 +237,10 @@ The MTC contract provides the following functionality:
 - **Constructor**: Initializes the contract by minting the total supply of Metatime Tokens and assigning it to the contract deployer.
 - **submitPools**: Allows the contract owner to submit pools and distribute tokens from the owner's balance to each pool.
 
+## Architecture Overview
+
+![MTC Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/mtc-schema.svg)
+
 ### Contract Details
 
 #### State Variables
@@ -266,6 +278,10 @@ The PrivateSaleTokenDistributor contract provides the following functionality:
 - **setClaimableAmounts**: Allows the contract owner to set the claimable amounts for a list of users.
 - **claim**: Enables a beneficiary to claim their tokens during the claim period.
 - **sweep**: Allows the contract owner to transfer any remaining tokens from the contract to their address after the claim period ends.
+
+## Architecture Overview
+
+![PrivateSaleTokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
 
 ### Contract Details
 
@@ -340,6 +356,10 @@ The StrategicPool contract provides the following functionality:
 - **burn**: Allows the owner to burn tokens from the pool without using a formula.
 - **calculateBurnAmount**: Calculates the amount of tokens to burn using a formula based on the current price and the number of blocks in two months.
 
+## Architecture Overview
+
+![StrategicPool Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/strategicpool-schema.svg)
+
 ### Contract Details
 
 #### State Variables
@@ -411,6 +431,10 @@ The TokenDistributor contract includes the following main features:
 4. **Sweeping Remaining Tokens:** After the claim period ends, the contract owner can sweep any remaining tokens by calling the `sweep()` function. The remaining tokens are transferred to the contract owner's address.
 
 5. **Updating Pool Parameters:** Before the claim period starts, the contract owner can update the pool parameters, including the distribution period start and end times, distribution rate, and period length. This allows flexibility in adjusting the distribution parameters if needed.
+
+## Architecture Overview
+
+![TokenDistributor Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor-schema.svg)
 
 ## Contract Structure
 

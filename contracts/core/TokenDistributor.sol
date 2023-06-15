@@ -185,6 +185,8 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         address sender = _msgSender();
         uint256 claimableAmount = calculateClaimableAmount(sender);
 
+        require(claimableAmount > 0, "TokenDistributor: no tokens to claim");
+
         claimedAmounts[sender] = claimedAmounts[sender] + claimableAmount;
 
         lastClaimTimes[sender] = block.timestamp;
@@ -291,8 +293,6 @@ contract TokenDistributor is Initializable, Ownable2Step, ReentrancyGuard {
         } else {
             claimableAmount = _calculateClaimableAmount(user);
         }
-
-        require(claimableAmount > 0, "TokenDistributor: no tokens to claim");
 
         return claimableAmount;
     }

@@ -58,8 +58,7 @@ const calculateExchangeFee = (amount: number, percentage: number) => {
 
 const calculateClaimableAmount = (blockTimestamp: BigNumber, lastClaimTimestamp: BigNumber, periodLength: number, claimableAmount: BigNumber, distributionRate: number) => {
   const decimals = BigNumber.from(10).pow(18);
-  const periodSinceLastClaim = ((blockTimestamp.sub(lastClaimTimestamp)).mul(decimals)).div(periodLength);
-  return ((claimableAmount.mul(distributionRate)).mul(periodSinceLastClaim)).div(10_000).div(decimals);
+  return (claimableAmount.mul(distributionRate).mul(blockTimestamp.sub(lastClaimTimestamp)).mul(decimals)).div(BigNumber.from(periodLength).mul(10_000).mul(decimals));
 };
 
 const calculateBurnAmount = (currentPrice: BigNumber, blocksInTwoMonths: number, constantValueFromFormula: number, totalBurnedAmount: number) => {

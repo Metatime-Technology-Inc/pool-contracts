@@ -209,12 +209,10 @@ contract Distributor is Initializable, Ownable2Step {
      * @return The amount of tokens claimable for the current period.
      */
     function _calculateClaimableAmount() internal view returns (uint256) {
-        uint256 initialAmount = claimableAmount;
-        uint256 periodSinceLastClaim = ((block.timestamp - lastClaimTime) *
-            10 ** 18) / periodLength;
-
         return
-            (initialAmount * distributionRate * periodSinceLastClaim) /
-            (BASE_DIVIDER * 10 ** 18);
+            (claimableAmount *
+                distributionRate *
+                (block.timestamp - lastClaimTime) *
+                10 ** 18) / (periodLength * BASE_DIVIDER * 10 ** 18);
     }
 }

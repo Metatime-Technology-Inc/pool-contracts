@@ -3,7 +3,6 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "../interfaces/IMTC.sol";
 import "../libs/Trigonometry.sol";
@@ -12,7 +11,7 @@ import "../libs/Trigonometry.sol";
  * @title StrategicPool
  * @dev A contract for managing a strategic pool of tokens.
  */
-contract StrategicPool is Ownable2Step, ReentrancyGuard {
+contract StrategicPool is Ownable2Step {
     IMTC public immutable token; // The token managed by the pool
     int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
     int256 public lastBurnedAmount = 0;
@@ -41,7 +40,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
     function burnWithFormula(
         int256 currentPrice,
         int256 blocksInTwoMonths
-    ) external onlyOwner nonReentrant {
+    ) external onlyOwner {
         uint256 amount = uint256(
             calculateBurnAmount(currentPrice, blocksInTwoMonths)
         );
@@ -60,7 +59,7 @@ contract StrategicPool is Ownable2Step, ReentrancyGuard {
      * @dev Burns tokens from the pool without using a formula.
      * @param burnAmount The amount of tokens to burn
      */
-    function burn(uint256 burnAmount) external onlyOwner nonReentrant {
+    function burn(uint256 burnAmount) external onlyOwner {
         totalBurnedAmount += int256(burnAmount);
 
         token.burn(burnAmount);

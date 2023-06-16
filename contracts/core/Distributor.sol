@@ -5,14 +5,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Distributor
  * @notice Holds tokens for users to claim.
  * @dev A contract for distributing tokens over a specified period of time.
  */
-contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
+contract Distributor is Initializable, Ownable2Step {
     string public poolName; // Name of the token distribution pool
     IERC20 public token; // Token to be distributed
     uint256 public startTime; // Start time of the distribution
@@ -123,7 +122,7 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
      * @dev Claim tokens for the sender.
      * @return A boolean indicating whether the claim was successful.
      */
-    function claim() external onlyOwner nonReentrant returns (bool) {
+    function claim() external onlyOwner returns (bool) {
         uint256 amount = calculateClaimableAmount();
 
         claimedAmount += amount;
@@ -216,7 +215,6 @@ contract Distributor is Initializable, Ownable2Step, ReentrancyGuard {
 
         return
             (((initialAmount * distributionRate) * periodSinceLastClaim)) /
-            BASE_DIVIDER /
-            10 ** 18;
+            (BASE_DIVIDER * 10 ** 18);
     }
 }

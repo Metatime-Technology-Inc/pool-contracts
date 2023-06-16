@@ -4,13 +4,12 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title PrivateSaleTokenDistributor
  * @dev A contract for distributing tokens during a private sale.
  */
-contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
+contract PrivateSaleTokenDistributor is Ownable2Step {
     IERC20 public immutable token; // The token being distributed
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
@@ -111,7 +110,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step, ReentrancyGuard {
     /**
      * @dev Allows a beneficiary to claim their tokens.
      */
-    function claim() external nonReentrant {
+    function claim() external {
         require(
             block.timestamp >= distributionPeriodStart,
             "PrivateSaleTokenDistributor: tokens cannot be claimed yet"

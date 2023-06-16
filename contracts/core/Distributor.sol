@@ -214,7 +214,7 @@ contract Distributor is Initializable, Ownable2Step {
             10 ** 18) / periodLength;
 
         return
-            (((initialAmount * distributionRate) * periodSinceLastClaim)) /
+            (initialAmount * distributionRate * periodSinceLastClaim) /
             (BASE_DIVIDER * 10 ** 18);
     }
 }

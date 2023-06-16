@@ -310,7 +310,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
             lastClaimTimes[user]) * 10 ** 18) / periodLength;
 
         return
-            (((initialAmount * distributionRate) * periodSinceLastClaim)) /
+            (initialAmount * distributionRate * periodSinceLastClaim) /
             (BASE_DIVIDER * 10 ** 18);
     }
 }

@@ -81,11 +81,15 @@ const config: HardhatUserConfig = {
       chainId: CHAIN_IDS.ELANOR,
       accounts: [`0x${privateKey}`],
     },
+    localhost: {
+      url: process.env.LOCALHOST_URL || "",
+      chainId: 31337,
+    },
     hardhat: {
       // mining: {
       //   auto: false,
       // },
-    },
+    }
   },
   etherscan: {
     apiKey: {

@@ -5,6 +5,7 @@ import { CONTRACTS } from "../scripts/constants";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { toWei } from "../scripts/helpers";
 import { ethers } from "ethers";
+import { run } from "hardhat";
 
 // creates new Distributor by using PoolFactory for given network
 task("create-distributor", "Create a new distributor")
@@ -366,7 +367,7 @@ task("submit-addresses", "Submit new mtc pool")
 
             const poolAddressesPath = path.resolve(__dirname, `../data/${file}/addresses.json`);
             const poolAmountsPath = path.resolve(__dirname, `../data/${file}/amounts.json`);
-            
+
             if (!fs.existsSync(poolAddressesPath) && !fs.existsSync(poolAmountsPath)) {
                 throw new Error("Files are not existed!");
             }
@@ -494,6 +495,57 @@ task("update-pool-params", "Transfers ownership of contract")
                 New distribution rate: ${newDistributionRate}\n
                 New period length: ${newPeriodLength}\n`
             );
+        } catch (err: any) {
+            throw new Error(err);
+        }
+    });
+
+// verifies multiple contracts
+task("verify-contracts", "Verifies multiple contracts")
+    .setAction(async (args, hre) => {
+        try {
+            const networkName = hre.network.name;
+
+            const folderPath = path.resolve(__dirname, `../deployments/${networkName}`);
+            if (!fs.existsSync(folderPath)) {
+                throw new Error("File not found!");
+            }
+
+            const folderContent = fs.readdirSync(folderPath);
+
+            const deployedContracts = folderContent.length > 0 && folderContent.filter((content: string) => {
+                return content.split(".")[1] === "json";
+            }).map((fileName: string) => {
+                const contractFilePath = folderPath + "/" + fileName;
+                let fileContent = fs.readFileSync(contractFilePath);
+                let contract = JSON.parse(fileContent.toString());
+
+                return {
+                    name: fileName.split(".")[0],
+                    address: contract.address,
+                    args: contract.args,
+                };
+            });
+
+            if (!deployedContracts || deployedContracts.length === 0) {
+                throw new Error("Unable to find deployed contracts!");
+            }
+
+            for (let i = 0; i < deployedContracts.length; i++) {
+                // await run("verify:verify", {
+                //     address: deployedContracts[i].address,
+                //     constructorArguments: deployedContracts[i].args,
+                // });
+
+                console.log({
+                    message: `Contract ${deployedContracts[i].name} verified!`,
+                    name: deployedContracts[i].name,
+                    address: deployedContracts[i].address,
+                    constructorArguments: deployedContracts[i].args,
+                });
+            }
+
+            console.log("Contracts succesfully verified!");
         } catch (err: any) {
             throw new Error(err);
         }

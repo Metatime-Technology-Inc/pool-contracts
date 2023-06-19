@@ -58,9 +58,9 @@ mtc-pools/
 │   │   ├── Distributor.sol
 │   │   ├── LiquidityPool.sol
 │   │   ├── MTC.sol
-│   │   ├── TokenDistributor2.sol
 │   │   ├── StrategicPool.sol
-│   │   └── TokenDistributor.sol
+│   │   ├── TokenDistributor.sol
+│   │   └── TokenDistributor2.sol
 │   ├── interfaces/
 │   │   ├── IDistributor.sol
 │   │   ├── IMTC.sol
@@ -281,7 +281,7 @@ The TokenDistributor2 contract provides the following functionality:
 
 ## Architecture Overview
 
-![TokenDistributor2 Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor2-schema.svg)
+![TokenDistributor2 Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/c88d31928f5f807018d40188d71eeac9888c12d1/resources/schemas/tokendistributor2-schema.svg)
 
 ### Contract Details
 

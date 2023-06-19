@@ -281,7 +281,7 @@ The TokenDistributorWithNoVesting contract provides the following functionality:
 
 ## Architecture Overview
 
-![TokenDistributorWithNoVesting Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/c88d31928f5f807018d40188d71eeac9888c12d1/resources/schemas/tokendistributor2-schema.svg)
+![TokenDistributorWithNoVesting Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7534c4b6b652f1c7d125e88fdc637dd631bae7f0/resources/schemas/tokendistributorwithnovesting-schema.svg)
 
 ### Contract Details
 

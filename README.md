@@ -83,9 +83,9 @@ mtc-pools/
 │   ├── distributor.test.ts
 │   ├── liquidity-pool.test.ts
 │   ├── mtc.test.ts
-│   ├── privatesaletokendistributor.test.ts
 │   ├── strategic-pool.test.ts
 │   ├── token-distributor.test.ts
+│   ├── token-distributor2.test.ts
 │   └── trigonometry.test.ts
 ├── hardhat.config.ts
 ├── README.md
@@ -269,7 +269,7 @@ It's important to note that only the contract owner can submit pools and distrib
 
 ## TokenDistributor2 Contract
 
-The TokenDistributor2 contract is designed for distributing tokens during a private sale. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
+The TokenDistributor2 contract is designed for distributing tokens during no vesting sales. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
 
 ### Contract Overview
 The TokenDistributor2 contract provides the following functionality:
@@ -281,7 +281,7 @@ The TokenDistributor2 contract provides the following functionality:
 
 ## Architecture Overview
 
-![LiquidityPool Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/privatesaletokendistributor-schema.svg)
+![TokenDistributor2 Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/7df75c8beaed39e713b4e6047ebfc8e4a8ed1182/resources/schemas/tokendistributor2-schema.svg)
 
 ### Contract Details
 
@@ -424,7 +424,7 @@ To use the StrategicPool contract, follow these steps:
 
 Note: Ensure that you have the required permissions to burn tokens from the pool and that you provide valid inputs for the burn calculations.
 
-# TokenDistributor Contract Technical Documentation
+# TokenDistributor Contract
 
 The TokenDistributor contract is a Solidity smart contract designed for distributing tokens among users over a specific period of time. It allows the contract owner to set claimable amounts for users before the claim period starts and enables users to claim their tokens during the distribution period. Any remaining tokens after the claim period can be swept by the contract owner.
 

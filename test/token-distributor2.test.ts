@@ -43,7 +43,7 @@ describe("TokenDistributor2", function () {
         };
     }
 
-    describe("Create private sale pool & claim period", async () => {
+    describe("Create TokenDistributor2 & test claim period", async () => {
         // try to create with wrong constructor params
         it("try to create with wrong constructor params", async function () {
             const {
@@ -66,7 +66,7 @@ describe("TokenDistributor2", function () {
                 .deploy(mtc.address, LISTING_TIMESTAMP + periodDurationInSeconds, LISTING_TIMESTAMP)).to.be.revertedWith("TokenDistributor2: end time must be bigger than start time");
         });
 
-        it("should initiate private sale & test claim period", async function () {
+        it("should initiate pool & test claim period", async function () {
             const {
                 mtc,
                 privateSaleTokenDistributor,

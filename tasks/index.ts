@@ -118,7 +118,7 @@ task("create-token-distributor", "Create a new token distributor")
         }
     });
 
-// creates PrivateSaleTokenDistributor for given network
+// creates TokenDistributor2 for given network
 task("create-private-sale", "Create a private sale pool")
     .addParam("mtc", "address of mtc")
     .addParam("start", "start timestamp of token distribution")
@@ -137,8 +137,8 @@ task("create-private-sale", "Create a private sale pool")
             const { deployer } = await hre.getNamedAccounts();
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
-            const PrivateSaleTokenDistributor = await hre.ethers.getContractFactory(CONTRACTS.core.PrivateSaleTokenDistributor);
-            const privateSaleTokenDistributor = await PrivateSaleTokenDistributor.connect(deployerSigner).deploy(
+            const TokenDistributor2 = await hre.ethers.getContractFactory(CONTRACTS.core.TokenDistributor2);
+            const privateSaleTokenDistributor = await TokenDistributor2.connect(deployerSigner).deploy(
                 mtcAddress,
                 Number(start),
                 Number(end),
@@ -147,7 +147,7 @@ task("create-private-sale", "Create a private sale pool")
             await privateSaleTokenDistributor.deployed();
 
             console.log("NETWORK:", networkName);
-            console.log("PrivateSaleTokenDistributor deployed at", privateSaleTokenDistributor.address);
+            console.log("TokenDistributor2 deployed at", privateSaleTokenDistributor.address);
         } catch (err: any) {
             throw new Error(err);
         }
@@ -229,7 +229,7 @@ task(
                 const objKeys = Object.keys(sectionObj);
 
                 const excludedContracts =
-                    [CONTRACTS.core.Distributor, CONTRACTS.core.PrivateSaleTokenDistributor, CONTRACTS.core.TokenDistributor, CONTRACTS.lib.Trigonometry];
+                    [CONTRACTS.core.Distributor, CONTRACTS.core.TokenDistributor2, CONTRACTS.core.TokenDistributor, CONTRACTS.lib.Trigonometry];
 
                 for (let i = 0; i < objKeys.length; i++) {
                     const innerSection = objKeys[i];
@@ -387,7 +387,7 @@ task("submit-addresses", "Submit new mtc pool")
 
                 console.log("NETWORK:", networkName);
                 console.log(
-                    `Addresses & amounts are submitted to PrivateSaleTokenDistributor\n
+                    `Addresses & amounts are submitted to TokenDistributor2\n
                     Private Sale Pool address: ${pool}\n
                     Total submitted address length: ${usersLength}\n
                     Total claimable amount: ${totalClaimableAmount}`);

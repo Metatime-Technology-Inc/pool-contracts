@@ -58,7 +58,7 @@ mtc-pools/
 │   │   ├── Distributor.sol
 │   │   ├── LiquidityPool.sol
 │   │   ├── MTC.sol
-│   │   ├── PrivateSaleTokenDistributor.sol
+│   │   ├── TokenDistributor2.sol
 │   │   ├── StrategicPool.sol
 │   │   └── TokenDistributor.sol
 │   ├── interfaces/
@@ -267,12 +267,12 @@ To use the MTC contract, follow these steps:
 
 It's important to note that only the contract owner can submit pools and distribute tokens from their balance.
 
-## PrivateSaleTokenDistributor Contract
+## TokenDistributor2 Contract
 
-The PrivateSaleTokenDistributor contract is designed for distributing tokens during a private sale. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
+The TokenDistributor2 contract is designed for distributing tokens during a private sale. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
 
 ### Contract Overview
-The PrivateSaleTokenDistributor contract provides the following functionality:
+The TokenDistributor2 contract provides the following functionality:
 
 - **Constructor**: Initializes the contract by setting the token being distributed, the start and end times of the distribution period, and the end time of the claim period.
 - **setClaimableAmounts**: Allows the contract owner to set the claimable amounts for a list of users.
@@ -294,7 +294,7 @@ The PrivateSaleTokenDistributor contract provides the following functionality:
 - **claimableAmounts**: A mapping of beneficiary addresses to their claimable amounts.
 
 #### Constructor
-The constructor function initializes the PrivateSaleTokenDistributor contract. It takes the following parameters:
+The constructor function initializes the TokenDistributor2 contract. It takes the following parameters:
 - `_token`: The token being distributed.
 - `_distributionPeriodStart`: The start time of the claim period.
 - `_distributionPeriodEnd`: The end time of the claim period.
@@ -336,7 +336,7 @@ The `sweep` function allows the contract owner to transfer any remaining tokens 
 5. Emits the `Swept` event, indicating the receiver (owner) and the amount swept.
 
 ### Usage
-To use the PrivateSaleTokenDistributor contract, follow these steps:
+To use the TokenDistributor2 contract, follow these steps:
 1. Deploy the contract, providing the token being distributed, the start time of the distribution period, and the end time of the distribution period as constructor arguments.
 2. As the contract owner, call the `setClaimableAmounts` function to set the claimable amounts for a list of users. Pass the array of user addresses and the corresponding array of claimable amounts.
 3. Users can call the `claim` function during the claim period to claim their tokens if they have any claimable amount.

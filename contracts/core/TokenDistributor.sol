@@ -160,9 +160,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
             lastClaimTimes[user] = distributionPeriodStart;
             emit CanClaim(user, amount);
 
-            unchecked {
-                sum += amounts[i];
-            }
+            sum += amounts[i];
         }
 
         require(
@@ -274,7 +272,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
         address user
     ) public view returns (uint256) {
         require(
-            block.timestamp < claimPeriodEnd,
+            block.timestamp <= claimPeriodEnd,
             "TokenDistributor: claim period ended"
         );
 

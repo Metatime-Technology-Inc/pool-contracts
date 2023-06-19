@@ -3,7 +3,7 @@
 <g id="graph0" class="graph" transform="translate(4,628) scale(1)" data-name="G">
 
 <polygon fill="#2e3e56" stroke="none" points="-4,4 -4,-628 384.31,-628 384.31,4 -4,4" style=""/>
-<g id="clust1" class="cluster" data-name="clusterPrivateSaleTokenDistributor">
+<g id="clust1" class="cluster" data-name="clusterTokenDistributor2">
 
 <path fill="#445773" stroke="#445773" d="M20,-178C20,-178 359.8,-178 359.8,-178 365.8,-178 371.8,-184 371.8,-190 371.8,-190 371.8,-467 371.8,-467 371.8,-473 365.8,-479 359.8,-479 359.8,-479 20,-479 20,-479 14,-479 8,-473 8,-467 8,-467 8,-190 8,-190 8,-184 14,-178 20,-178" style=""/>
 <text text-anchor="middle" x="189.9" y="-462.4" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">TokenDistributor2</text>
@@ -90,12 +90,6 @@
 <ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="112.86" cy="-258" rx="32.47" ry="18" style=""/>
 <text text-anchor="middle" x="112.86" y="-253.8" font-family="Times,serif" font-size="14.00" style="">claim</text>
 </g>
-<!-- TokenDistributor2.claim&#45;&gt;TokenDistributor2.address -->
-<g id="edge7" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2.address">
-
-<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M143.24,-266.24C162.22,-271.57 187.44,-278.67 209.73,-285 225.21,-289.4 242.12,-294.23 257.28,-298.57" style=""/>
-<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="256.06,-301.86 266.63,-301.26 257.99,-295.13 256.06,-301.86" style=""/>
-</g>
 <!-- TokenDistributor2._msgSender -->
 <g id="node7" class="node" pointer-events="visible" data-name="TokenDistributor2._msgSender">
 
@@ -103,34 +97,28 @@
 <text text-anchor="middle" x="305.02" y="-253.8" font-family="Times,serif" font-size="14.00" style="">_msgSender</text>
 </g>
 <!-- TokenDistributor2.claim&#45;&gt;TokenDistributor2._msgSender -->
-<g id="edge8" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
+<g id="edge6" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M136.8,-244.25C166.58,-237.19 219.26,-235.88 257.55,-240.31" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="257.05,-243.78 267.44,-241.7 258.02,-236.85 257.05,-243.78" style=""/>
 </g>
 <!-- TokenDistributor2.claim&#45;&gt;TokenDistributor2._msgSender -->
-<g id="edge9" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
+<g id="edge7" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M145.26,-252.83C169.72,-251.37 204.59,-250.92 235.42,-251.49" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="235.24,-254.98 245.32,-251.72 235.4,-247.99 235.24,-254.98" style=""/>
 </g>
 <!-- TokenDistributor2.claim&#45;&gt;TokenDistributor2._msgSender -->
-<g id="edge11" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
+<g id="edge9" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M145.26,-263.17C169.72,-264.63 204.59,-265.08 235.42,-264.51" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="235.4,-268.01 245.32,-264.28 235.24,-261.02 235.4,-268.01" style=""/>
 </g>
 <!-- TokenDistributor2.claim&#45;&gt;TokenDistributor2._msgSender -->
-<g id="edge12" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
+<g id="edge10" class="edge" data-name="TokenDistributor2.claim-&gt;TokenDistributor2._msgSender">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M136.8,-271.75C166.58,-278.81 219.26,-280.12 257.55,-275.69" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="258.02,-279.15 267.44,-274.3 257.05,-272.22 258.02,-279.15" style=""/>
-</g>
-<!-- TokenDistributor2.claim&#45;&gt;IERC20.balanceOf -->
-<g id="edge6" class="edge" data-name="TokenDistributor2.claim-&gt;IERC20.balanceOf">
-
-<path fill="none" stroke="white" stroke-width="2" d="M146.3,-255.55C166.49,-252.53 191.92,-245.83 209.73,-231 231.42,-212.94 220.26,-196.17 237.73,-174 246.57,-162.79 258.03,-152.28 268.94,-143.53" style=""/>
-<polygon fill="white" stroke="white" stroke-width="2" points="270.93,-146.41 276.72,-137.54 266.66,-140.86 270.93,-146.41" style=""/>
 </g>
 <!-- SafeERC20.safeTransfer -->
 <g id="node10" class="node" pointer-events="visible" data-name="SafeERC20.safeTransfer">
@@ -139,7 +127,7 @@
 <text text-anchor="middle" x="305.02" y="-29.8" font-family="Times,serif" font-size="14.00" style="">safeTransfer</text>
 </g>
 <!-- TokenDistributor2.claim&#45;&gt;SafeERC20.safeTransfer -->
-<g id="edge10" class="edge" data-name="TokenDistributor2.claim-&gt;SafeERC20.safeTransfer">
+<g id="edge8" class="edge" data-name="TokenDistributor2.claim-&gt;SafeERC20.safeTransfer">
 
 <path fill="none" stroke="white" stroke-width="2" d="M146.79,-257.15C167.72,-254.82 193.78,-248.28 209.73,-231 253.36,-183.74 204.85,-144.29 237.73,-89 244.61,-77.43 254.84,-67.2 265.22,-58.79" style=""/>
 <polygon fill="white" stroke="white" stroke-width="2" points="267.24,-61.66 273.12,-52.84 263.03,-56.07 267.24,-61.66" style=""/>
@@ -151,7 +139,7 @@
 <text text-anchor="middle" x="112.86" y="-199.8" font-family="Times,serif" font-size="14.00" style="">sweep</text>
 </g>
 <!-- TokenDistributor2.sweep&#45;&gt;TokenDistributor2.address -->
-<g id="edge14" class="edge" data-name="TokenDistributor2.sweep-&gt;TokenDistributor2.address">
+<g id="edge12" class="edge" data-name="TokenDistributor2.sweep-&gt;TokenDistributor2.address">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M148.93,-207.02C168.6,-210.27 192.57,-217.02 209.73,-231 230.69,-248.07 217.76,-266.78 237.73,-285 243.32,-290.1 249.99,-294.3 256.93,-297.74" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="255.34,-300.87 265.91,-301.63 258.13,-294.44 255.34,-300.87" style=""/>
@@ -163,25 +151,25 @@
 <text text-anchor="middle" x="305.02" y="-199.8" font-family="Times,serif" font-size="14.00" style="">owner</text>
 </g>
 <!-- TokenDistributor2.sweep&#45;&gt;TokenDistributor2.owner -->
-<g id="edge16" class="edge" data-name="TokenDistributor2.sweep-&gt;TokenDistributor2.owner">
+<g id="edge14" class="edge" data-name="TokenDistributor2.sweep-&gt;TokenDistributor2.owner">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M148.3,-198.66C178.72,-197 223.36,-196.8 257.06,-198.09" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="256.66,-201.57 266.81,-198.53 256.99,-194.58 256.66,-201.57" style=""/>
 </g>
 <!-- TokenDistributor2.sweep&#45;&gt;TokenDistributor2.owner -->
-<g id="edge17" class="edge" data-name="TokenDistributor2.sweep-&gt;TokenDistributor2.owner">
+<g id="edge15" class="edge" data-name="TokenDistributor2.sweep-&gt;TokenDistributor2.owner">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M148.3,-209.34C178.72,-211 223.36,-211.2 257.06,-209.91" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="256.99,-213.42 266.81,-209.47 256.66,-206.43 256.99,-213.42" style=""/>
 </g>
 <!-- TokenDistributor2.sweep&#45;&gt;IERC20.balanceOf -->
-<g id="edge13" class="edge" data-name="TokenDistributor2.sweep-&gt;IERC20.balanceOf">
+<g id="edge11" class="edge" data-name="TokenDistributor2.sweep-&gt;IERC20.balanceOf">
 
 <path fill="none" stroke="white" stroke-width="2" d="M141.11,-191.82C171.92,-178.05 222.58,-155.4 259.23,-139.02" style=""/>
 <polygon fill="white" stroke="white" stroke-width="2" points="260.61,-142.24 268.31,-134.96 257.75,-135.85 260.61,-142.24" style=""/>
 </g>
 <!-- TokenDistributor2.sweep&#45;&gt;SafeERC20.safeTransfer -->
-<g id="edge15" class="edge" data-name="TokenDistributor2.sweep-&gt;SafeERC20.safeTransfer">
+<g id="edge13" class="edge" data-name="TokenDistributor2.sweep-&gt;SafeERC20.safeTransfer">
 
 <path fill="none" stroke="white" stroke-width="2" d="M131.22,-187.31C154.93,-164.65 198.92,-123.07 237.73,-89 248.71,-79.36 260.98,-69.06 271.94,-60.01" style=""/>
 <polygon fill="white" stroke="white" stroke-width="2" points="274.12,-62.75 279.62,-53.7 269.67,-57.34 274.12,-62.75" style=""/>
@@ -206,13 +194,13 @@
 <polygon fill="none" stroke="#e8726d" points="295.02,-501 295.02,-517 316.02,-517 316.02,-501 295.02,-501" style=""/>
 </g>
 <!-- key&#45;&gt;key2 -->
-<g id="edge18" class="edge" data-name="key-&gt;key2">
+<g id="edge16" class="edge" data-name="key-&gt;key2">
 
 <path fill="none" stroke="#1bc6a6" stroke-width="2" d="M170.86,-569C220.19,-569 235.63,-569 279.26,-569" style=""/>
 <polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="278.99,-572.5 288.99,-569 278.99,-565.5 278.99,-572.5" style=""/>
 </g>
 <!-- key&#45;&gt;key2 -->
-<g id="edge19" class="edge" data-name="key-&gt;key2">
+<g id="edge17" class="edge" data-name="key-&gt;key2">
 
 <path fill="none" stroke="white" stroke-width="2" d="M170.86,-549C220.19,-549 235.63,-549 279.26,-549" style=""/>
 <polygon fill="white" stroke="white" stroke-width="2" points="278.99,-552.5 288.99,-549 278.99,-545.5 278.99,-552.5" style=""/>

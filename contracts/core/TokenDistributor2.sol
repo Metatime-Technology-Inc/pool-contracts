@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @title PrivateSaleTokenDistributor
- * @dev A contract for distributing tokens during a private sale.
+ * @title TokenDistributor2
+ * @dev A contract for distributing tokens during no vesting sales.
  */
-contract PrivateSaleTokenDistributor is Ownable2Step {
+contract TokenDistributor2 is Ownable2Step {
     IERC20 public immutable token; // The token being distributed
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
@@ -35,11 +35,11 @@ contract PrivateSaleTokenDistributor is Ownable2Step {
     ) {
         require(
             address(_token) != address(0),
-            "PrivateSaleTokenDistributor: invalid token address"
+            "TokenDistributor2: invalid token address"
         );
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
-            "PrivateSaleTokenDistributor: end time must be bigger than start time"
+            "TokenDistributor2: end time must be bigger than start time"
         );
 
         token = _token;
@@ -54,7 +54,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step {
     modifier isSettable() {
         require(
             block.timestamp < distributionPeriodStart,
-            "PrivateSaleTokenDistributor: claim period has already started"
+            "TokenDistributor2: claim period has already started"
         );
         _;
     }
@@ -71,7 +71,7 @@ contract PrivateSaleTokenDistributor is Ownable2Step {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
-            "PrivateSaleTokenDistributor: user and amount list lengths must match"
+            "TokenDistributor2: user and amount list lengths must match"
         );
 
         uint256 sum = totalAmount;
@@ -80,27 +80,25 @@ contract PrivateSaleTokenDistributor is Ownable2Step {
 
             require(
                 user != address(0),
-                "PrivateSaleTokenDistributor: cannot set zero address"
+                "TokenDistributor2: cannot set zero address"
             );
 
             uint256 amount = amounts[i];
 
             require(
                 claimableAmounts[user] == 0,
-                "PrivateSaleTokenDistributor: address already set"
+                "TokenDistributor2: address already set"
             );
 
             claimableAmounts[user] = amount;
             emit CanClaim(user, amount);
 
-            unchecked {
-                sum += amounts[i];
-            }
+            sum += amounts[i];
         }
 
         require(
             token.balanceOf(address(this)) >= sum,
-            "PrivateSaleTokenDistributor: total claimable amount does not match"
+            "TokenDistributor2: total claimable amount does not match"
         );
         totalAmount = sum;
 
@@ -113,18 +111,18 @@ contract PrivateSaleTokenDistributor is Ownable2Step {
     function claim() external {
         require(
             block.timestamp >= distributionPeriodStart,
-            "PrivateSaleTokenDistributor: tokens cannot be claimed yet"
+            "TokenDistributor2: tokens cannot be claimed yet"
         );
         require(
             block.timestamp <= claimPeriodEnd,
-            "PrivateSaleTokenDistributor: claim period has ended"
+            "TokenDistributor2: claim period has ended"
         );
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
         require(
             claimableAmount > 0,
-            "PrivateSaleTokenDistributor: no tokens to claim"
+            "TokenDistributor2: no tokens to claim"
         );
 
         claimableAmounts[_msgSender()] = 0;
@@ -140,11 +138,11 @@ contract PrivateSaleTokenDistributor is Ownable2Step {
     function sweep() external onlyOwner {
         require(
             block.timestamp > claimPeriodEnd,
-            "PrivateSaleTokenDistributor: cannot sweep before claim end time"
+            "TokenDistributor2: cannot sweep before claim end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "PrivateSaleTokenDistributor: no leftovers");
+        require(leftovers != 0, "TokenDistributor2: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 

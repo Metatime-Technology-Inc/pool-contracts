@@ -60,7 +60,7 @@ mtc-pools/
 │   │   ├── MTC.sol
 │   │   ├── StrategicPool.sol
 │   │   ├── TokenDistributor.sol
-│   │   └── TokenDistributor2.sol
+│   │   └── TokenDistributorWithNoVesting.sol
 │   ├── interfaces/
 │   │   ├── IDistributor.sol
 │   │   ├── IMTC.sol
@@ -84,8 +84,8 @@ mtc-pools/
 │   ├── liquidity-pool.test.ts
 │   ├── mtc.test.ts
 │   ├── strategic-pool.test.ts
+│   ├── token-distributor-with-no-vesting.test.ts
 │   ├── token-distributor.test.ts
-│   ├── token-distributor2.test.ts
 │   └── trigonometry.test.ts
 ├── hardhat.config.ts
 ├── README.md
@@ -267,12 +267,12 @@ To use the MTC contract, follow these steps:
 
 It's important to note that only the contract owner can submit pools and distribute tokens from their balance.
 
-## TokenDistributor2 Contract
+## TokenDistributorWithNoVesting Contract
 
-The TokenDistributor2 contract is designed for distributing tokens during no vesting sales. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
+The TokenDistributorWithNoVesting contract is designed for distributing tokens during no vesting sales. It allows the contract owner to set claimable amounts for users and enables users to claim their tokens within a specified claim period. Additionally, any remaining tokens can be swept from the contract by the owner after the claim period ends.
 
 ### Contract Overview
-The TokenDistributor2 contract provides the following functionality:
+The TokenDistributorWithNoVesting contract provides the following functionality:
 
 - **Constructor**: Initializes the contract by setting the token being distributed, the start and end times of the distribution period, and the end time of the claim period.
 - **setClaimableAmounts**: Allows the contract owner to set the claimable amounts for a list of users.
@@ -281,7 +281,7 @@ The TokenDistributor2 contract provides the following functionality:
 
 ## Architecture Overview
 
-![TokenDistributor2 Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/c88d31928f5f807018d40188d71eeac9888c12d1/resources/schemas/tokendistributor2-schema.svg)
+![TokenDistributorWithNoVesting Schema](https://raw.githubusercontent.com/ismailcanvardar/mtc-pools/c88d31928f5f807018d40188d71eeac9888c12d1/resources/schemas/tokendistributor2-schema.svg)
 
 ### Contract Details
 
@@ -294,7 +294,7 @@ The TokenDistributor2 contract provides the following functionality:
 - **claimableAmounts**: A mapping of beneficiary addresses to their claimable amounts.
 
 #### Constructor
-The constructor function initializes the TokenDistributor2 contract. It takes the following parameters:
+The constructor function initializes the TokenDistributorWithNoVesting contract. It takes the following parameters:
 - `_token`: The token being distributed.
 - `_distributionPeriodStart`: The start time of the claim period.
 - `_distributionPeriodEnd`: The end time of the claim period.
@@ -336,7 +336,7 @@ The `sweep` function allows the contract owner to transfer any remaining tokens 
 5. Emits the `Swept` event, indicating the receiver (owner) and the amount swept.
 
 ### Usage
-To use the TokenDistributor2 contract, follow these steps:
+To use the TokenDistributorWithNoVesting contract, follow these steps:
 1. Deploy the contract, providing the token being distributed, the start time of the distribution period, and the end time of the distribution period as constructor arguments.
 2. As the contract owner, call the `setClaimableAmounts` function to set the claimable amounts for a list of users. Pass the array of user addresses and the corresponding array of claimable amounts.
 3. Users can call the `claim` function during the claim period to claim their tokens if they have any claimable amount.

@@ -6,7 +6,7 @@ interface IContracts {
     MTC: string;
     StrategicPool: string;
     TokenDistributor: string;
-    TokenDistributor2: string;
+    TokenDistributorWithNoVesting: string;
   };
   lib: {
     Trigonometry: string;
@@ -24,7 +24,7 @@ const CONTRACTS: IContracts = {
     MTC: "MTC",
     StrategicPool: "StrategicPool",
     TokenDistributor: "TokenDistributor",
-    TokenDistributor2: "TokenDistributor2",
+    TokenDistributorWithNoVesting: "TokenDistributorWithNoVesting",
   },
   lib: {
     Trigonometry: "Trigonometry",

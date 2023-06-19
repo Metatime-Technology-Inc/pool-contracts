@@ -4,7 +4,7 @@ import { toWei } from "../helpers";
 export enum BaseContract {
     Distributor,
     LiquidityPool,
-    TokenDistributor2,
+    TokenDistributorWithNoVesting,
     StrategicPool,
     TokenDistributor,
 }
@@ -86,7 +86,7 @@ const POOL_PARAMS: PoolParams = {
         lockedAmount: toWei(String(100_000_000)),
         vestingDurationInDays: 0,
         hasVesting: false,
-        baseContract: BaseContract.TokenDistributor2
+        baseContract: BaseContract.TokenDistributorWithNoVesting
     },
     /**
      * Pool name: Public Sale

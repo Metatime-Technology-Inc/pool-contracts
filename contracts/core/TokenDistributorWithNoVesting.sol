@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @title TokenDistributor2
+ * @title TokenDistributorWithNoVesting
  * @dev A contract for distributing tokens during no vesting sales.
  */
-contract TokenDistributor2 is Ownable2Step {
+contract TokenDistributorWithNoVesting is Ownable2Step {
     IERC20 public immutable token; // The token being distributed
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
@@ -35,11 +35,11 @@ contract TokenDistributor2 is Ownable2Step {
     ) {
         require(
             address(_token) != address(0),
-            "TokenDistributor2: invalid token address"
+            "TokenDistributorWithNoVesting: invalid token address"
         );
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
-            "TokenDistributor2: end time must be bigger than start time"
+            "TokenDistributorWithNoVesting: end time must be bigger than start time"
         );
 
         token = _token;
@@ -54,7 +54,7 @@ contract TokenDistributor2 is Ownable2Step {
     modifier isSettable() {
         require(
             block.timestamp < distributionPeriodStart,
-            "TokenDistributor2: claim period has already started"
+            "TokenDistributorWithNoVesting: claim period has already started"
         );
         _;
     }
@@ -71,7 +71,7 @@ contract TokenDistributor2 is Ownable2Step {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
-            "TokenDistributor2: user and amount list lengths must match"
+            "TokenDistributorWithNoVesting: user and amount list lengths must match"
         );
 
         uint256 sum = totalAmount;
@@ -80,14 +80,14 @@ contract TokenDistributor2 is Ownable2Step {
 
             require(
                 user != address(0),
-                "TokenDistributor2: cannot set zero address"
+                "TokenDistributorWithNoVesting: cannot set zero address"
             );
 
             uint256 amount = amounts[i];
 
             require(
                 claimableAmounts[user] == 0,
-                "TokenDistributor2: address already set"
+                "TokenDistributorWithNoVesting: address already set"
             );
 
             claimableAmounts[user] = amount;
@@ -98,7 +98,7 @@ contract TokenDistributor2 is Ownable2Step {
 
         require(
             token.balanceOf(address(this)) >= sum,
-            "TokenDistributor2: total claimable amount does not match"
+            "TokenDistributorWithNoVesting: total claimable amount does not match"
         );
         totalAmount = sum;
 
@@ -111,18 +111,18 @@ contract TokenDistributor2 is Ownable2Step {
     function claim() external {
         require(
             block.timestamp >= distributionPeriodStart,
-            "TokenDistributor2: tokens cannot be claimed yet"
+            "TokenDistributorWithNoVesting: tokens cannot be claimed yet"
         );
         require(
             block.timestamp <= claimPeriodEnd,
-            "TokenDistributor2: claim period has ended"
+            "TokenDistributorWithNoVesting: claim period has ended"
         );
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
         require(
             claimableAmount > 0,
-            "TokenDistributor2: no tokens to claim"
+            "TokenDistributorWithNoVesting: no tokens to claim"
         );
 
         claimableAmounts[_msgSender()] = 0;
@@ -138,11 +138,11 @@ contract TokenDistributor2 is Ownable2Step {
     function sweep() external onlyOwner {
         require(
             block.timestamp > claimPeriodEnd,
-            "TokenDistributor2: cannot sweep before claim end time"
+            "TokenDistributorWithNoVesting: cannot sweep before claim end time"
         );
 
         uint256 leftovers = token.balanceOf(address(this));
-        require(leftovers != 0, "TokenDistributor2: no leftovers");
+        require(leftovers != 0, "TokenDistributorWithNoVesting: no leftovers");
 
         SafeERC20.safeTransfer(token, owner(), leftovers);
 

@@ -41,6 +41,11 @@ const config: HardhatUserConfig = {
       chainId: CHAIN_IDS.RINKEBY,
       accounts: [`0x${privateKey}`],
     },
+    bsc: {
+      url: process.env.BSC_URL || "",
+      chainId: CHAIN_IDS.BSC,
+      accounts: [`0x${privateKey}`],
+    },
     bscTestnet: {
       url: process.env.BSC_TESTNET_URL || "",
       chainId: CHAIN_IDS.BSC_TESTNET,

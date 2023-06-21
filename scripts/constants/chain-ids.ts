@@ -1,6 +1,7 @@
 const CHAIN_IDS = {
     HARDHAT: 31337,
     MAINNET: 1,
+    BSC: 56,
     RINKEBY: 4,
     ROPSTEN: 3,
     GANACHE: 1337,

@@ -20,23 +20,23 @@ const func: DeployFunction = async ({
 
     console.log("MTC deployed at", mtc.address);
 
-    const liquidityPool = await deploy(CONTRACTS.core.LiquidityPool, {
-        from: deployer,
-        args: [mtc.address],
-        log: true,
-        skipIfAlreadyDeployed: true,
-    });
+    // const liquidityPool = await deploy(CONTRACTS.core.LiquidityPool, {
+    //     from: deployer,
+    //     args: [mtc.address],
+    //     log: true,
+    //     skipIfAlreadyDeployed: true,
+    // });
 
-    console.log("Liquidity pool deployed at", liquidityPool.address);
+    // console.log("Liquidity pool deployed at", liquidityPool.address);
 
-    const strategicPool = await deploy(CONTRACTS.core.StrategicPool, {
-        from: deployer,
-        args: [mtc.address],
-        log: true,
-        skipIfAlreadyDeployed: true,
-    });
+    // const strategicPool = await deploy(CONTRACTS.core.StrategicPool, {
+    //     from: deployer,
+    //     args: [mtc.address],
+    //     log: true,
+    //     skipIfAlreadyDeployed: true,
+    // });
 
-    console.log("Strategic pool deployed at", strategicPool.address);
+    // console.log("Strategic pool deployed at", strategicPool.address);
 
     const poolFactory = await deploy(CONTRACTS.utils.PoolFactory, {
         from: deployer,

@@ -375,44 +375,75 @@ task("submit-addresses", "Submit new mtc pool")
             const addresses = require(poolAddressesPath);
             const amounts = require(poolAmountsPath);
 
-            if (file === "private-sale") {
-                const { PrivateSaleTokenDistributor__factory } = require("../typechain-types");
-                const privateSaleDistributorInstance = PrivateSaleTokenDistributor__factory.connect(pool, deployerSigner);
+            const addressesArr = Array(addresses)[0];
+            const amountsArr = Array(amounts)[0];
 
-                const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addresses, amounts);
+            if (addressesArr.length !== amountsArr.length) {
+                throw new Error("Addresses and amounts arrays length did not match!");
+            }
 
-                const submitPools = await submitPoolsTx.wait();
-                const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
-                const [usersLength, totalClaimableAmount] = event?.args!;
+            let currentLap = 0;
+            const denominator = 100;
+            const totalLap = addressesArr.length / denominator;
 
-                console.log("NETWORK:", networkName);
-                console.log(
-                    `Addresses & amounts are submitted to TokenDistributorWithNoVesting\n
-                    Private Sale Pool address: ${pool}\n
-                    Total submitted address length: ${usersLength}\n
-                    Total claimable amount: ${totalClaimableAmount}`);
+            console.log("===============================================================");
 
-                return;
-            } else {
-                const { TokenDistributor__factory } = require("../typechain-types");
-                const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
-                const poolName = await tokenDistributorInstance.poolName();
+            while (currentLap < totalLap) {
+                const lapDiff = totalLap - currentLap;
+                let startIndex = 0;
+                let endIndex = 0;
 
-                const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addresses, amounts);
+                startIndex = denominator * currentLap;
 
-                const submitPools = await submitPoolsTx.wait();
-                const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
-                const [usersLength, totalClaimableAmount] = event?.args!;
+                if (lapDiff > 0 && lapDiff < 1) {
+                    endIndex = addressesArr.length;
+                } else {
+                    endIndex = (denominator * currentLap) + denominator;
+                }
 
-                console.log("NETWORK:", networkName);
-                console.log(
-                    `Addresses & amounts are submitted to TokenDistributor\n
-                    Pool name: ${poolName}\n
-                    Pool address: ${pool}\n
-                    Total submitted address length: ${usersLength}\n
-                    Total claimable amount: ${totalClaimableAmount}`);
+                const addressesChunk = addressesArr.slice(startIndex, endIndex);
+                const amountsChunk = amountsArr.slice(startIndex, endIndex);
 
-                return;
+                if (file === "private-sale") {
+                    const { TokenDistributorWithNoVesting__factory } = require("../typechain-types");
+                    const privateSaleDistributorInstance = TokenDistributorWithNoVesting__factory.connect(pool, deployerSigner);
+
+                    const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunk);
+
+                    const submitPools = await submitPoolsTx.wait();
+                    const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
+                    const [usersLength, totalClaimableAmount] = event?.args!;
+
+                    console.log("NETWORK:", networkName);
+                    console.log(
+                        `Addresses & amounts are submitted to TokenDistributorWithNoVesting\n
+                            Private Sale Pool address: ${pool}\n
+                            Total submitted address length: ${usersLength}\n
+                            Total claimable amount: ${totalClaimableAmount}`);
+                } else {
+                    const { TokenDistributor__factory } = require("../typechain-types");
+                    const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
+                    const poolName = await tokenDistributorInstance.poolName();
+
+                    const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunk);
+
+                    const submitPools = await submitPoolsTx.wait();
+                    const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
+                    const [usersLength, totalClaimableAmount] = event?.args!;
+
+                    console.log("NETWORK:", networkName);
+                    console.log(
+                        `Addresses & amounts are submitted to TokenDistributor\n
+                        Pool name: ${poolName}\n
+                        Pool address: ${pool}\n
+                        Total submitted address length: ${usersLength}\n
+                        Total claimable amount: ${totalClaimableAmount}`
+                    );
+                }
+
+                console.log("Set between", "startIndex:", startIndex, "endIndex:", endIndex);
+
+                currentLap += 1;
             }
         } catch (err: any) {
             throw new Error(err);

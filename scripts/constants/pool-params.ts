@@ -99,24 +99,8 @@ const POOL_PARAMS: PoolParams = {
         poolName: "Public Sale",
         distributionRate: 100,
         periodLength: ONE_DAY_IN_SECS,
-        lockedAmount: toWei(String(195_000_000)),
+        lockedAmount: toWei(String(200_000_000)),
         vestingDurationInDays: 100,
-        hasVesting: true,
-        baseContract: BaseContract.TokenDistributor,
-    },
-    /**
-     * Pool name: Trust Pad Sale Pool
-     * Total allocated token amounts: 5,000,000 MTC
-     * Vesting: 150 days linear
-     * Distribution rate: 0.66% daily
-     * Cliff: Until exchange listing
-     */
-    TRUST_PAD_SALE_POOL: {
-        poolName: "Trust Pad",
-        distributionRate: 66,
-        periodLength: ONE_DAY_IN_SECS,
-        lockedAmount: toWei(String(5_000_000)),
-        vestingDurationInDays: 150,
         hasVesting: true,
         baseContract: BaseContract.TokenDistributor,
     },

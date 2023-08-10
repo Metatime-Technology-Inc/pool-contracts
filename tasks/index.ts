@@ -403,12 +403,13 @@ task("submit-addresses", "Submit new mtc pool")
 
                 const addressesChunk = addressesArr.slice(startIndex, endIndex);
                 const amountsChunk = amountsArr.slice(startIndex, endIndex);
+                const amountsChunkToWei = amountsChunk.map((amount: number) => toWei(String(amount)));
 
                 if (file === "private-sale") {
                     const { TokenDistributorWithNoVesting__factory } = require("../typechain-types");
                     const privateSaleDistributorInstance = TokenDistributorWithNoVesting__factory.connect(pool, deployerSigner);
 
-                    const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunk);
+                    const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunkToWei);
 
                     const submitPools = await submitPoolsTx.wait();
                     const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
@@ -425,7 +426,7 @@ task("submit-addresses", "Submit new mtc pool")
                     const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
                     const poolName = await tokenDistributorInstance.poolName();
 
-                    const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunk);
+                    const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunkToWei);
 
                     const submitPools = await submitPoolsTx.wait();
                     const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");

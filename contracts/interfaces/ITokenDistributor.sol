@@ -12,7 +12,6 @@ interface ITokenDistributor {
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner.
      * @param _poolName The name of the token distribution pool.
-     * @param _token The address of the ERC20 token being distributed.
      * @param _startTime The start time of the distribution period.
      * @param _endTime The end time of the distribution period.
      * @param _distributionRate The distribution rate (percentage).
@@ -21,7 +20,6 @@ interface ITokenDistributor {
     function initialize(
         address _owner,
         string memory _poolName,
-        address _token,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _distributionRate,

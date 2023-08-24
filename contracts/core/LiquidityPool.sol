@@ -1,30 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title LiquidityPool
  * @dev A contract for managing a liquidity pool.
  */
 contract LiquidityPool is Ownable2Step {
-    IERC20 public immutable token; // Token used in the liquidity pool
+    bool public initialized = false;
 
     event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
 
     /**
-     * @dev Constructor.
-     * @param _token The token used in the liquidity pool
+     * @dev Initializes the contract.
      */
-    constructor(IERC20 _token) {
+    function initialize() external {
         require(
-            address(_token) != address(0),
-            "LiquidityPool: invalid token address"
+            initialized == false,
+            "LiquidityPool: contract has initialized before"
         );
 
-        token = _token;
+        _transferOwnership(_msgSender());
+        initialized = true;
     }
 
     /**
@@ -47,14 +45,15 @@ contract LiquidityPool is Ownable2Step {
         address _to,
         uint256 _withdrawalAmount
     ) internal returns (bool) {
-        uint256 poolBalance = token.balanceOf(address(this));
+        uint256 poolBalance = address(this).balance;
         require(
             poolBalance > 0 && _withdrawalAmount <= poolBalance,
-            "LiquidityPool: no tokens to withdraw"
+            "LiquidityPool: no mtc to withdraw"
         );
 
-        SafeERC20.safeTransfer(token, _to, _withdrawalAmount);
+        (bool sent, ) = _to.call{value: _withdrawalAmount}("");
+        require(sent, "LiquidityPool: unable to withdraw");
 
-        return true;
+        return sent;
     }
 }

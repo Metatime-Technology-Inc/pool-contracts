@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title TokenDistributorWithNoVesting
  * @dev A contract for distributing tokens during no vesting sales.
  */
 contract TokenDistributorWithNoVesting is Ownable2Step {
-    IERC20 public immutable token; // The token being distributed
+    bool public initialized = false;
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
@@ -23,29 +21,25 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
 
     /**
-     * @dev Constructor.
-     * @param _token The token being distributed
+     * @dev Initializes the contract.
      * @param _distributionPeriodStart The start time of the claim period
      * @param _distributionPeriodEnd The end time of the claim period
      */
-    constructor(
-        IERC20 _token,
+    function initialize(
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd
-    ) {
-        require(
-            address(_token) != address(0),
-            "TokenDistributorWithNoVesting: invalid token address"
-        );
+    ) external {
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
             "TokenDistributorWithNoVesting: end time must be bigger than start time"
         );
 
-        token = _token;
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
         claimPeriodEnd = _distributionPeriodEnd + 100 days;
+
+        _transferOwnership(_msgSender());
+        initialized = true;
     }
 
     /**
@@ -97,7 +91,7 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
         }
 
         require(
-            token.balanceOf(address(this)) >= sum,
+            address(this).balance >= sum,
             "TokenDistributorWithNoVesting: total claimable amount does not match"
         );
         totalAmount = sum;
@@ -127,7 +121,8 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
 
         claimableAmounts[_msgSender()] = 0;
 
-        SafeERC20.safeTransfer(token, _msgSender(), claimableAmount);
+        (bool sent, ) = _msgSender().call{value: claimableAmount}("");
+        require(sent, "LiquidityPool: unable to withdraw");
 
         emit HasClaimed(_msgSender(), claimableAmount);
     }
@@ -141,10 +136,11 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
             "TokenDistributorWithNoVesting: cannot sweep before claim end time"
         );
 
-        uint256 leftovers = token.balanceOf(address(this));
+        uint256 leftovers = address(this).balance;
         require(leftovers != 0, "TokenDistributorWithNoVesting: no leftovers");
 
-        SafeERC20.safeTransfer(token, owner(), leftovers);
+        (bool sent, ) = owner().call{value: leftovers}("");
+        require(sent, "LiquidityPool: unable to withdraw");
 
         emit Swept(owner(), leftovers);
     }

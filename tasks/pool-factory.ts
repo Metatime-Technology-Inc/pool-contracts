@@ -14,15 +14,18 @@ task("create-distributor", "Create a new distributor")
     .addParam("rate", "distribution rate")
     .addParam("length", "length of the claim period")
     .addParam("amount", "claimable amount in pool")
+    .addParam("leftamount", "left claimable amount for migration")
+    .addParam("lastclaimtime", "last claim time for migration")
     .setAction(async (args, hre) => {
         try {
-            const { name, mtc, start, end, rate, length, amount, factory } = args;
+            const { factory, name, mtc, start, end, rate, length, amount, leftamount, lastclaimtime } = args;
 
-            if (!factory || !name || !mtc || !start || !end || !rate || !length || !amount) {
+            if (!factory || !name || !mtc || !start || !end || !rate || !length || !amount || !leftamount || !lastclaimtime) {
                 throw new Error("Missing arguments!");
             }
 
-            const factoryAddress = ethers.utils.getAddress(factory);
+            // const factoryAddress = ethers.utils.getAddress(factory);
+            const factoryAddress = factory;
             const mtcAddress = ethers.utils.getAddress(mtc);
 
             const networkName = hre.network.name;
@@ -30,9 +33,11 @@ task("create-distributor", "Create a new distributor")
             const deployerSigner = await hre.ethers.getSigner(deployer);
 
             const { PoolFactory__factory } = require("../typechain-types");
-
+            
             const poolFactory = PoolFactory__factory.connect(factoryAddress, deployerSigner);
-
+            const dc = await poolFactory.distributorCount();
+            console.log(dc);
+            
             const createDistributorTx = await poolFactory.createDistributor(
                 String(name),
                 mtcAddress,
@@ -40,21 +45,25 @@ task("create-distributor", "Create a new distributor")
                 Number(end),
                 Number(rate),
                 Number(length),
-                toWei(amount)
+                Number(lastclaimtime),
+                toWei(amount),
+                toWei(leftamount)
             );
 
             const createDistributor = await createDistributorTx.wait();
-            const event = createDistributor.events?.find((event: any) => event.event === "DistributorCreated");
-            const [creatorAddress, distributorAddress, distributorId] = event?.args!;
+            console.log(createDistributor);
+            
+            // const event = createDistributor.events?.find((event: any) => event.event === "DistributorCreated");
+            // const [creatorAddress, distributorAddress, distributorId] = event?.args!;
 
-            console.log("NETWORK:", networkName);
-            console.log(
-                `[DISTRIBUTOR CREATED]\n
-            -> Creator Address: ${creatorAddress}\n
-            -> Distributor Address: ${distributorAddress}\n
-            -> Distributor Id: ${distributorId}
-            `
-            );
+            // console.log("NETWORK:", networkName);
+            // console.log(
+            //     `[DISTRIBUTOR CREATED]\n
+            // -> Creator Address: ${creatorAddress}\n
+            // -> Distributor Address: ${distributorAddress}\n
+            // -> Distributor Id: ${distributorId}
+            // `
+            // );
         } catch (err: any) {
             throw new Error(err);
         }
@@ -162,13 +171,14 @@ task("submit-pool", "Submit new mtc pool")
 
 // submit addresses and amounts
 task("submit-addresses", "Submit new mtc pool")
+    .addParam("lastclaimtime", "last claim time for migration")
     .addParam("pool", "address of the pool")
     .addParam("file", "file name of the pool")
     .setAction(async (args, hre) => {
         try {
-            const { pool, file } = args;
+            const { lastclaimtime, pool, file } = args;
 
-            if (!pool || !file) {
+            if (!lastclaimtime || !pool || !file) {
                 throw new Error("Missing arguments!");
             }
 
@@ -178,6 +188,7 @@ task("submit-addresses", "Submit new mtc pool")
 
             const poolAddressesPath = path.resolve(__dirname, `../data/${file}/addresses.json`);
             const poolAmountsPath = path.resolve(__dirname, `../data/${file}/amounts.json`);
+            const poolLeftAmountsPath = path.resolve(__dirname, `../data/${file}/left-amounts.json`);
 
             if (!fs.existsSync(poolAddressesPath) && !fs.existsSync(poolAmountsPath)) {
                 throw new Error("Files are not existed!");
@@ -185,11 +196,13 @@ task("submit-addresses", "Submit new mtc pool")
 
             const addresses = require(poolAddressesPath);
             const amounts = require(poolAmountsPath);
+            const leftAmounts = require(poolLeftAmountsPath);
 
             const addressesArr = Array(addresses)[0];
             const amountsArr = Array(amounts)[0];
+            const leftAmountsArr = Array(leftAmounts)[0];
 
-            if (addressesArr.length !== amountsArr.length) {
+            if (addressesArr.length !== amountsArr.length && addressesArr.length !== leftAmountsArr.length) {
                 throw new Error("Addresses and amounts arrays length did not match!");
             }
 
@@ -214,13 +227,15 @@ task("submit-addresses", "Submit new mtc pool")
 
                 const addressesChunk = addressesArr.slice(startIndex, endIndex);
                 const amountsChunk = amountsArr.slice(startIndex, endIndex);
+                const leftAmountsChunk = leftAmountsArr.slice(startIndex, endIndex);
                 const amountsChunkToWei = amountsChunk.map((amount: number) => toWei(String(amount)));
+                const leftAmountsChunkToWei = leftAmountsChunk.map((amount: number) => toWei(String(amount)));
 
                 if (file === "private-sale") {
                     const { TokenDistributorWithNoVesting__factory } = require("../typechain-types");
                     const privateSaleDistributorInstance = TokenDistributorWithNoVesting__factory.connect(pool, deployerSigner);
 
-                    const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunkToWei);
+                    const submitPoolsTx = await privateSaleDistributorInstance.setClaimableAmounts(addressesChunk, leftAmountsChunkToWei);
 
                     const submitPools = await submitPoolsTx.wait();
                     const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
@@ -237,7 +252,7 @@ task("submit-addresses", "Submit new mtc pool")
                     const tokenDistributorInstance = TokenDistributor__factory.connect(pool, deployerSigner);
                     const poolName = await tokenDistributorInstance.poolName();
 
-                    const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(addressesChunk, amountsChunkToWei);
+                    const submitPoolsTx = await tokenDistributorInstance.setClaimableAmounts(Number(lastclaimtime), addressesChunk, amountsChunkToWei, leftAmountsChunkToWei);
 
                     const submitPools = await submitPoolsTx.wait();
                     const event = submitPools.events?.find((event: any) => event.event === "SetClaimableAmounts");
@@ -248,6 +263,7 @@ task("submit-addresses", "Submit new mtc pool")
                         `Addresses & amounts are submitted to TokenDistributor\n
                         Pool name: ${poolName}\n
                         Pool address: ${pool}\n
+                        Last claim time in blocktimestamp: ${Number(lastclaimtime)}\n
                         Total submitted address length: ${usersLength}\n
                         Total claimable amount: ${totalClaimableAmount}`
                     );

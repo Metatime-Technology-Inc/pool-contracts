@@ -4,8 +4,6 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "../core/Distributor.sol";
-import "../core/TokenDistributor.sol";
 import "../interfaces/IDistributor.sol";
 import "../interfaces/ITokenDistributor.sol";
 
@@ -16,12 +14,13 @@ import "../interfaces/ITokenDistributor.sol";
 contract PoolFactory is Ownable2Step {
     uint256 public distributorCount; // Counter for the number of created Distributor contracts.
     uint256 public tokenDistributorCount; // Counter for the number of created TokenDistributor contracts.
+    bool public initialized = false;
 
     mapping(uint256 => address) private _distributors; // Mapping to store Distributor contract addresses by their IDs.
     mapping(uint256 => address) private _tokenDistributors; // Mapping to store TokenDistributor contract addresses by their IDs.
 
-    address public immutable distributorImplementation; // Address of the implementation contract for Distributor contracts.
-    address public immutable tokenDistributorImplementation; // Address of the implementation contract for TokenDistributor contracts.
+    address public distributorImplementation; // Address of the implementation contract for Distributor contracts.
+    address public tokenDistributorImplementation; // Address of the implementation contract for TokenDistributor contracts.
 
     event DistributorCreated(
         address creatorAddress,
@@ -34,9 +33,27 @@ contract PoolFactory is Ownable2Step {
         uint256 tokenDistributorId
     ); // Event emitted when a TokenDistributor contract is created.
 
-    constructor() {
-        distributorImplementation = address(new Distributor());
-        tokenDistributorImplementation = address(new TokenDistributor());
+    /**
+     * @dev Initializes the contract with new implementation addresses.
+     */
+    function initialize(
+        address distributorAddress,
+        address tokenDistributorAddress
+    ) external {
+        require(
+            initialized == false,
+            "PoolFactory: contract has initialized before"
+        );
+        require(
+            distributorAddress != address(0) &&
+                tokenDistributorAddress != address(0),
+            "PoolFactory: invalid adress types"
+        );
+        _transferOwnership(_msgSender());
+        distributorImplementation = distributorAddress;
+        tokenDistributorImplementation = tokenDistributorAddress;
+
+        initialized = true;
     }
 
     /**
@@ -64,7 +81,6 @@ contract PoolFactory is Ownable2Step {
     /**
      * @dev Creates a new Distributor contract.
      * @param poolName The name of the pool.
-     * @param token The address of the token contract.
      * @param startTime The start time of the distribution.
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
@@ -74,26 +90,26 @@ contract PoolFactory is Ownable2Step {
      */
     function createDistributor(
         string memory poolName,
-        address token,
         uint256 startTime,
         uint256 endTime,
         uint256 distributionRate,
         uint256 periodLength,
-        uint256 claimableAmount
+        uint256 lastClaimTime,
+        uint256 claimableAmount,
+        uint256 leftClaimableAmount
     ) external onlyOwner returns (uint256) {
-        require(token != address(0), "PoolFactory: invalid token address");
-
         address newDistributorAddress = Clones.clone(distributorImplementation);
         IDistributor newDistributor = IDistributor(newDistributorAddress);
         newDistributor.initialize(
             owner(),
             poolName,
-            token,
             startTime,
             endTime,
             distributionRate,
             periodLength,
-            claimableAmount
+            lastClaimTime,
+            claimableAmount,
+            leftClaimableAmount
         );
 
         emit DistributorCreated(
@@ -108,7 +124,6 @@ contract PoolFactory is Ownable2Step {
     /**
      * @dev Creates a new TokenDistributor contract.
      * @param poolName The name of the pool.
-     * @param token The address of the token contract.
      * @param startTime The start time of the distribution.
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
@@ -117,14 +132,11 @@ contract PoolFactory is Ownable2Step {
      */
     function createTokenDistributor(
         string memory poolName,
-        address token,
         uint256 startTime,
         uint256 endTime,
         uint256 distributionRate,
         uint256 periodLength
     ) external onlyOwner returns (uint256) {
-        require(token != address(0), "PoolFactory: invalid token address");
-
         address newTokenDistributorAddress = Clones.clone(
             tokenDistributorImplementation
         );
@@ -134,7 +146,6 @@ contract PoolFactory is Ownable2Step {
         newTokenDistributor.initialize(
             owner(),
             poolName,
-            token,
             startTime,
             endTime,
             distributionRate,

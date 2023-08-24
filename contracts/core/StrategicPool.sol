@@ -2,9 +2,6 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import "../interfaces/IMTC.sol";
 import "../libs/Trigonometry.sol";
 
 /**
@@ -12,7 +9,8 @@ import "../libs/Trigonometry.sol";
  * @dev A contract for managing a strategic pool of tokens.
  */
 contract StrategicPool is Ownable2Step {
-    IMTC public immutable token; // The token managed by the pool
+    bool public initialized = false;
+    address public constant BURN_ADDRESS = address(0);
     int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
     int256 public lastBurnedAmount = 0;
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
@@ -20,16 +18,16 @@ contract StrategicPool is Ownable2Step {
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
 
     /**
-     * Constructor
-     * @param _token The token being burned
+     * @dev Initializes the contract.
      */
-    constructor(IMTC _token) {
+    function initialize() external {
         require(
-            address(_token) != address(0),
-            "StrategicPool: invalid token address"
+            initialized == false,
+            "StrategicPool: contract has initialized before"
         );
 
-        token = _token;
+        _transferOwnership(_msgSender());
+        initialized = true;
     }
 
     /**
@@ -50,7 +48,8 @@ contract StrategicPool is Ownable2Step {
         totalBurnedAmount += int256(amount);
         lastBurnedAmount = int256(amount);
 
-        token.burn(amount);
+        (bool sent, ) = BURN_ADDRESS.call{value: amount}("");
+        require(sent, "StrategicPool: unable to burn");
 
         emit Burned(amount, true);
     }
@@ -62,7 +61,8 @@ contract StrategicPool is Ownable2Step {
     function burn(uint256 burnAmount) external onlyOwner {
         totalBurnedAmount += int256(burnAmount);
 
-        token.burn(burnAmount);
+        (bool sent, ) = BURN_ADDRESS.call{value: burnAmount}("");
+        require(sent, "StrategicPool: unable to burn");
 
         emit Burned(burnAmount, false);
     }

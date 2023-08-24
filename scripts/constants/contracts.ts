@@ -13,6 +13,8 @@ interface IContracts {
     MockTrigonometry: string;
   },
   utils: {
+    Multicall3: string;
+    MultiSigWallet: string;
     PoolFactory: string;
   };
 }
@@ -31,6 +33,8 @@ const CONTRACTS: IContracts = {
     MockTrigonometry: "MockTrigonometry",
   },
   utils: {
+    Multicall3: "Multicall3",
+    MultiSigWallet: "MultiSigWallet",
     PoolFactory: "PoolFactory"
   }
 };

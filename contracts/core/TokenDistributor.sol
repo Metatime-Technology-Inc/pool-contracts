@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /**
@@ -11,8 +9,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
  * @dev A contract for distributing tokens among users over a specific period of time.
  */
 contract TokenDistributor is Initializable, Ownable2Step {
-    string public poolName; // The name of the token distribution pool
-    IERC20 public token; // The ERC20 token being distributed
+    string public poolName; // The name of the mtc distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
@@ -38,12 +35,12 @@ contract TokenDistributor is Initializable, Ownable2Step {
     ); // Event emitted when pool params are updated
 
     /**
-     * @dev Constructor function.
+     * @dev disableInitializers function.
      * It disables the execution of initializers in the contract, as it is not intended to be called directly.
      * The purpose of this function is to prevent accidental execution of initializers when creating proxy instances of the contract.
      * It is called internally during the construction of the proxy contract.
      */
-    constructor() {
+    function disableInitializers() external {
         _disableInitializers();
     }
 
@@ -64,12 +61,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
             _distributionPeriodEnd > _distributionPeriodStart,
             "TokenDistributor: end time must be bigger than start time"
         );
-
-        require(
-            (BASE_DIVIDER / _distributionRate) * _periodLength ==
-                _distributionPeriodEnd - _distributionPeriodStart,
-            "TokenDistributor: invalid parameters"
-        );
         _;
     }
 
@@ -87,8 +78,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
     /**
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner
-     * @param _poolName The name of the token distribution pool
-     * @param _token The ERC20 token being distributed
+     * @param _poolName The name of the mtc distribution pool
      * @param _distributionPeriodStart The start time of the distribution period
      * @param _distributionPeriodEnd The end time of the distribution period
      * @param _distributionRate The distribution rate (percentage)
@@ -97,7 +87,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
     function initialize(
         address _owner,
         string memory _poolName,
-        address _token,
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd,
         uint256 _distributionRate,
@@ -115,7 +104,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
         _transferOwnership(_owner);
 
         poolName = _poolName;
-        token = IERC20(_token);
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
         claimPeriodEnd = _distributionPeriodEnd + 100 days;
@@ -130,8 +118,10 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * @param amounts An array of claimable amounts corresponding to each user
      */
     function setClaimableAmounts(
+        uint256 lastClaimTime,
         address[] calldata users,
-        uint256[] calldata amounts
+        uint256[] calldata amounts,
+        uint256[] calldata leftAmounts
     ) external onlyOwner isSettable {
         uint256 usersLength = users.length;
         require(
@@ -149,6 +139,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
             );
 
             uint256 amount = amounts[i];
+            uint256 leftAmount = leftAmounts[i];
 
             require(
                 claimableAmounts[user] == 0,
@@ -156,15 +147,15 @@ contract TokenDistributor is Initializable, Ownable2Step {
             );
 
             claimableAmounts[user] = amount;
-            leftClaimableAmounts[user] = amount;
-            lastClaimTimes[user] = distributionPeriodStart;
+            leftClaimableAmounts[user] = leftAmount;
+            lastClaimTimes[user] = lastClaimTime;
             emit CanClaim(user, amount);
 
-            sum += amounts[i];
+            sum += leftAmounts[i];
         }
 
         require(
-            token.balanceOf(address(this)) >= sum,
+            address(this).balance >= sum,
             "TokenDistributor: total claimable amount does not match"
         );
 
@@ -192,7 +183,8 @@ contract TokenDistributor is Initializable, Ownable2Step {
             leftClaimableAmounts[sender] -
             claimableAmount;
 
-        SafeERC20.safeTransfer(token, sender, claimableAmount);
+        (bool sent, ) = sender.call{value: claimableAmount}("");
+        require(sent, "TokenDistributor: unable to claim");
 
         emit HasClaimed(sender, claimableAmount);
 
@@ -209,10 +201,11 @@ contract TokenDistributor is Initializable, Ownable2Step {
             "TokenDistributor: cannot sweep before claim period end time"
         );
 
-        uint256 leftovers = token.balanceOf(address(this));
+        uint256 leftovers = address(this).balance;
         require(leftovers != 0, "TokenDistributor: no leftovers");
 
-        SafeERC20.safeTransfer(token, owner(), leftovers);
+        (bool sent, ) = owner().call{value: leftovers}("");
+        require(sent, "TokenDistributor: unable to claim");
 
         emit Swept(owner(), leftovers);
     }

@@ -4,18 +4,15 @@ import { ethers } from "ethers";
 
 // creates TokenDistributorWithNoVesting for given network
 task("create-private-sale", "Create a private sale pool")
-    .addParam("mtc", "address of mtc")
     .addParam("start", "start timestamp of token distribution")
     .addParam("end", "end timestamp of token distribution")
     .setAction(async (args, hre) => {
         try {
-            const { mtc, start, end } = args;
+            const { start, end } = args;
 
-            if (!mtc || !start || !end) {
+            if (!start || !end) {
                 throw new Error("Missing arguments!");
             }
-
-            const mtcAddress = ethers.utils.getAddress(mtc);
 
             const networkName = hre.network.name;
             const { deployer } = await hre.getNamedAccounts();
@@ -23,7 +20,6 @@ task("create-private-sale", "Create a private sale pool")
 
             const TokenDistributorWithNoVesting = await hre.ethers.getContractFactory(CONTRACTS.core.TokenDistributorWithNoVesting);
             const privateSaleTokenDistributor = await TokenDistributorWithNoVesting.connect(deployerSigner).deploy(
-                mtcAddress,
                 Number(start),
                 Number(end),
             );

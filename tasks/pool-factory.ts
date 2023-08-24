@@ -8,7 +8,6 @@ import { ethers } from "ethers";
 task("create-distributor", "Create a new distributor")
     .addParam("factory", "address of pool factory")
     .addParam("name", "name of pool")
-    .addParam("mtc", "address of mtc")
     .addParam("start", "start timestamp of distribution")
     .addParam("end", "end timestamp of distribution")
     .addParam("rate", "distribution rate")
@@ -18,15 +17,14 @@ task("create-distributor", "Create a new distributor")
     .addParam("lastclaimtime", "last claim time for migration")
     .setAction(async (args, hre) => {
         try {
-            const { factory, name, mtc, start, end, rate, length, amount, leftamount, lastclaimtime } = args;
+            const { factory, name, start, end, rate, length, amount, leftamount, lastclaimtime } = args;
 
-            if (!factory || !name || !mtc || !start || !end || !rate || !length || !amount || !leftamount || !lastclaimtime) {
+            if (!factory || !name || !start || !end || !rate || !length || !amount || !leftamount || !lastclaimtime) {
                 throw new Error("Missing arguments!");
             }
 
             // const factoryAddress = ethers.utils.getAddress(factory);
             const factoryAddress = factory;
-            const mtcAddress = ethers.utils.getAddress(mtc);
 
             const networkName = hre.network.name;
             const { deployer } = await hre.getNamedAccounts();
@@ -40,7 +38,6 @@ task("create-distributor", "Create a new distributor")
             
             const createDistributorTx = await poolFactory.createDistributor(
                 String(name),
-                mtcAddress,
                 Number(start),
                 Number(end),
                 Number(rate),
@@ -73,21 +70,19 @@ task("create-distributor", "Create a new distributor")
 task("create-token-distributor", "Create a new token distributor")
     .addParam("factory", "address of pool factory")
     .addParam("name", "name of pool")
-    .addParam("mtc", "address of token")
     .addParam("start", "start timestamp of token distribution")
     .addParam("end", "end timestamp of token distribution")
     .addParam("rate", "distribution rate")
     .addParam("length", "length of the claim period")
     .setAction(async (args, hre) => {
         try {
-            const { factory, name, mtc, start, end, rate, length } = args;
+            const { factory, name, start, end, rate, length } = args;
 
-            if (!name || !mtc || !start || !end || !rate || !length || !factory) {
+            if (!name || !start || !end || !rate || !length || !factory) {
                 throw new Error("Missing arguments!");
             }
 
             const factoryAddress = ethers.utils.getAddress(factory);
-            const mtcAddress = ethers.utils.getAddress(mtc);
 
             const networkName = hre.network.name;
             const { deployer } = await hre.getNamedAccounts();
@@ -99,7 +94,6 @@ task("create-token-distributor", "Create a new token distributor")
 
             const createTokenDistributorTx = await poolFactory.createTokenDistributor(
                 String(name),
-                mtcAddress,
                 Number(start),
                 Number(end),
                 Number(rate),
@@ -124,53 +118,8 @@ task("create-token-distributor", "Create a new token distributor")
         }
     });
 
-// submit new pool
-task("submit-pool", "Submit new mtc pool")
-    .addParam("mtc", "address of mtc")
-    .addParam("name", "name of the pool")
-    .addParam("addr", "address of the pool")
-    .addParam("amount", "locked amount in the pool")
-    .setAction(async (args, hre) => {
-        try {
-            const { mtc, name, addr, amount } = args;
-
-            if (!mtc || !name || !addr || !amount) {
-                throw new Error("Missing arguments!");
-            }
-
-            const mtcAddress = ethers.utils.getAddress(mtc);
-
-            const networkName = hre.network.name;
-            const { deployer } = await hre.getNamedAccounts();
-            const deployerSigner = await hre.ethers.getSigner(deployer);
-
-            const { MTC__factory } = require("../typechain-types");
-            const mtcInstance = MTC__factory.connect(mtcAddress, deployerSigner);
-
-            const poolStruct = {
-                name,
-                addr,
-                lockedAmount: toWei(String(amount)),
-            };
-            const submitPoolsTx = await mtcInstance.submitPools([poolStruct]);
-
-            const submitPools = await submitPoolsTx.wait();
-            const event = submitPools.events?.find((event: any) => event.event === "PoolSubmitted");
-            const [poolName, poolAddress, lockedAmount] = event?.args!;
-
-            console.log("NETWORK:", networkName);
-            console.log(
-                `Pool's submitted\n
-                Pool name: ${poolName}\n
-                Pool address: ${poolAddress}\n
-                Locked amount: ${lockedAmount}`);
-        } catch (err: any) {
-            throw new Error(err);
-        }
-    });
-
 // submit addresses and amounts
-task("submit-addresses", "Submit new mtc pool")
+task("submit-addresses", "Submit addresses to mtc pool")
     .addParam("lastclaimtime", "last claim time for migration")
     .addParam("pool", "address of the pool")
     .addParam("file", "file name of the pool")

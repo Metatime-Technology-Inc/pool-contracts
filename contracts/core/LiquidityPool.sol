@@ -11,6 +11,7 @@ contract LiquidityPool is Ownable2Step {
     bool public initialized = false;
 
     event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
+    event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
     /**
      * @dev Initializes the contract.
@@ -55,5 +56,9 @@ contract LiquidityPool is Ownable2Step {
         require(sent, "LiquidityPool: unable to withdraw");
 
         return sent;
+    }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value, address(this).balance);
     }
 }

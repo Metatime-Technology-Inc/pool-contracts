@@ -124,6 +124,26 @@ task(
     }
 );
 
+task("get-balance", "Get ETH balance")
+    .addParam("address", "account address")
+    .setAction(async (args, hre) => {
+        try {
+            const { address } = args;
+            const networkName = hre.network.name;
+
+            if (!address) {
+                throw new Error("Please provide address argument!");
+            }
+
+            hre.ethers.utils.getAddress(address);
+
+            const balance = await hre.ethers.provider.getBalance(address);
+            console.log(`Account balance ${hre.ethers.utils.formatEther(balance)} ETH in ${networkName} network.`);
+        } catch (err: any) {
+            console.log(err);
+        }
+    });
+
 task(
     "get-timestamp",
     async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {

@@ -16,6 +16,7 @@ contract StrategicPool is Ownable2Step {
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
+    event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
     /**
      * @dev Initializes the contract.
@@ -87,5 +88,9 @@ contract StrategicPool is Ownable2Step {
                             int256(Trigonometry.PI)) / (180 * 1e18)
                     )
                 ) * 2923) / 1e3)) / 1e18;
+    }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value, address(this).balance);
     }
 }

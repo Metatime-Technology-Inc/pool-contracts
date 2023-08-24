@@ -19,6 +19,7 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary claims tokens
     event Swept(address receiver, uint256 amount); // Event emitted when tokens are swept from the contract
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
+    event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
     /**
      * @dev Initializes the contract.
@@ -143,5 +144,9 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
         require(sent, "LiquidityPool: unable to withdraw");
 
         emit Swept(owner(), leftovers);
+    }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value, address(this).balance);
     }
 }

@@ -29,6 +29,7 @@ contract Distributor is Initializable, Ownable2Step {
         uint256 newPeriodLength,
         uint256 newClaimableAmount
     ); // Event emitted when pool params are updated
+    event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
     /**
      * @dev disableInitializers function.
@@ -205,5 +206,9 @@ contract Distributor is Initializable, Ownable2Step {
                 distributionRate *
                 (block.timestamp - lastClaimTime) *
                 10 ** 18) / (periodLength * BASE_DIVIDER * 10 ** 18);
+    }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value, address(this).balance);
     }
 }

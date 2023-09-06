@@ -62,17 +62,6 @@ contract Distributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Controls settable status of contract while trying to set addresses and their amounts.
-     */
-    modifier isSettable() {
-        require(
-            block.timestamp < startTime,
-            "Distributor: claim period has already started"
-        );
-        _;
-    }
-
-    /**
      * @dev Initializes the contract with the specified parameters.
      * @param _owner The address of the contract owner.
      * @param _poolName The name of the mtc distribution pool.
@@ -147,7 +136,6 @@ contract Distributor is Initializable, Ownable2Step {
     )
         external
         onlyOwner
-        isSettable
         isParamsValid(
             newStartTime,
             newEndTime,

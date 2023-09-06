@@ -2,8 +2,8 @@
 pragma solidity 0.8.16;
 
 contract WMTC {
-    string public name = "Wrapped Ether";
-    string public symbol = "WETH";
+    string public name = "Wrapped MTC";
+    string public symbol = "WMTC";
     uint8 public decimals = 18;
 
     event Approval(address indexed src, address indexed guy, uint wad);
@@ -47,7 +47,7 @@ contract WMTC {
     ) public returns (bool) {
         require(balanceOf[src] >= wad);
 
-        if (src != msg.sender && allowance[src][msg.sender] > 0) {
+        if (src != msg.sender && allowance[src][msg.sender] != type(uint256).max) {
             require(allowance[src][msg.sender] >= wad);
             allowance[src][msg.sender] -= wad;
         }

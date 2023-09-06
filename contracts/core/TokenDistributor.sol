@@ -66,17 +66,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Controls settable status of contract while trying to set addresses and their amounts.
-     */
-    modifier isSettable() {
-        require(
-            block.timestamp < distributionPeriodStart,
-            "TokenDistributor: claim period has already started"
-        );
-        _;
-    }
-
-    /**
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner
      * @param _poolName The name of the mtc distribution pool
@@ -123,7 +112,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
         address[] calldata users,
         uint256[] calldata amounts,
         uint256[] calldata leftAmounts
-    ) external onlyOwner isSettable {
+    ) external onlyOwner {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
@@ -226,7 +215,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
     )
         external
         onlyOwner
-        isSettable
         isParamsValid(
             newDistributionPeriodStart,
             newDistributionPeriodEnd,

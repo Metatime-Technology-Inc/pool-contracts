@@ -8,6 +8,7 @@ interface IMetaminer {
         bool exist;
     }
 
-    function minerCount() external returns(uint256);
-    function miners(address addr) external returns(Miner memory);
+    function minerCount() external returns (uint256);
+
+    function miners(address addr) external returns (Miner memory);
 }

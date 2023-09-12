@@ -147,6 +147,6 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
     }
 
     receive() external payable {
-        emit Deposit(msg.sender, msg.value, address(this).balance);
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 }

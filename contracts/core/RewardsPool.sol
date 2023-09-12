@@ -12,18 +12,20 @@ import "../interfaces/IMetaminer.sol";
  * @dev A contract for distributing tokens over a specified period of time for mining purposes.
  */
 contract RewardsPool is Initializable, Ownable2Step {
-    string public poolName; // Name of the mtc distribution pool
-    IMetaminer public constant METAMINER = IMetaminer(0x0000000000000000000000000000000000002006);
+    IMetaminer public constant METAMINER =
+        IMetaminer(0x0000000000000000000000000000000000002006);
     uint256 public constant DAILY_BLOCK_COUNT = 17_280;
     uint256 public constant DAILY_PRIZE_POOL = 166_666;
+    uint256 public constant DAILY_PRIZE_LIMIT = 450 * 10 ** 18;
     mapping(address => uint256) public claimedAmounts; // Total amount of tokens claimed so far
     mapping(address => bool) public managers; // Managers of the contract
 
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
+    event SetManagers(address[] indexed managers); // Event emitted when managers set by owner
 
     /**
-     * @dev Checks manager address.
+     * @dev Checks manager accessibility.
      */
     modifier onlyManager() {
         require(
@@ -36,25 +38,20 @@ contract RewardsPool is Initializable, Ownable2Step {
     /**
      * @dev Initializes the contract with the specified parameters.
      * @param _owner The address of the contract owner.
-     * @param _poolName The name of the mtc distribution pool.
      */
     function initialize(
-        address _owner,
-        string memory _poolName
-    )
-        external
-        initializer
-    {
+        address _owner
+    ) external initializer {
         _transferOwnership(_owner);
-
-        poolName = _poolName;
     }
 
     /**
      * @dev Sets new manager addresses.
      * @return A boolean indicating whether the address setting was successful.
      */
-    function setManagers(address[] memory newManagers) onlyOwner external returns (bool) {
+    function setManagers(
+        address[] memory newManagers
+    ) external onlyOwner returns (bool) {
         uint256 i = 0;
         uint256 newManagersLength = newManagers.length;
         for (i; i < newManagersLength; i++) {
@@ -70,7 +67,6 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @return A boolean indicating whether the claim was successful.
      */
     function claim(address receiver) external onlyManager returns (uint256) {
-        require(METAMINER.miners(receiver).exist == true, "RewardsPool: receiver is not miner");
         uint256 amount = calculateClaimableAmount();
 
         claimedAmounts[receiver] += amount;
@@ -98,14 +94,15 @@ contract RewardsPool is Initializable, Ownable2Step {
     function _calculateClaimableAmount() internal returns (uint256) {
         uint256 metaminerCount = METAMINER.minerCount();
 
-        uint256 calculatedAmount = ((DAILY_PRIZE_POOL * 10 ** 18) / metaminerCount) / 10 ** 18;
-        uint256 amount = calculatedAmount > 450 ? 450 : calculatedAmount;
-        uint256 dailyMinedBlockCount = DAILY_BLOCK_COUNT / metaminerCount;
-        
-        return amount / dailyMinedBlockCount;
+        uint256 calculatedAmount = ((DAILY_PRIZE_POOL * 10 ** 18) /
+            metaminerCount);
+        return
+            calculatedAmount > DAILY_PRIZE_LIMIT
+                ? DAILY_PRIZE_LIMIT / DAILY_BLOCK_COUNT
+                : calculatedAmount / (DAILY_BLOCK_COUNT / metaminerCount);
     }
 
     receive() external payable {
-        emit Deposit(msg.sender, msg.value, address(this).balance);
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 }

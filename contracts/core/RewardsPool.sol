@@ -12,8 +12,8 @@ import "../interfaces/IMetaminer.sol";
  * @dev A contract for distributing tokens over a specified period of time for mining purposes.
  */
 contract RewardsPool is Initializable, Ownable2Step {
-    IMetaminer public constant METAMINER =
-        IMetaminer(0x0000000000000000000000000000000000002006);
+    uint256 currentBlock = 0;
+    IMetaminer public metaminer;
     uint256 public constant DAILY_BLOCK_COUNT = 17_280;
     uint256 public constant DAILY_PRIZE_POOL = 166_666;
     uint256 public constant DAILY_PRIZE_LIMIT = 450 * 10 ** 18;
@@ -37,12 +37,15 @@ contract RewardsPool is Initializable, Ownable2Step {
 
     /**
      * @dev Initializes the contract with the specified parameters.
-     * @param _owner The address of the contract owner.
+     * @param owner The address of the contract owner.
+     * @param metaminerAddress Address of Metaminer contract.
      */
     function initialize(
-        address _owner
+        address owner,
+        address metaminerAddress
     ) external initializer {
-        _transferOwnership(_owner);
+        _transferOwnership(owner);
+        metaminer = IMetaminer(metaminerAddress);
     }
 
     /**
@@ -67,6 +70,7 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @return A boolean indicating whether the claim was successful.
      */
     function claim(address receiver) external onlyManager returns (uint256) {
+        // external call blok yapısını al
         uint256 amount = calculateClaimableAmount();
 
         claimedAmounts[receiver] += amount;
@@ -92,14 +96,15 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @return The amount of tokens claimable for the current period.
      */
     function _calculateClaimableAmount() internal returns (uint256) {
-        uint256 metaminerCount = METAMINER.minerCount();
+        uint256 metaminerCount = metaminer.minerCount();
 
         uint256 calculatedAmount = ((DAILY_PRIZE_POOL * 10 ** 18) /
             metaminerCount);
-        return
-            calculatedAmount > DAILY_PRIZE_LIMIT
-                ? DAILY_PRIZE_LIMIT / DAILY_BLOCK_COUNT
-                : calculatedAmount / (DAILY_BLOCK_COUNT / metaminerCount);
+        uint256 amount = calculatedAmount > DAILY_PRIZE_LIMIT
+            ? DAILY_PRIZE_LIMIT / DAILY_BLOCK_COUNT
+            : calculatedAmount / (DAILY_BLOCK_COUNT / metaminerCount); 
+
+        return amount;
     }
 
     receive() external payable {

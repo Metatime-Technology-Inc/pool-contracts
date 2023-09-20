@@ -102,7 +102,7 @@ contract RewardsPool is Initializable, Ownable2Step {
             metaminerCount);
         uint256 amount = calculatedAmount > DAILY_PRIZE_LIMIT
             ? DAILY_PRIZE_LIMIT / DAILY_BLOCK_COUNT
-            : calculatedAmount / (DAILY_BLOCK_COUNT / metaminerCount); 
+            : calculatedAmount / (DAILY_BLOCK_COUNT / metaminerCount);
 
         return amount;
     }

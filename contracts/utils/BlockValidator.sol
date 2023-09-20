@@ -29,7 +29,12 @@ contract BlockValidator is Context, Initializable {
     event SetPayload(uint256 blockNumber);
     event FinalizeBlock(uint256 blockNumber);
 
-    function initialize(address managerAddress, address blockSetterAddress, address rewardsPoolAddress, address metaminerAddress) external initializer {
+    function initialize(
+        address managerAddress,
+        address blockSetterAddress,
+        address rewardsPoolAddress,
+        address metaminerAddress
+    ) external initializer {
         manager = managerAddress;
         blockSetter = blockSetterAddress;
         rewardsPool = IRewardsPool(rewardsPoolAddress);
@@ -37,10 +42,19 @@ contract BlockValidator is Context, Initializable {
     }
 
     // Adds payload to queue
-    function setBlockPayload(uint256 blockNumber, BlockPayload memory blockPayload) external returns(bool) {
-        require(_msgSender() == blockSetter, "setBlockPayload: Unauthorized address.");
+    function setBlockPayload(
+        uint256 blockNumber,
+        BlockPayload memory blockPayload
+    ) external returns (bool) {
+        require(
+            _msgSender() == blockSetter,
+            "setBlockPayload: Unauthorized address."
+        );
 
-        require(blockPayloads[blockNumber].coinbase == address(0), "setBlockPayload: Unable to set block payload.");
+        require(
+            blockPayloads[blockNumber].coinbase == address(0),
+            "setBlockPayload: Unable to set block payload."
+        );
         blockPayloads[blockNumber] = blockPayload;
 
         emit SetPayload(blockNumber);
@@ -49,21 +63,22 @@ contract BlockValidator is Context, Initializable {
     }
 
     // Finalizes block
-    function finalizeBlock(uint256 blockNumber) external returns(bool) {
-        require(
-            manager == _msgSender(),
-            "RewardsPool: address is not manager"
-        );
+    function finalizeBlock(uint256 blockNumber) external returns (bool) {
+        require(manager == _msgSender(), "RewardsPool: address is not manager");
 
         BlockPayload storage payload = blockPayloads[blockNumber];
-        require(payload.coinbase != address(0), "finalizeBlock: Unable to finalize block.");
+        require(
+            payload.coinbase != address(0),
+            "finalizeBlock: Unable to finalize block."
+        );
 
         payload.isFinalized = true;
 
         if (_verifiedBlockId == DELAY_LIMIT) {
             uint8 i = 0;
             for (i; i < DELAY_LIMIT; i++) {
-                address coinbase = blockPayloads[lastVerifiedBlocknumbers[i]].coinbase;
+                address coinbase = blockPayloads[lastVerifiedBlocknumbers[i]]
+                    .coinbase;
 
                 rewardsPool.claim(coinbase);
             }
@@ -74,7 +89,7 @@ contract BlockValidator is Context, Initializable {
 
         lastVerifiedBlocknumbers[_verifiedBlockId] = blockNumber;
         _verifiedBlockId++;
-            
+
         emit FinalizeBlock(blockNumber);
 
         return true;

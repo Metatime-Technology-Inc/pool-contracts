@@ -53,7 +53,10 @@ contract Metaminer is Ownable2Step {
     }
 
     function setMiner() external payable returns (bool) {
-        require(msg.value == (ANNUAL_AMOUNT + STAKE_AMOUNT), "Required MTC is not sended.");
+        require(
+            msg.value == (ANNUAL_AMOUNT + STAKE_AMOUNT),
+            "Required MTC is not sended."
+        );
         miners[_msgSender()] = Miner(0, 0, true);
         minerSubscription[_msgSender()] = _nextYear(_msgSender());
         minerCount += 1;
@@ -74,9 +77,7 @@ contract Metaminer is Ownable2Step {
         return (true);
     }
 
-    function setValidator(
-        address _miner
-    ) external onlyOwner returns (bool) {
+    function setValidator(address _miner) external onlyOwner returns (bool) {
         miners[_miner] = Miner(0, 0, true);
         minerSubscription[_miner] = _nextYear(_miner);
         minerCount += 1;
@@ -111,13 +112,16 @@ contract Metaminer is Ownable2Step {
         return (true);
     }
 
-    function finalizeBlock(uint256 blockNumber) external payable returns(bool) {
+    function finalizeBlock(
+        uint256 blockNumber
+    ) external payable returns (bool) {
         bool status = _minerCheck(_msgSender());
-        if(status == true) {
-            IBlockValidator.BlockPayload memory blockPayload = blockValidator.blockPayloads(blockNumber);
+        if (status == true) {
+            IBlockValidator.BlockPayload memory blockPayload = blockValidator
+                .blockPayloads(blockNumber);
             address coinbase = blockPayload.coinbase;
             uint256 blockReward = blockPayload.blockReward;
-            
+
             require(_msgSender() == coinbase, "Wrong sender address.");
             require(msg.value >= blockReward, "Insufficient amount.");
 
@@ -131,7 +135,11 @@ contract Metaminer is Ownable2Step {
     }
 
     function _nextYear(address _miner) internal view returns (uint256) {
-        return (minerSubscription[_miner] > block.timestamp ? (minerSubscription[_miner] + YEAR) : (block.timestamp + YEAR));
+        return (
+            minerSubscription[_miner] > block.timestamp
+                ? (minerSubscription[_miner] + YEAR)
+                : (block.timestamp + YEAR)
+        );
     }
 
     function _addShareHolder(
@@ -140,7 +148,10 @@ contract Metaminer is Ownable2Step {
         uint256 _percent
     ) internal isMiner(_miner) returns (bool) {
         Miner storage miner = miners[_miner];
-        shareholders[_miner][miner.shareHolderCount] = Shareholder(_addr, _percent);
+        shareholders[_miner][miner.shareHolderCount] = Shareholder(
+            _addr,
+            _percent
+        );
         miner.shareHolderCount++;
         return (true);
     }
@@ -153,7 +164,9 @@ contract Metaminer is Ownable2Step {
         for (uint256 i = 0; i < _shareholderCount; i++) {
             Shareholder memory shareHolder = shareholders[_miner][i];
             uint256 holderPercent = (_balance * shareHolder.percent) / 100;
-            (bool sent, ) = address(shareHolder.addr).call{value: holderPercent}("");
+            (bool sent, ) = address(shareHolder.addr).call{
+                value: holderPercent
+            }("");
             require(sent, "_shareIncome failed.");
         }
         return (true);
@@ -168,15 +181,16 @@ contract Metaminer is Ownable2Step {
         return (true);
     }
 
-    function _minerCheck(address _miner) isMiner(_miner) internal returns (bool) {
-        if(minerSubscription[_miner] < block.timestamp){
+    function _minerCheck(
+        address _miner
+    ) internal isMiner(_miner) returns (bool) {
+        if (minerSubscription[_miner] < block.timestamp) {
             _unstake(_miner);
             return (false);
-        }else{
+        } else {
             return (true);
         }
     }
 
-    receive() external payable {
-    }
+    receive() external payable {}
 }

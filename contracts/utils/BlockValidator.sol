@@ -28,6 +28,12 @@ contract BlockValidator is Context, Initializable {
     // Event that emitted after payload set
     event SetPayload(uint256 blockNumber);
     event FinalizeBlock(uint256 blockNumber);
+    event Claim(
+        address indexed coinbase,
+        bytes32 indexed blockNumber,
+        uint256 claimedAmount,
+        uint256 blockReward
+    );
 
     function initialize(
         address managerAddress,
@@ -77,10 +83,12 @@ contract BlockValidator is Context, Initializable {
         if (_verifiedBlockId == DELAY_LIMIT) {
             uint8 i = 0;
             for (i; i < DELAY_LIMIT; i++) {
-                address coinbase = blockPayloads[lastVerifiedBlocknumbers[i]]
-                    .coinbase;
+                BlockPayload memory bp = blockPayloads[
+                    lastVerifiedBlocknumbers[i]
+                ];
 
-                rewardsPool.claim(coinbase);
+                uint256 result = rewardsPool.claim(bp.coinbase);
+                emit Claim(bp.coinbase, bp.blockHash, result, bp.blockReward);
             }
 
             _verifiedBlockId = 0;

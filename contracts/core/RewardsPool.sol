@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IMetaminer.sol";
+import "../interfaces/IMinerFormulas.sol";
 
 /**
  * @title RewardsPool
@@ -14,9 +15,7 @@ import "../interfaces/IMetaminer.sol";
 contract RewardsPool is Initializable, Ownable2Step {
     uint256 currentBlock = 0;
     IMetaminer public metaminer;
-    uint256 public constant DAILY_BLOCK_COUNT = 17_280;
-    uint256 public constant DAILY_PRIZE_POOL = 166_666;
-    uint256 public constant DAILY_PRIZE_LIMIT = 450 * 10 ** 18;
+    IMinerFormulas public minerFormulas;
     mapping(address => uint256) public claimedAmounts; // Total amount of tokens claimed so far
     mapping(address => bool) public managers; // Managers of the contract
 
@@ -42,10 +41,12 @@ contract RewardsPool is Initializable, Ownable2Step {
      */
     function initialize(
         address owner,
-        address metaminerAddress
+        address metaminerAddress,
+        address minerFormulasAddress
     ) external initializer {
         _transferOwnership(owner);
         metaminer = IMetaminer(metaminerAddress);
+        minerFormulas = IMinerFormulas(minerFormulasAddress);
     }
 
     /**
@@ -87,7 +88,7 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @dev Calculates the amount of tokens claimable for the current period.
      * @return The amount of tokens claimable for the current period.
      */
-    function calculateClaimableAmount() public returns (uint256) {
+    function calculateClaimableAmount() public view returns (uint256) {
         return _calculateClaimableAmount();
     }
 
@@ -95,16 +96,10 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @dev Internal function to calculate the amount of tokens claimable for the current period.
      * @return The amount of tokens claimable for the current period.
      */
-    function _calculateClaimableAmount() internal returns (uint256) {
+    function _calculateClaimableAmount() internal view returns (uint256) {
         uint256 metaminerCount = metaminer.minerCount();
 
-        uint256 calculatedAmount = ((DAILY_PRIZE_POOL * 10 ** 18) /
-            metaminerCount);
-        uint256 amount = calculatedAmount > DAILY_PRIZE_LIMIT
-            ? DAILY_PRIZE_LIMIT / DAILY_BLOCK_COUNT
-            : calculatedAmount / (DAILY_BLOCK_COUNT / metaminerCount);
-
-        return amount;
+        return minerFormulas.calculateMetaminerReward(metaminerCount);
     }
 
     receive() external payable {

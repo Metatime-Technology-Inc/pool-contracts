@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IRewardsPool.sol";
-import "../interfaces/IMetaminer.sol";
 
 contract BlockValidator is Context, Initializable {
     uint256[32] public lastVerifiedBlocknumbers;
@@ -14,7 +13,6 @@ contract BlockValidator is Context, Initializable {
     address public manager;
     address public blockSetter;
     IRewardsPool public rewardsPool;
-    IMetaminer public metaminer;
     uint8 private _verifiedBlockId = 0;
 
     // Validation queue struct
@@ -38,13 +36,11 @@ contract BlockValidator is Context, Initializable {
     function initialize(
         address managerAddress,
         address blockSetterAddress,
-        address rewardsPoolAddress,
-        address metaminerAddress
+        address rewardsPoolAddress
     ) external initializer {
         manager = managerAddress;
         blockSetter = blockSetterAddress;
         rewardsPool = IRewardsPool(rewardsPoolAddress);
-        metaminer = IMetaminer(metaminerAddress);
     }
 
     // Adds payload to queue

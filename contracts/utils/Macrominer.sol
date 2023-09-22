@@ -2,89 +2,95 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "../libs/MinerTypes.sol";
 
 import "../interfaces/IMinerHealthCheck.sol";
 import "../interfaces/IMetaPoints.sol";
+import "../interfaces/IMinerList.sol";
 
-contract Macrominer is Context {
-    enum Type {
-        Archive,
-        Fullnode,
-        Light
-    }
-
+contract Macrominer is Context, Initializable {
     uint256 public constant STAKE_AMOUNT = 100 ether;
     uint256 public constant VOTE_POINT_LIMIT = 100;
 
-    uint256 public archiveCount;
-    uint256 public fullnodeCount;
-    uint256 public lightCount;
     uint256 public voteId;
-    IMinerHealthCheck public minerHealthCheck =
-        IMinerHealthCheck(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
-    IMetaPoints public metapoints =
-        IMetaPoints(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
-
-    struct Miner {
-        Type _type;
-        bool exist;
-    }
+    IMinerHealthCheck public minerHealthCheck;
+    IMetaPoints public metapoints;
+    IMinerList public minerList;
 
     struct Vote {
         uint256 voteId;
         uint256 point;
     }
 
-    mapping(address => mapping(Type => Miner)) public miners;
-    mapping(address => mapping(Type => Vote)) public votes;
-
-    event AddMiner(address indexed miner, Type indexed _type);
-    event KickMiner(address indexed miner, Type indexed _type);
+    mapping(address => mapping(MinerTypes.NodeType => Vote)) public votes;
 
     event BeginVote(
         uint256 indexed voteId,
         address indexed miner,
-        Type indexed _type
+        MinerTypes.NodeType indexed nodeType
     );
     event Voted(
         uint256 indexed voteId,
         address indexed miner,
-        Type indexed _type,
+        MinerTypes.NodeType indexed nodeType,
         uint256 point
     );
     event EndVote(
         uint256 indexed voteId,
         address indexed miner,
-        Type indexed _type
+        MinerTypes.NodeType indexed nodeType
     );
 
-    modifier isMiner(address miner, Type _type) {
-        require(miners[miner][_type].exist == true, "Address is not miner.");
-        _;
-    }
-
-    modifier notMiner(address miner, Type _type) {
+    modifier isMiner(address miner, MinerTypes.NodeType nodeType) {
         require(
-            miners[miner][_type].exist == false,
-            "Address is already miner."
+            minerList.isMiner(miner, nodeType),
+            "Address is not macrominer."
         );
         _;
     }
 
+    modifier notMiner(address miner, MinerTypes.NodeType nodeType) {
+        require(
+            !minerList.isMiner(miner, nodeType),
+            "Address is already macrominer."
+        );
+        _;
+    }
+
+    modifier isNodeTypeValid(MinerTypes.NodeType nodeType) {
+        require(
+            nodeType != MinerTypes.NodeType.Meta ||
+                nodeType != MinerTypes.NodeType.Micro,
+            "Wrong node type."
+        );
+        _;
+    }
+
+    function initialize(
+        address minerHealthCheckAddress,
+        address metapointsAddress,
+        address minerListAddress
+    ) external initializer {
+        minerHealthCheck = IMinerHealthCheck(minerHealthCheckAddress);
+        metapoints = IMetaPoints(metapointsAddress);
+        minerList = IMinerList(minerListAddress);
+    }
+
     function setMiner(
-        Type _type
-    ) external payable notMiner(_msgSender(), _type) returns (bool) {
+        MinerTypes.NodeType nodeType
+    )
+        external
+        payable
+        isNodeTypeValid(nodeType)
+        notMiner(_msgSender(), nodeType)
+        returns (bool)
+    {
         require(
             msg.value == STAKE_AMOUNT,
             "You have to stake as required STAKE_AMOUNT."
         );
-
-        miners[_msgSender()][_type] = Miner(_type, true);
-        _minerIncrement(_type);
-
-        emit AddMiner(_msgSender(), _type);
-
         return (true);
     }
 
@@ -93,19 +99,22 @@ contract Macrominer is Context {
     // to be miner miners have to stake
     function checkMinerStatus(
         address votedMinerAddress,
-        Type[2] memory minerTypes
+        MinerTypes.NodeType votedMinerNodeType,
+        MinerTypes.NodeType nodeType
     )
         external
-        isMiner(votedMinerAddress, minerTypes[0])
-        isMiner(_msgSender(), minerTypes[1])
+        isNodeTypeValid(votedMinerNodeType)
+        isNodeTypeValid(nodeType)
+        isMiner(votedMinerAddress, votedMinerNodeType)
+        isMiner(_msgSender(), nodeType)
     {
         // check status
         bool isAlive = minerHealthCheck.status(
             votedMinerAddress,
-            _formatType(minerTypes[0])
+            votedMinerNodeType
         );
 
-        Vote storage vote = votes[votedMinerAddress][minerTypes[0]];
+        Vote storage vote = votes[votedMinerAddress][votedMinerNodeType];
 
         // -- false status
         if (isAlive == false) {
@@ -116,14 +125,22 @@ contract Macrominer is Context {
                 vote.voteId = voteId;
                 voteId++;
 
-                emit BeginVote(vote.voteId, votedMinerAddress, minerTypes[0]);
+                emit BeginVote(
+                    vote.voteId,
+                    votedMinerAddress,
+                    votedMinerNodeType
+                );
             }
 
             if (mpBalance + vote.point >= VOTE_POINT_LIMIT) {
                 // --- check if its bigger than limit after adding voting points, then decrement miner count and suspand miner
-                _kickMiner(votedMinerAddress, minerTypes[0]);
+                _kickMiner(votedMinerAddress, votedMinerNodeType);
 
-                emit EndVote(vote.voteId, votedMinerAddress, minerTypes[0]);
+                emit EndVote(
+                    vote.voteId,
+                    votedMinerAddress,
+                    votedMinerNodeType
+                );
             } else {
                 // --- check if its lower than limit after adding voting points, then increment voting points
                 vote.point += mpBalance;
@@ -131,68 +148,25 @@ contract Macrominer is Context {
                 emit Voted(
                     vote.voteId,
                     votedMinerAddress,
-                    minerTypes[0],
+                    votedMinerNodeType,
                     mpBalance
                 );
             }
         } else {
-            delete votes[votedMinerAddress][minerTypes[0]];
+            delete votes[votedMinerAddress][votedMinerNodeType];
 
-            emit EndVote(vote.voteId, votedMinerAddress, minerTypes[0]);
+            emit EndVote(vote.voteId, votedMinerAddress, votedMinerNodeType);
         }
     }
 
     function _kickMiner(
         address minerAddress,
-        Type _type
+        MinerTypes.NodeType nodeType
     ) internal returns (bool) {
-        delete miners[minerAddress][_type];
-        delete votes[minerAddress][_type];
+        delete votes[minerAddress][nodeType];
         (bool sent, ) = payable(minerAddress).call{value: STAKE_AMOUNT}("");
-        _minerDecrement(_type);
 
         require(sent, "Unstake failed.");
-
-        emit KickMiner(minerAddress, _type);
-
-        return (true);
-    }
-
-    function _formatType(
-        Type _type
-    ) internal pure returns (MinerTypes.NodeType) {
-        if (_type == Type.Archive) {
-            return (MinerTypes.NodeType.MacroArchive);
-        } else if (_type == Type.Fullnode) {
-            return (MinerTypes.NodeType.MacroFullnode);
-        } else if (_type == Type.Light) {
-            return (MinerTypes.NodeType.MacroLight);
-        }
-
-        revert("Not as expected.");
-    }
-
-    function _minerIncrement(Type _type) internal returns (bool) {
-        if (_type == Type.Archive) {
-            archiveCount++;
-        } else if (_type == Type.Fullnode) {
-            fullnodeCount++;
-        } else if (_type == Type.Light) {
-            lightCount++;
-        }
-
-        return (true);
-    }
-
-    function _minerDecrement(Type _type) internal returns (bool) {
-        if (_type == Type.Archive) {
-            archiveCount--;
-        } else if (_type == Type.Fullnode) {
-            fullnodeCount--;
-        } else if (_type == Type.Light) {
-            lightCount--;
-        }
-
         return (true);
     }
 

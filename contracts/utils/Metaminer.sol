@@ -2,19 +2,19 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../libs/MinerTypes.sol";
 import "../interfaces/IBlockValidator.sol";
 import "../interfaces/IMinerList.sol";
 
-contract Metaminer is Ownable2Step {
+contract Metaminer is Ownable2Step, Initializable {
     IBlockValidator public blockValidator;
     IMinerList public minerList;
     uint256 constant STAKE_AMOUNT = 1_000_000 ether;
     uint256 constant ANNUAL_AMOUNT = 100_000 ether;
     uint256 constant YEAR = 31536000;
     uint256 public minerCount;
-    bool private _init;
 
     struct Share {
         uint256 sharedPercent;
@@ -53,13 +53,10 @@ contract Metaminer is Ownable2Step {
     function initialize(
         address blockValidatorAddress,
         address minerListAddress
-    ) external returns (bool) {
-        require(_init == false, "Contract already initialized.");
-        _init = true;
+    ) external initializer {
         _transferOwnership(_msgSender());
         blockValidator = IBlockValidator(blockValidatorAddress);
-        minerList = IMinerList(minerList);
-        return (true);
+        minerList = IMinerList(minerListAddress);
     }
 
     function setMiner() external payable returns (bool) {

@@ -5,10 +5,20 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract MinerList is Initializable, AccessControl {
-    mapping(address => mapping(MinerTypes.NodeType => bool)) public list;
-
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+
+    mapping(address => mapping(MinerTypes.NodeType => bool)) public list;
+    mapping(MinerTypes.NodeType => uint256) public count;
+
+    event AddMiner(
+        address indexed minerAddress,
+        MinerTypes.NodeType indexed nodeType
+    );
+    event DeleteMiner(
+        address indexed minerAddress,
+        MinerTypes.NodeType indexed nodeType
+    );
 
     function initialize(
         address ownerAddress,
@@ -85,6 +95,9 @@ contract MinerList is Initializable, AccessControl {
         MinerTypes.NodeType nodeType
     ) internal returns (bool) {
         list[minerAddress][nodeType] = true;
+        count[nodeType]++;
+
+        emit AddMiner(minerAddress, nodeType);
         return (true);
     }
 
@@ -93,6 +106,9 @@ contract MinerList is Initializable, AccessControl {
         MinerTypes.NodeType nodeType
     ) internal returns (bool) {
         delete list[minerAddress][nodeType];
+        count[nodeType]--;
+
+        emit DeleteMiner(minerAddress, nodeType);
         return (true);
     }
 }

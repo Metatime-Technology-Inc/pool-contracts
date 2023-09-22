@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+import "../libs/MinerTypes.sol";
 import "../interfaces/IMetaPoints.sol";
-import "../interfaces/IMetaminer.sol";
-import "../interfaces/IMacrominer.sol";
-import "../interfaces/IMicrominer.sol";
+import "../interfaces/IMinerHealthCheck.sol";
+import "../interfaces/IMinerList.sol";
 
 library MinerFormulas {
     enum PoolType {
@@ -14,12 +14,10 @@ library MinerFormulas {
 
     IMetaPoints public constant METAPOINTS =
         IMetaPoints(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
-    IMetaminer public constant METAMINER =
-        IMetaminer(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
-    IMacrominer public constant MACROMINER =
-        IMacrominer(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
-    IMicrominer public constant MICROMINER =
-        IMicrominer(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
+    IMinerList public constant METALIST =
+        IMinerList(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
+    IMinerHealthCheck public constant METAHEALTHCHECK =
+        IMinerHealthCheck(0xDAFEA492D9c6733ae3d56b7Ed1ADB60692c98Bc5);
 
     uint256 public constant METAMINER_DAILY_BLOCK_COUNT = 17_280;
     uint256 public constant METAMINER_DAILY_PRIZE_POOL = 166_666;
@@ -29,15 +27,14 @@ library MinerFormulas {
     uint256 public constant MACROMINER_FULLNODE_DAILY_MAX_REWARD = 100;
     uint256 public constant MACROMINER_LIGHT_DAILY_MAX_REWARD = 50;
 
-    uint256 public constant MACROMINER_ARCHIVE_DAILY_PRIZE_POOL_REWARD = 75_000;
-    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_POOL_REWARD = 60_000;
+    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD = 60_000;
+    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD = 15_000;
 
-    uint256 public constant MACROMINER_FULLNODE_DAILY_PRIZE_POOL_REWARD =
-        50_000;
-    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_POOL_REWARD = 40_000;
-
-    uint256 public constant MACROMINER_LIGHT_DAILY_PRIZE_POOL_REWARD = 25_000;
-    uint256 public constant MACROMINER_LIGHT_DAILY_CALC_POOL_REWARD = 40_000;
+    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_ONE_POOL_REWARD = 40_000;
+    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_TWO_POOL_REWARD = 10_000;
+    
+    uint256 public constant MACROMINER_LIGHT_DAILY_CALC_ONE_POOL_REWARD = 40_000;
+    uint256 public constant MACROMINER_LIGHT_DAILY_CALC_TWO_POOL_REWARD = 5_000;
 
     function calculateMetaminerReward(
         uint256 metaminerCount
@@ -51,91 +48,53 @@ library MinerFormulas {
                     (METAMINER_DAILY_BLOCK_COUNT / metaminerCount);
     }
 
-    // macrominers get rewards from reward pool and miner pool
-    function calculateMacrominerArchiveReward(
-        address minerAddress,
-        PoolType poolType
+    function calculateDailyOnePoolReward(
+        MinerTypes.NodeType nodeType
     ) external view returns (uint256) {
-        if (poolType == PoolType.Reward) {
-            uint256 MP = _balaceOfMP(minerAddress);
-            uint256 TMP = _totalSupplyMP();
-            uint256 TN = _totalNodeCount();
-            //
-            return (0);
-        } else if (poolType == PoolType.Mining) {
-            uint256 formula = (MACROMINER_ARCHIVE_DAILY_CALC_POOL_REWARD /
-                (24 * _totalNodeCount()));
-            return (
-                formula >= MACROMINER_ARCHIVE_DAILY_MAX_REWARD
-                    ? MACROMINER_ARCHIVE_DAILY_MAX_REWARD
-                    : formula
-            );
-        }
+        uint256 TOTAL_NODE_COUNT = 0;
+        uint256 DAILY_CALC_POOL_REWARD = 0;
 
-        return (0);
+        uint256 RESULT = 0;
+        if(nodeType == MinerTypes.NodeType.MacroArchive) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroArchive);
+            DAILY_CALC_POOL_REWARD = MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD;
+        } else if(nodeType == MinerTypes.NodeType.MacroFullnode) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroFullnode);
+            DAILY_CALC_POOL_REWARD = MACROMINER_FULLNODE_DAILY_CALC_ONE_POOL_REWARD;
+        } else if(nodeType == MinerTypes.NodeType.MacroLight) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroLight);
+            DAILY_CALC_POOL_REWARD = MACROMINER_LIGHT_DAILY_CALC_ONE_POOL_REWARD;
+        }
+        uint256 formula = ((DAILY_CALC_POOL_REWARD / (24 * TOTAL_NODE_COUNT)) / 1 hours);
+        RESULT = formula;
+        return (RESULT);
     }
 
-    function calculateMacrominerFullReward(
+    function calculateDailyTwoPoolReward(
         address minerAddress,
-        PoolType poolType
+        MinerTypes.NodeType nodeType
     ) external view returns (uint256) {
-        if (poolType == PoolType.Reward) {
-            uint256 MP = _balaceOfMP(minerAddress);
-            uint256 TMP = _totalSupplyMP();
-            uint256 TN = _totalNodeCount();
-            //
-            return (0);
-        } else if (poolType == PoolType.Mining) {
-            uint256 formula = (MACROMINER_FULLNODE_DAILY_CALC_POOL_REWARD /
-                (24 * _totalNodeCount()));
-            return (
-                formula >= MACROMINER_FULLNODE_DAILY_MAX_REWARD
-                    ? MACROMINER_FULLNODE_DAILY_MAX_REWARD
-                    : formula
-            );
+        uint256 TOTAL_NODE_COUNT = 0;
+        uint256 REST_POOL_AMOUNT = 0;
+        uint256 MINER_META_POINT = _balaceOfMP(minerAddress);
+        uint256 TOTAL_SUPPLY_META_POINTS = _totalSupplyMP();
+        uint256 MINERS_TOTAL_ACTIVITIES = METAHEALTHCHECK.dailyNodesActivities(_getDate(), nodeType);
+        uint256 MINER_ACTIVITY = METAHEALTHCHECK.dailyNodeActivity(_getDate(), minerAddress, nodeType);
+
+        uint256 RESULT = 0;
+        if(nodeType == MinerTypes.NodeType.MacroArchive) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroArchive);
+            REST_POOL_AMOUNT = MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD;
+        } else if(nodeType == MinerTypes.NodeType.MacroFullnode) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroFullnode);
+            REST_POOL_AMOUNT = MACROMINER_FULLNODE_DAILY_CALC_TWO_POOL_REWARD;
+        } else if(nodeType == MinerTypes.NodeType.MacroLight) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroLight);
+            REST_POOL_AMOUNT = MACROMINER_LIGHT_DAILY_CALC_TWO_POOL_REWARD;
         }
-
-        return (0);
-    }
-
-    function calculateMacrominerLightReward(
-        address minerAddress,
-        PoolType poolType
-    ) external view returns (uint256) {
-        if (poolType == PoolType.Reward) {
-            uint256 MP = _balaceOfMP(minerAddress);
-            uint256 TMP = _totalSupplyMP();
-            uint256 TN = _totalNodeCount();
-            //
-            return (0);
-        } else if (poolType == PoolType.Mining) {
-            uint256 formula = (MACROMINER_LIGHT_DAILY_CALC_POOL_REWARD /
-                (24 * _totalNodeCount()));
-            return (
-                formula >= MACROMINER_LIGHT_DAILY_MAX_REWARD
-                    ? MACROMINER_LIGHT_DAILY_MAX_REWARD
-                    : formula
-            );
-        }
-
-        return (0);
-    }
-
-    function totalNodeCount() external view returns (uint256) {
-        return (_totalNodeCount());
-    }
-
-    function _totalNodeCount() internal view returns (uint256) {
-        uint256 metaminerCount = METAMINER.minerCount();
-
-        uint256 archiveCount = MACROMINER.archiveCount();
-        uint256 fullnodeCount = MACROMINER.fullnodeCount();
-        uint256 lightCount = MACROMINER.lightCount();
-
-        uint256 macrominerCount = archiveCount + fullnodeCount + lightCount;
-
-        uint256 microminerCount = MICROMINER.minerCount();
-        return (metaminerCount + macrominerCount + microminerCount);
+        uint256 formula = (((REST_POOL_AMOUNT / (TOTAL_SUPPLY_META_POINTS * (MINERS_TOTAL_ACTIVITIES / (TOTAL_NODE_COUNT * 24)))) * MINER_META_POINT * (MINER_ACTIVITY / 24)) / 1 hours);
+        RESULT = formula;
+        return (RESULT);
     }
 
     function _balaceOfMP(address miner) internal view returns (uint256) {
@@ -144,6 +103,11 @@ library MinerFormulas {
 
     function _totalSupplyMP() internal view returns (uint256) {
         return (METAPOINTS.totalSupply());
+    }
+
+    function _getDate() internal pure returns (uint256) {
+        // calculate today date from block.timestamp and return
+        return (0);
     }
 
     // in whitepaper there is not some kind reward to microminers, just they are get reward from macrominer vote

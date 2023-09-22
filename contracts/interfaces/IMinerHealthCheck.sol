@@ -7,4 +7,6 @@ interface IMinerHealthCheck {
         address minerAddress,
         MinerTypes.NodeType miner
     ) external view returns (bool);
+    function dailyNodesActivities(uint256 date, MinerTypes.NodeType nodeType) external view returns(uint256);
+    function dailyNodeActivity(uint256 date, address minerAddress, MinerTypes.NodeType nodeType) external view returns(uint256);
 }

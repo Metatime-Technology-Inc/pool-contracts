@@ -3,14 +3,16 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libs/MinerTypes.sol";
-import "../interfaces/IMetaminer.sol";
 import "../interfaces/IMinerList.sol";
 
 contract MinerHealthCheck is Initializable {
-    IMetaminer public metaminer;
     IMinerList public minerList;
     mapping(address => mapping(MinerTypes.NodeType => uint256))
         public lastUptime;
+    mapping(uint256 => mapping(MinerTypes.NodeType => uint256)) public dailyNodesActivities; // TA
+    mapping(uint256 => mapping(address => mapping(MinerTypes.NodeType => uint256))) public dailyNodeActivity; // A
+    mapping(uint256 => mapping(MinerTypes.NodeType => uint256)) public totalRewardsFromFirstFormula;
+    mapping(uint256 => mapping(MinerTypes.NodeType => uint256)) public totalRewardsFromSecondFormula;
     uint256 public timeout;
 
     modifier isMiner(address miner, MinerTypes.NodeType nodeType) {
@@ -19,33 +21,33 @@ contract MinerHealthCheck is Initializable {
     }
 
     function initialize(
-        address metaminerAddress,
         address minerListAddress,
         uint256 requiredTimeout
     ) external initializer {
-        metaminer = IMetaminer(metaminerAddress);
         minerList = IMinerList(minerListAddress);
         timeout = requiredTimeout;
     }
 
     function ping(
-        MinerTypes.NodeType minerType
-    ) external isMiner(msg.sender, minerType) returns (bool) {
-        lastUptime[msg.sender][minerType] = block.timestamp;
+        MinerTypes.NodeType nodeType
+    ) external isMiner(msg.sender, nodeType) returns (bool) {
         // active time on day
-        // 100_000 node, tx sayısı block a giren
+        // 1000 node, tx sayısı block a giren
         // - block basan metaminer tx atıyor
         // - block history archiveNode tx atıyor
         // -- -- block geldi -> block check on contract if not exist send tx
         // -- total: 2
-        if (minerType == MinerTypes.NodeType.Meta) {
-            // meta
-        } else if (minerType == MinerTypes.NodeType.Micro) {
-            // macro
-        } else {
-            // micro
+        uint256 lastSeen = lastUptime[msg.sender][nodeType];
+        uint256 maxLimit = lastSeen + timeout;
+
+        if(maxLimit >= block.timestamp){
+            uint256 activityTime = block.timestamp - lastSeen;
+            _incrementDailyActiveTimes(msg.sender, nodeType, activityTime);
+            _incrementDailyTotalActiveTimes(nodeType, activityTime);
+            _claimRewards(msg.sender, nodeType, activityTime);
         }
 
+        lastUptime[msg.sender][nodeType] = block.timestamp;
         return true;
     }
 
@@ -58,5 +60,46 @@ contract MinerHealthCheck is Initializable {
                 ? true
                 : false
         );
+    }
+
+    function setTimeout(
+        uint256 newTimeout
+    ) external returns (bool) {
+        timeout = newTimeout;
+        return (true);
+    }
+
+    function _claimRewards(address minerAddress, MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
+        // for only macrominers
+        // activityTime is multiplier
+
+        // calculateDailyOnePoolReward -> hard cap example -> MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD
+        // calculateDailyTwoPoolReward -> hard cap example -> MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD
+
+        // claim from miner pool for both first formula and second formula, then add returned amount to for both totalRewards mapping
+        // mint (1 / 24 hours MetaPoints) * activityTime
+        
+        return (true);
+    }
+
+    function _incrementDailyTotalActiveTimes(MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
+        dailyNodesActivities[_getDate()][nodeType] += activityTime;
+        return (true);
+    }
+
+    function _incrementDailyActiveTimes(address minerAddress, MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
+        dailyNodeActivity[_getDate()][minerAddress][nodeType] += activityTime;
+        return (true);
+    }
+
+    // function _incrementTotalReward(MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
+    //     totalRewards[_getDate()][nodeType] += activityTime;
+    //     return (true);
+    // }
+
+    function _getDate() internal pure returns (uint256) {
+        // calculate today date from block.timestamp and return
+        // it can be return from MinerFormulas contract
+        return (0);
     }
 }

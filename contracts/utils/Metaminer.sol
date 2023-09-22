@@ -2,20 +2,23 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+
+import "../libs/MinerTypes.sol";
 import "../interfaces/IBlockValidator.sol";
+import "../interfaces/IMinerList.sol";
 
 contract Metaminer is Ownable2Step {
     IBlockValidator public blockValidator;
+    IMinerList public minerList;
     uint256 constant STAKE_AMOUNT = 1_000_000 ether;
     uint256 constant ANNUAL_AMOUNT = 100_000 ether;
     uint256 constant YEAR = 31536000;
     uint256 public minerCount;
     bool private _init;
 
-    struct Miner {
+    struct Share {
         uint256 sharedPercent;
         uint256 shareHolderCount;
-        bool exist;
     }
 
     struct Shareholder {
@@ -23,7 +26,7 @@ contract Metaminer is Ownable2Step {
         uint256 percent;
     }
 
-    mapping(address => Miner) public miners;
+    mapping(address => Share) public shares;
     mapping(address => uint256) public minerSubscription;
     mapping(address => mapping(uint256 => Shareholder)) public shareholders;
 
@@ -32,7 +35,10 @@ contract Metaminer is Ownable2Step {
     event MinerUnsubscribe(address indexed miner);
 
     modifier isMiner(address _miner) {
-        require(miners[_miner].exist == true, "Address is not miner.");
+        require(
+            minerList.isMiner(_msgSender(), MinerTypes.NodeType.Meta),
+            "Address is not metaminer."
+        );
         _;
     }
 
@@ -44,11 +50,15 @@ contract Metaminer is Ownable2Step {
         _;
     }
 
-    function initialize(address blockValidatorAddress) external returns (bool) {
+    function initialize(
+        address blockValidatorAddress,
+        address minerListAddress
+    ) external returns (bool) {
         require(_init == false, "Contract already initialized.");
         _init = true;
         _transferOwnership(_msgSender());
         blockValidator = IBlockValidator(blockValidatorAddress);
+        minerList = IMinerList(minerList);
         return (true);
     }
 
@@ -57,9 +67,10 @@ contract Metaminer is Ownable2Step {
             msg.value == (ANNUAL_AMOUNT + STAKE_AMOUNT),
             "Required MTC is not sended."
         );
-        miners[_msgSender()] = Miner(0, 0, true);
+        shares[_msgSender()] = Share(0, 0);
         minerSubscription[_msgSender()] = _nextYear(_msgSender());
         minerCount += 1;
+        minerList.addMiner(_msgSender(), MinerTypes.NodeType.Meta);
         emit MinerAdded(_msgSender(), minerSubscription[_msgSender()]);
         return (true);
     }
@@ -78,9 +89,10 @@ contract Metaminer is Ownable2Step {
     }
 
     function setValidator(address _miner) external onlyOwner returns (bool) {
-        miners[_miner] = Miner(0, 0, true);
+        shares[_miner] = Share(0, 0);
         minerSubscription[_miner] = _nextYear(_miner);
         minerCount += 1;
+        minerList.addMiner(_miner, MinerTypes.NodeType.Meta);
         emit MinerAdded(_miner, minerSubscription[_miner]);
         return (true);
     }
@@ -98,16 +110,16 @@ contract Metaminer is Ownable2Step {
         uint256[] memory _percents,
         uint256 _shareHoldersLength
     ) external onlyOwner returns (bool) {
-        Miner storage miner = miners[_miner];
+        Share storage share = shares[_miner];
         for (uint256 i = 0; i < _shareHoldersLength; i++) {
             address addr = _shareHolders[i];
             uint256 percent = _percents[i];
-            uint256 nextPercent = miner.sharedPercent + percent;
+            uint256 nextPercent = share.sharedPercent + percent;
 
             require(nextPercent <= 100, "Total percent cannot exceed 100.");
 
             _addShareHolder(_miner, addr, percent);
-            miner.sharedPercent = nextPercent;
+            share.sharedPercent = nextPercent;
         }
         return (true);
     }
@@ -147,12 +159,12 @@ contract Metaminer is Ownable2Step {
         address _addr,
         uint256 _percent
     ) internal isMiner(_miner) returns (bool) {
-        Miner storage miner = miners[_miner];
-        shareholders[_miner][miner.shareHolderCount] = Shareholder(
+        Share storage share = shares[_miner];
+        shareholders[_miner][share.shareHolderCount] = Shareholder(
             _addr,
             _percent
         );
-        miner.shareHolderCount++;
+        share.shareHolderCount++;
         return (true);
     }
 
@@ -160,7 +172,7 @@ contract Metaminer is Ownable2Step {
         address _miner,
         uint256 _balance
     ) internal isMiner(_miner) validMinerSubscription(_miner) returns (bool) {
-        uint256 _shareholderCount = miners[_miner].shareHolderCount;
+        uint256 _shareholderCount = shares[_miner].shareHolderCount;
         for (uint256 i = 0; i < _shareholderCount; i++) {
             Shareholder memory shareHolder = shareholders[_miner][i];
             uint256 holderPercent = (_balance * shareHolder.percent) / 100;
@@ -175,7 +187,7 @@ contract Metaminer is Ownable2Step {
     function _unstake(address _miner) internal returns (bool) {
         (bool sent, ) = address(_miner).call{value: STAKE_AMOUNT}("");
         require(sent, "unstake failed.");
-        miners[_miner].exist = false;
+        minerList.deleteMiner(_miner, MinerTypes.NodeType.Meta);
         minerSubscription[_miner] = 0;
         minerCount -= 1;
         return (true);

@@ -1,17 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
+import "../libs/MinerTypes.sol";
 
 interface IMinerHealthCheck {
-    enum MinerType {
-        Meta,
-        Archive,
-        Fullnode,
-        Light,
-        Micro
-    }
-
     function status(
-        address miner,
-        MinerType minerType
+        address minerAddress,
+        MinerTypes.NodeType miner
     ) external view returns (bool);
 }

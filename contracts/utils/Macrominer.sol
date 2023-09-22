@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/Context.sol";
+import "../libs/MinerTypes.sol";
 
 import "../interfaces/IMinerHealthCheck.sol";
 import "../interfaces/IMetaPoints.sol";
@@ -159,13 +160,13 @@ contract Macrominer is Context {
 
     function _formatType(
         Type _type
-    ) internal pure returns (IMinerHealthCheck.MinerType) {
+    ) internal pure returns (MinerTypes.NodeType) {
         if (_type == Type.Archive) {
-            return (IMinerHealthCheck.MinerType.Archive);
+            return (MinerTypes.NodeType.MacroArchive);
         } else if (_type == Type.Fullnode) {
-            return (IMinerHealthCheck.MinerType.Fullnode);
+            return (MinerTypes.NodeType.MacroFullnode);
         } else if (_type == Type.Light) {
-            return (IMinerHealthCheck.MinerType.Light);
+            return (MinerTypes.NodeType.MacroLight);
         }
 
         revert("Not as expected.");

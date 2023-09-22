@@ -70,9 +70,9 @@ library MinerFormulas {
                     ? MACROMINER_ARCHIVE_DAILY_MAX_REWARD
                     : formula
             );
-        } else {
-            return (0);
         }
+
+        return (0);
     }
 
     function calculateMacrominerFullReward(
@@ -93,9 +93,9 @@ library MinerFormulas {
                     ? MACROMINER_FULLNODE_DAILY_MAX_REWARD
                     : formula
             );
-        } else {
-            return (0);
         }
+
+        return (0);
     }
 
     function calculateMacrominerLightReward(
@@ -116,9 +116,9 @@ library MinerFormulas {
                     ? MACROMINER_LIGHT_DAILY_MAX_REWARD
                     : formula
             );
-        } else {
-            return (0);
         }
+
+        return (0);
     }
 
     function totalNodeCount() external view returns (uint256) {

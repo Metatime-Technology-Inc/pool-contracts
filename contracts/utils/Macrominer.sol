@@ -164,6 +164,7 @@ contract Macrominer is Context, Initializable {
         MinerTypes.NodeType nodeType
     ) internal returns (bool) {
         delete votes[minerAddress][nodeType];
+        minerList.deleteMiner(minerAddress, nodeType);
         (bool sent, ) = payable(minerAddress).call{value: STAKE_AMOUNT}("");
 
         require(sent, "Unstake failed.");

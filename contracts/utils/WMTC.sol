@@ -14,6 +14,10 @@ contract WMTC {
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
 
+    receive() external payable {
+        deposit();
+    }
+
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);
@@ -60,9 +64,5 @@ contract WMTC {
         emit Transfer(src, dst, wad);
 
         return true;
-    }
-
-    receive() external payable {
-        deposit();
     }
 }

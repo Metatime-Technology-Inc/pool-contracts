@@ -49,6 +49,8 @@ contract Metaminer is Ownable2Step, Initializable {
         _;
     }
 
+    receive() external payable {}
+
     function initialize(
         address blockValidatorAddress,
         address minerListAddress
@@ -198,6 +200,4 @@ contract Metaminer is Ownable2Step, Initializable {
             return (true);
         }
     }
-
-    receive() external payable {}
 }

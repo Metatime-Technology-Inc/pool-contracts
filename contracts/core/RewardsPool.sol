@@ -21,6 +21,10 @@ contract RewardsPool is Initializable, Ownable2Step {
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
+    receive() external payable {
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
+    }
+
     /**
      * @dev Initializes the contract with the specified parameters.
      * @param ownerAddress The address of the contract owner.
@@ -41,7 +45,10 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @return A boolean indicating whether the claim was successful.
      */
     function claim(address receiver) external returns (uint256) {
-        require(minerList.hasRole(MANAGER_ROLE, _msgSender()), "BlockValidator: address is not minerList manager");
+        require(
+            minerList.hasRole(MANAGER_ROLE, _msgSender()),
+            "BlockValidator: address is not minerList manager"
+        );
         // external call blok yapısını al
         uint256 amount = calculateClaimableAmount();
 
@@ -60,18 +67,6 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @return The amount of tokens claimable for the current period.
      */
     function calculateClaimableAmount() public view returns (uint256) {
-        return _calculateClaimableAmount();
-    }
-
-    /**
-     * @dev Internal function to calculate the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period.
-     */
-    function _calculateClaimableAmount() internal view returns (uint256) {
         return minerFormulas.calculateMetaminerReward();
-    }
-
-    receive() external payable {
-        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 }

@@ -68,6 +68,8 @@ contract Macrominer is Context, Initializable {
         _;
     }
 
+    receive() external payable {}
+
     function initialize(
         address minerHealthCheckAddress,
         address metapointsAddress,
@@ -91,7 +93,7 @@ contract Macrominer is Context, Initializable {
             msg.value == STAKE_AMOUNT,
             "You have to stake as required STAKE_AMOUNT."
         );
-        minerList.addMiner(_msgSender(),nodeType);
+        minerList.addMiner(_msgSender(), nodeType);
         return (true);
     }
 
@@ -171,6 +173,4 @@ contract Macrominer is Context, Initializable {
         require(sent, "Unstake failed.");
         return (true);
     }
-
-    receive() external payable {}
 }

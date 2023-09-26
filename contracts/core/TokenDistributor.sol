@@ -41,8 +41,12 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * The purpose of this function is to prevent accidental execution of initializers when creating proxy instances of the contract.
      * It is called internally during the construction of the proxy contract.
      */
-    function disableInitializers() external {
+    constructor() {
         _disableInitializers();
+    }
+
+    receive() external payable {
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 
     /**
@@ -290,9 +294,5 @@ contract TokenDistributor is Initializable, Ownable2Step {
                 distributionRate *
                 (block.timestamp - lastClaimTimes[user]) *
                 10 ** 18) / (periodLength * BASE_DIVIDER * 10 ** 18);
-    }
-
-    receive() external payable {
-        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 }

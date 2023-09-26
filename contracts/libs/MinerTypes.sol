@@ -6,6 +6,7 @@ library MinerTypes {
         NodeType nodeType;
         bool exist;
     }
+
     enum NodeType {
         Meta,
         MacroArchive,

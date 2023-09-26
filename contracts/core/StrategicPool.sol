@@ -18,6 +18,10 @@ contract StrategicPool is Ownable2Step {
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
+    receive() external payable {
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
+    }
+
     /**
      * @dev Initializes the contract.
      */
@@ -88,9 +92,5 @@ contract StrategicPool is Ownable2Step {
                             int256(Trigonometry.PI)) / (180 * 1e18)
                     )
                 ) * 2923) / 1e3)) / 1e18;
-    }
-
-    receive() external payable {
-        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 }

@@ -52,6 +52,10 @@ contract MultiSigWallet {
         _;
     }
 
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value, address(this).balance);
+    }
+
     function initialize(
         address[] memory _owners,
         uint _numConfirmationsRequired
@@ -76,10 +80,6 @@ contract MultiSigWallet {
 
         numConfirmationsRequired = _numConfirmationsRequired;
         initialized = true;
-    }
-
-    receive() external payable {
-        emit Deposit(msg.sender, msg.value, address(this).balance);
     }
 
     function submitTransaction(

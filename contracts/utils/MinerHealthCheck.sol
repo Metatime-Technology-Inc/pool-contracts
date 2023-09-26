@@ -4,15 +4,21 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libs/MinerTypes.sol";
 import "../interfaces/IMinerList.sol";
+import "../interfaces/IMinerFormulas.sol";
 
 contract MinerHealthCheck is Initializable {
     IMinerList public minerList;
+    IMinerFormulas public minerFormulas;
     mapping(address => mapping(MinerTypes.NodeType => uint256))
         public lastUptime;
-    mapping(uint256 => mapping(MinerTypes.NodeType => uint256)) public dailyNodesActivities; // TA
-    mapping(uint256 => mapping(address => mapping(MinerTypes.NodeType => uint256))) public dailyNodeActivity; // A
-    mapping(uint256 => mapping(MinerTypes.NodeType => uint256)) public totalRewardsFromFirstFormula;
-    mapping(uint256 => mapping(MinerTypes.NodeType => uint256)) public totalRewardsFromSecondFormula;
+    mapping(uint256 => mapping(MinerTypes.NodeType => uint256))
+        public dailyNodesActivities; // TA
+    mapping(uint256 => mapping(address => mapping(MinerTypes.NodeType => uint256)))
+        public dailyNodeActivity; // A
+    mapping(uint256 => mapping(MinerTypes.NodeType => uint256))
+        public totalRewardsFromFirstFormula;
+    mapping(uint256 => mapping(MinerTypes.NodeType => uint256))
+        public totalRewardsFromSecondFormula;
     uint256 public timeout;
 
     modifier isMiner(address miner, MinerTypes.NodeType nodeType) {
@@ -22,9 +28,11 @@ contract MinerHealthCheck is Initializable {
 
     function initialize(
         address minerListAddress,
+        address minerFormulasAddress,
         uint256 requiredTimeout
     ) external initializer {
         minerList = IMinerList(minerListAddress);
+        minerFormulas = IMinerFormulas(minerFormulasAddress);
         timeout = requiredTimeout;
     }
 
@@ -40,7 +48,7 @@ contract MinerHealthCheck is Initializable {
         uint256 lastSeen = lastUptime[msg.sender][nodeType];
         uint256 maxLimit = lastSeen + timeout;
 
-        if(maxLimit >= block.timestamp){
+        if (maxLimit >= block.timestamp) {
             uint256 activityTime = block.timestamp - lastSeen;
             _incrementDailyActiveTimes(msg.sender, nodeType, activityTime);
             _incrementDailyTotalActiveTimes(nodeType, activityTime);
@@ -62,14 +70,16 @@ contract MinerHealthCheck is Initializable {
         );
     }
 
-    function setTimeout(
-        uint256 newTimeout
-    ) external returns (bool) {
+    function setTimeout(uint256 newTimeout) external returns (bool) {
         timeout = newTimeout;
         return (true);
     }
 
-    function _claimRewards(address minerAddress, MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
+    function _claimRewards(
+        address minerAddress,
+        MinerTypes.NodeType nodeType,
+        uint256 activityTime
+    ) internal returns (bool) {
         // for only macrominers
         // activityTime is multiplier
 
@@ -78,17 +88,26 @@ contract MinerHealthCheck is Initializable {
 
         // claim from miner pool for both first formula and second formula, then add returned amount to for both totalRewards mapping
         // mint (1 / 24 hours MetaPoints) * activityTime
-        
+
         return (true);
     }
 
-    function _incrementDailyTotalActiveTimes(MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
-        dailyNodesActivities[_getDate()][nodeType] += activityTime;
+    function _incrementDailyTotalActiveTimes(
+        MinerTypes.NodeType nodeType,
+        uint256 activityTime
+    ) internal returns (bool) {
+        dailyNodesActivities[minerFormulas.getDate()][nodeType] += activityTime;
         return (true);
     }
 
-    function _incrementDailyActiveTimes(address minerAddress, MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
-        dailyNodeActivity[_getDate()][minerAddress][nodeType] += activityTime;
+    function _incrementDailyActiveTimes(
+        address minerAddress,
+        MinerTypes.NodeType nodeType,
+        uint256 activityTime
+    ) internal returns (bool) {
+        dailyNodeActivity[minerFormulas.getDate()][minerAddress][
+            nodeType
+        ] += activityTime;
         return (true);
     }
 
@@ -96,10 +115,4 @@ contract MinerHealthCheck is Initializable {
     //     totalRewards[_getDate()][nodeType] += activityTime;
     //     return (true);
     // }
-
-    function _getDate() internal pure returns (uint256) {
-        // calculate today date from block.timestamp and return
-        // it can be return from MinerFormulas contract
-        return (0);
-    }
 }

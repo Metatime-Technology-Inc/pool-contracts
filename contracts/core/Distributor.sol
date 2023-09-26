@@ -32,16 +32,6 @@ contract Distributor is Initializable, Ownable2Step {
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
     /**
-     * @dev disableInitializers function.
-     * It disables the execution of initializers in the contract, as it is not intended to be called directly.
-     * The purpose of this function is to prevent accidental execution of initializers when creating proxy instances of the contract.
-     * It is called internally during the construction of the proxy contract.
-     */
-    function disableInitializers() external {
-        _disableInitializers();
-    }
-
-    /**
      * @dev A modifier that validates pool parameters.
      * @param _startTime Start timestamp of claim period.
      * @param _endTime End timestamp of claim period.
@@ -59,6 +49,20 @@ contract Distributor is Initializable, Ownable2Step {
             "Distributor: end time must be bigger than start time"
         );
         _;
+    }
+
+    /**
+     * @dev disableInitializers function.
+     * It disables the execution of initializers in the contract, as it is not intended to be called directly.
+     * The purpose of this function is to prevent accidental execution of initializers when creating proxy instances of the contract.
+     * It is called internally during the construction of the proxy contract.
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
+    receive() external payable {
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 
     /**
@@ -194,9 +198,5 @@ contract Distributor is Initializable, Ownable2Step {
                 distributionRate *
                 (block.timestamp - lastClaimTime) *
                 10 ** 18) / (periodLength * BASE_DIVIDER * 10 ** 18);
-    }
-
-    receive() external payable {
-        emit Deposit(_msgSender(), msg.value, address(this).balance);
     }
 }

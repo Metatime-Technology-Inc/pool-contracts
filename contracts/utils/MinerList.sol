@@ -23,7 +23,7 @@ contract MinerList is Initializable, AccessControl {
     function initialize(
         address ownerAddress,
         address[] memory managerAddresses
-    ) public initializer {
+    ) external initializer {
         _grantRole(OWNER_ROLE, ownerAddress);
         _addManager(managerAddresses);
     }

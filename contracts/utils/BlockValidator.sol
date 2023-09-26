@@ -15,7 +15,6 @@ contract BlockValidator is Context, Initializable {
     IMinerList public minerList;
     IRewardsPool public rewardsPool;
     uint8 private _verifiedBlockId = 0;
-    bytes32 private constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     // Validation queue struct
     struct BlockPayload {
@@ -69,7 +68,10 @@ contract BlockValidator is Context, Initializable {
 
     // Finalizes block
     function finalizeBlock(uint256 blockNumber) external returns (bool) {
-        require(minerList.hasRole(MANAGER_ROLE, _msgSender()), "BlockValidator: address is not minerList manager");
+        require(
+            minerList.hasRole(minerList.MANAGER_ROLE(), _msgSender()),
+            "BlockValidator: address is not minerList manager"
+        );
 
         BlockPayload storage payload = blockPayloads[blockNumber];
         require(

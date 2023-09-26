@@ -35,7 +35,7 @@ contract Metaminer is Ownable2Step, Initializable {
 
     modifier isMiner(address _miner) {
         require(
-            minerList.isMiner(_msgSender(), MinerTypes.NodeType.Meta),
+            minerList.isMiner(_miner, MinerTypes.NodeType.Meta),
             "Address is not metaminer."
         );
         _;

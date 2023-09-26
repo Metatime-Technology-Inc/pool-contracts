@@ -125,6 +125,8 @@ contract Metaminer is Ownable2Step, Initializable {
         if (status == true) {
             IBlockValidator.BlockPayload memory blockPayload = blockValidator
                 .blockPayloads(blockNumber);
+            bool finalized = blockPayload.isFinalized;
+            require(finalized == false, "Already finalized.");
             address coinbase = blockPayload.coinbase;
             uint256 blockReward = blockPayload.blockReward;
 

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../libs/MinerTypes.sol";
 import "../interfaces/IBlockValidator.sol";
 import "../interfaces/IMinerList.sol";
 
-contract Metaminer is Ownable2Step, Initializable {
+contract Metaminer is Context, Initializable {
     IBlockValidator public blockValidator;
     IMinerList public minerList;
     uint256 constant STAKE_AMOUNT = 1_000_000 ether;
@@ -49,13 +49,20 @@ contract Metaminer is Ownable2Step, Initializable {
         _;
     }
 
+    modifier hasOwnerRole() {
+        require(
+            minerList.hasRole(minerList.OWNER_ROLE(), _msgSender()),
+            "Unauthorized action."
+        );
+        _;
+    }
+
     receive() external payable {}
 
     function initialize(
         address blockValidatorAddress,
         address minerListAddress
     ) external initializer {
-        _transferOwnership(_msgSender());
         blockValidator = IBlockValidator(blockValidatorAddress);
         minerList = IMinerList(minerListAddress);
     }
@@ -85,7 +92,7 @@ contract Metaminer is Ownable2Step, Initializable {
         return (true);
     }
 
-    function setValidator(address _miner) external onlyOwner returns (bool) {
+    function setValidator(address _miner) external hasOwnerRole returns (bool) {
         shares[_miner] = Share(0, 0);
         minerSubscription[_miner] = _nextYear(_miner);
         minerList.addMiner(_miner, MinerTypes.NodeType.Meta);
@@ -95,7 +102,7 @@ contract Metaminer is Ownable2Step, Initializable {
 
     function refreshValidator(
         address _miner
-    ) external onlyOwner returns (bool) {
+    ) external hasOwnerRole returns (bool) {
         minerSubscription[_miner] = _nextYear(_miner);
         return (true);
     }
@@ -105,7 +112,7 @@ contract Metaminer is Ownable2Step, Initializable {
         address[] memory _shareHolders,
         uint256[] memory _percents,
         uint256 _shareHoldersLength
-    ) external onlyOwner returns (bool) {
+    ) external hasOwnerRole returns (bool) {
         Share storage share = shares[_miner];
         for (uint256 i = 0; i < _shareHoldersLength; i++) {
             address addr = _shareHolders[i];

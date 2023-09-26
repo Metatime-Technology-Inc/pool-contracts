@@ -18,8 +18,7 @@ contract MetaPoints is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     function initialize(
-        address ownerAddress,
-        address managerAddress
+        address ownerAddress
     ) public initializer {
         __ERC20_init("Meta Points", "MP");
         __ERC20Burnable_init();
@@ -27,7 +26,7 @@ contract MetaPoints is
         __AccessControl_init();
 
         _grantRole(OWNER_ROLE, ownerAddress);
-        _grantRole(MANAGER_ROLE, managerAddress);
+        _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
     }
 
     function pause() public onlyRole(OWNER_ROLE) {

@@ -4,7 +4,11 @@ pragma solidity 0.8.16;
 import "../libs/MinerTypes.sol";
 
 interface IMinerList {
+    function OWNER_ROLE() external view returns (bytes32);
+
     function MANAGER_ROLE() external view returns (bytes32);
+
+    function VALIDATOR_ROLE() external view returns (bytes32);
 
     function count(
         MinerTypes.NodeType nodeType

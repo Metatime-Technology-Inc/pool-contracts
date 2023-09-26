@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract MinerList is Initializable, AccessControl {
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
 
     mapping(address => mapping(MinerTypes.NodeType => bool)) public list;
     mapping(MinerTypes.NodeType => uint256) public count;
@@ -20,12 +21,10 @@ contract MinerList is Initializable, AccessControl {
         MinerTypes.NodeType indexed nodeType
     );
 
-    function initialize(
-        address ownerAddress,
-        address[] memory managerAddresses
-    ) external initializer {
+    function initialize(address ownerAddress) external initializer {
         _grantRole(OWNER_ROLE, ownerAddress);
-        _addManager(managerAddresses);
+        _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(VALIDATOR_ROLE, OWNER_ROLE);
     }
 
     function isMiner(
@@ -33,20 +32,6 @@ contract MinerList is Initializable, AccessControl {
         MinerTypes.NodeType nodeType
     ) external view returns (bool) {
         return list[minerAddress][nodeType];
-    }
-
-    function addManager(
-        address[] memory managerAddresses
-    ) external onlyRole(OWNER_ROLE) returns (bool) {
-        _addManager(managerAddresses);
-        return (true);
-    }
-
-    function deleteManager(
-        address[] memory managerAddresses
-    ) external onlyRole(OWNER_ROLE) returns (bool) {
-        _deleteManager(managerAddresses);
-        return (true);
     }
 
     function addMiner(
@@ -62,31 +47,6 @@ contract MinerList is Initializable, AccessControl {
         MinerTypes.NodeType nodeType
     ) external onlyRole(MANAGER_ROLE) returns (bool) {
         _deleteMiner(minerAddress, nodeType);
-        return (true);
-    }
-
-    function _addManager(
-        address[] memory managerAddresses
-    ) internal returns (bool) {
-        for (uint256 i = 0; i < managerAddresses.length; i++) {
-            require(managerAddresses[i] != address(0), "Wrong address.");
-            address addr = managerAddresses[i];
-            _grantRole(MANAGER_ROLE, addr);
-        }
-        return (true);
-    }
-
-    function _deleteManager(
-        address[] memory managerAddresses
-    ) internal returns (bool) {
-        for (uint256 i = 0; i < managerAddresses.length; i++) {
-            require(
-                hasRole(MANAGER_ROLE, managerAddresses[i]),
-                "Address is not manager."
-            );
-            address addr = managerAddresses[i];
-            _revokeRole(MANAGER_ROLE, addr);
-        }
         return (true);
     }
 

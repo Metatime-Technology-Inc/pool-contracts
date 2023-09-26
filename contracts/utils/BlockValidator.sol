@@ -5,15 +5,17 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IRewardsPool.sol";
+import "../interfaces/IMinerList.sol";
+import "../libs/MinerTypes.sol";
 
 contract BlockValidator is Context, Initializable {
     uint256[32] public lastVerifiedBlocknumbers;
     uint8 public constant DELAY_LIMIT = 32;
     mapping(uint256 => BlockPayload) public blockPayloads;
-    address public manager;
-    address public blockSetter;
+    IMinerList public minerList;
     IRewardsPool public rewardsPool;
     uint8 private _verifiedBlockId = 0;
+    bytes32 private constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     // Validation queue struct
     struct BlockPayload {
@@ -21,6 +23,14 @@ contract BlockValidator is Context, Initializable {
         bytes32 blockHash;
         uint256 blockReward;
         bool isFinalized;
+    }
+
+    modifier isMiner(address _miner) {
+        require(
+            minerList.isMiner(_miner, MinerTypes.NodeType.Meta),
+            "Address is not metaminer."
+        );
+        _;
     }
 
     // Event that emitted after payload set
@@ -34,12 +44,10 @@ contract BlockValidator is Context, Initializable {
     );
 
     function initialize(
-        address managerAddress,
-        address blockSetterAddress,
+        address minerListAddress,
         address rewardsPoolAddress
     ) external initializer {
-        manager = managerAddress;
-        blockSetter = blockSetterAddress;
+        minerList = IMinerList(minerListAddress);
         rewardsPool = IRewardsPool(rewardsPoolAddress);
     }
 
@@ -47,12 +55,7 @@ contract BlockValidator is Context, Initializable {
     function setBlockPayload(
         uint256 blockNumber,
         BlockPayload memory blockPayload
-    ) external returns (bool) {
-        require(
-            _msgSender() == blockSetter,
-            "setBlockPayload: Unauthorized address."
-        );
-
+    ) external isMiner(_msgSender()) returns (bool) {
         require(
             blockPayloads[blockNumber].coinbase == address(0),
             "setBlockPayload: Unable to set block payload."
@@ -66,7 +69,7 @@ contract BlockValidator is Context, Initializable {
 
     // Finalizes block
     function finalizeBlock(uint256 blockNumber) external returns (bool) {
-        require(manager == _msgSender(), "RewardsPool: address is not manager");
+        require(minerList.hasRole(MANAGER_ROLE, _msgSender()), "BlockValidator: address is not minerList manager");
 
         BlockPayload storage payload = blockPayloads[blockNumber];
         require(

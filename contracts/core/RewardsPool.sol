@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IMinerFormulas.sol";
+import "../interfaces/IMinerList.sol";
 
 /**
  * @title RewardsPool
@@ -13,23 +14,12 @@ import "../interfaces/IMinerFormulas.sol";
 contract RewardsPool is Initializable, Ownable2Step {
     uint256 currentBlock = 0;
     IMinerFormulas public minerFormulas;
+    IMinerList public minerList;
+    bytes32 private constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     mapping(address => uint256) public claimedAmounts; // Total amount of tokens claimed so far
-    mapping(address => bool) public managers; // Managers of the contract
 
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
-    event SetManagers(address[] indexed managers); // Event emitted when managers set by owner
-
-    /**
-     * @dev Checks manager accessibility.
-     */
-    modifier onlyManager() {
-        require(
-            managers[_msgSender()] == true,
-            "RewardsPool: address is not manager"
-        );
-        _;
-    }
 
     /**
      * @dev Initializes the contract with the specified parameters.
@@ -38,34 +28,20 @@ contract RewardsPool is Initializable, Ownable2Step {
      */
     function initialize(
         address ownerAddress,
-        address minerFormulasAddress
+        address minerFormulasAddress,
+        address minerListAddress
     ) external initializer {
         _transferOwnership(ownerAddress);
         minerFormulas = IMinerFormulas(minerFormulasAddress);
-    }
-
-    /**
-     * @dev Sets new manager addresses.
-     * @return A boolean indicating whether the address setting was successful.
-     */
-    function setManagers(
-        address[] memory newManagers
-    ) external onlyOwner returns (bool) {
-        uint256 i = 0;
-        uint256 newManagersLength = newManagers.length;
-        for (i; i < newManagersLength; i++) {
-            address newManagerAddress = newManagers[i];
-            managers[newManagerAddress] = true;
-        }
-
-        return true;
+        minerList = IMinerList(minerListAddress);
     }
 
     /**
      * @dev Claim tokens for the sender.
      * @return A boolean indicating whether the claim was successful.
      */
-    function claim(address receiver) external onlyManager returns (uint256) {
+    function claim(address receiver) external returns (uint256) {
+        require(minerList.hasRole(MANAGER_ROLE, _msgSender()), "BlockValidator: address is not minerList manager");
         // external call blok yapısını al
         uint256 amount = calculateClaimableAmount();
 

@@ -4,11 +4,12 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "../helpers/RolesHandler.sol";
 import "../interfaces/IRewardsPool.sol";
 import "../interfaces/IMinerList.sol";
 import "../libs/MinerTypes.sol";
 
-contract BlockValidator is Context, Initializable {
+contract BlockValidator is Context, Initializable, RolesHandler {
     uint256[32] public lastVerifiedBlocknumbers;
     uint8 public constant DELAY_LIMIT = 32;
     mapping(uint256 => BlockPayload) public blockPayloads;
@@ -67,12 +68,9 @@ contract BlockValidator is Context, Initializable {
     }
 
     // Finalizes block
-    function finalizeBlock(uint256 blockNumber) external returns (bool) {
-        require(
-            minerList.hasRole(minerList.MANAGER_ROLE(), _msgSender()),
-            "BlockValidator: address is not minerList manager"
-        );
-
+    function finalizeBlock(
+        uint256 blockNumber
+    ) external onlyManagerRole(_msgSender()) returns (bool) {
         BlockPayload storage payload = blockPayloads[blockNumber];
         require(
             payload.coinbase != address(0),

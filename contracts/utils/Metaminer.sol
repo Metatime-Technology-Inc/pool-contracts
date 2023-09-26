@@ -7,8 +7,9 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libs/MinerTypes.sol";
 import "../interfaces/IBlockValidator.sol";
 import "../interfaces/IMinerList.sol";
+import "../helpers/RolesHandler.sol";
 
-contract Metaminer is Context, Initializable {
+contract Metaminer is Context, Initializable, RolesHandler {
     IBlockValidator public blockValidator;
     IMinerList public minerList;
     uint256 constant STAKE_AMOUNT = 1_000_000 ether;
@@ -49,14 +50,6 @@ contract Metaminer is Context, Initializable {
         _;
     }
 
-    modifier hasOwnerRole() {
-        require(
-            minerList.hasRole(minerList.OWNER_ROLE(), _msgSender()),
-            "Unauthorized action."
-        );
-        _;
-    }
-
     receive() external payable {}
 
     function initialize(
@@ -92,7 +85,9 @@ contract Metaminer is Context, Initializable {
         return (true);
     }
 
-    function setValidator(address _miner) external hasOwnerRole returns (bool) {
+    function setValidator(
+        address _miner
+    ) external onlyOwnerRole(_msgSender()) returns (bool) {
         shares[_miner] = Share(0, 0);
         minerSubscription[_miner] = _nextYear(_miner);
         minerList.addMiner(_miner, MinerTypes.NodeType.Meta);
@@ -102,7 +97,7 @@ contract Metaminer is Context, Initializable {
 
     function refreshValidator(
         address _miner
-    ) external hasOwnerRole returns (bool) {
+    ) external onlyOwnerRole(_msgSender()) returns (bool) {
         minerSubscription[_miner] = _nextYear(_miner);
         return (true);
     }
@@ -112,7 +107,7 @@ contract Metaminer is Context, Initializable {
         address[] memory _shareHolders,
         uint256[] memory _percents,
         uint256 _shareHoldersLength
-    ) external hasOwnerRole returns (bool) {
+    ) external onlyOwnerRole(_msgSender()) returns (bool) {
         Share storage share = shares[_miner];
         for (uint256 i = 0; i < _shareHoldersLength; i++) {
             address addr = _shareHolders[i];

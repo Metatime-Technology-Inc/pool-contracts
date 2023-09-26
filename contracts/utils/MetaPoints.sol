@@ -7,40 +7,36 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+import "../helpers/RolesHandler.sol";
+
 contract MetaPoints is
     Initializable,
     ERC20Upgradeable,
     ERC20BurnableUpgradeable,
     PausableUpgradeable,
-    AccessControlUpgradeable
+    RolesHandler
 {
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
-    function initialize(
-        address ownerAddress
-    ) public initializer {
+    function initialize() public initializer {
         __ERC20_init("Meta Points", "MP");
         __ERC20Burnable_init();
         __Pausable_init();
-        __AccessControl_init();
-
-        _grantRole(OWNER_ROLE, ownerAddress);
-        _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
     }
 
-    function pause() public onlyRole(OWNER_ROLE) {
+    function pause() public onlyOwnerRole(_msgSender()) {
         _pause();
     }
 
-    function unpause() public onlyRole(OWNER_ROLE) {
+    function unpause() public onlyOwnerRole(_msgSender()) {
         _unpause();
     }
 
     function mint(
         address to,
         uint256 amount
-    ) public whenNotPaused onlyRole(MANAGER_ROLE) {
+    ) public whenNotPaused onlyManagerRole(_msgSender()) {
         _mint(to, amount);
     }
 
@@ -49,7 +45,7 @@ contract MetaPoints is
     function burnFrom(
         address account,
         uint256 amount
-    ) public virtual override onlyRole(MANAGER_ROLE) {
+    ) public virtual override onlyManagerRole(_msgSender()) {
         _burn(account, amount);
     }
 

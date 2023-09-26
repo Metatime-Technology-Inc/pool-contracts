@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
-import "../libs/MinerTypes.sol";
+
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract MinerList is Initializable, AccessControl {
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
+import "../helpers/RolesHandler.sol";
+import "../libs/MinerTypes.sol";
 
+contract MinerList is Context, Initializable, RolesHandler {
     mapping(address => mapping(MinerTypes.NodeType => bool)) public list;
     mapping(MinerTypes.NodeType => uint256) public count;
 
@@ -21,10 +20,8 @@ contract MinerList is Initializable, AccessControl {
         MinerTypes.NodeType indexed nodeType
     );
 
-    function initialize(address ownerAddress) external initializer {
-        _grantRole(OWNER_ROLE, ownerAddress);
-        _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
-        _setRoleAdmin(VALIDATOR_ROLE, OWNER_ROLE);
+    function initialize(address rolesAddress) external initializer {
+        roles = IRoles(rolesAddress);
     }
 
     function isMiner(
@@ -37,7 +34,7 @@ contract MinerList is Initializable, AccessControl {
     function addMiner(
         address minerAddress,
         MinerTypes.NodeType nodeType
-    ) external onlyRole(MANAGER_ROLE) returns (bool) {
+    ) external onlyManagerRole(_msgSender()) returns (bool) {
         _addMiner(minerAddress, nodeType);
         return (true);
     }
@@ -45,7 +42,7 @@ contract MinerList is Initializable, AccessControl {
     function deleteMiner(
         address minerAddress,
         MinerTypes.NodeType nodeType
-    ) external onlyRole(MANAGER_ROLE) returns (bool) {
+    ) external onlyManagerRole(_msgSender()) returns (bool) {
         _deleteMiner(minerAddress, nodeType);
         return (true);
     }

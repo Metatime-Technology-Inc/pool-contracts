@@ -27,18 +27,13 @@ library MinerFormulas {
     uint256 public constant MACROMINER_FULLNODE_DAILY_MAX_REWARD = 100;
     uint256 public constant MACROMINER_LIGHT_DAILY_MAX_REWARD = 50;
 
-    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD =
-        60_000;
-    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD =
-        15_000;
+    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD = 60_000;
+    uint256 public constant MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD = 15_000;
 
-    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_ONE_POOL_REWARD =
-        40_000;
-    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_TWO_POOL_REWARD =
-        10_000;
-
-    uint256 public constant MACROMINER_LIGHT_DAILY_CALC_ONE_POOL_REWARD =
-        40_000;
+    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_ONE_POOL_REWARD = 40_000;
+    uint256 public constant MACROMINER_FULLNODE_DAILY_CALC_TWO_POOL_REWARD = 10_000;
+    
+    uint256 public constant MACROMINER_LIGHT_DAILY_CALC_ONE_POOL_REWARD = 40_000;
     uint256 public constant MACROMINER_LIGHT_DAILY_CALC_TWO_POOL_REWARD = 5_000;
 
     function calculateMetaminerReward() external view returns (uint256) {
@@ -48,8 +43,7 @@ library MinerFormulas {
             calculatedAmount > METAMINER_DAILY_PRIZE_LIMIT
                 ? METAMINER_DAILY_PRIZE_LIMIT / METAMINER_DAILY_BLOCK_COUNT
                 : calculatedAmount /
-                    (METAMINER_DAILY_BLOCK_COUNT /
-                        METALIST.count(MinerTypes.NodeType.Meta));
+                    (METAMINER_DAILY_BLOCK_COUNT / METALIST.count(MinerTypes.NodeType.Meta));
     }
 
     function calculateDailyOnePoolReward(
@@ -59,20 +53,17 @@ library MinerFormulas {
         uint256 DAILY_CALC_POOL_REWARD = 0;
 
         uint256 RESULT = 0;
-        if (nodeType == MinerTypes.NodeType.MacroArchive) {
+        if(nodeType == MinerTypes.NodeType.MacroArchive) {
             TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroArchive);
             DAILY_CALC_POOL_REWARD = MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD;
-        } else if (nodeType == MinerTypes.NodeType.MacroFullnode) {
-            TOTAL_NODE_COUNT = METALIST.count(
-                MinerTypes.NodeType.MacroFullnode
-            );
+        } else if(nodeType == MinerTypes.NodeType.MacroFullnode) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroFullnode);
             DAILY_CALC_POOL_REWARD = MACROMINER_FULLNODE_DAILY_CALC_ONE_POOL_REWARD;
-        } else if (nodeType == MinerTypes.NodeType.MacroLight) {
+        } else if(nodeType == MinerTypes.NodeType.MacroLight) {
             TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroLight);
             DAILY_CALC_POOL_REWARD = MACROMINER_LIGHT_DAILY_CALC_ONE_POOL_REWARD;
         }
-        uint256 formula = ((DAILY_CALC_POOL_REWARD / (24 * TOTAL_NODE_COUNT)) /
-            1 hours);
+        uint256 formula = ((DAILY_CALC_POOL_REWARD / (24 * TOTAL_NODE_COUNT)) / 1 hours);
         RESULT = formula;
         return (RESULT);
     }
@@ -85,39 +76,30 @@ library MinerFormulas {
         uint256 REST_POOL_AMOUNT = 0;
         uint256 MINER_META_POINT = _balaceOfMP(minerAddress);
         uint256 TOTAL_SUPPLY_META_POINTS = _totalSupplyMP();
-        uint256 MINERS_TOTAL_ACTIVITIES = METAHEALTHCHECK.dailyNodesActivities(
-            _getDate(),
-            nodeType
-        );
-        uint256 MINER_ACTIVITY = METAHEALTHCHECK.dailyNodeActivity(
-            _getDate(),
-            minerAddress,
-            nodeType
-        );
+        uint256 MINERS_TOTAL_ACTIVITIES = METAHEALTHCHECK.dailyNodesActivities(_getDate(), nodeType);
+        uint256 MINER_ACTIVITY = METAHEALTHCHECK.dailyNodeActivity(_getDate(), minerAddress, nodeType);
 
         uint256 RESULT = 0;
-        if (nodeType == MinerTypes.NodeType.MacroArchive) {
+        if(nodeType == MinerTypes.NodeType.MacroArchive) {
             TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroArchive);
             REST_POOL_AMOUNT = MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD;
-        } else if (nodeType == MinerTypes.NodeType.MacroFullnode) {
-            TOTAL_NODE_COUNT = METALIST.count(
-                MinerTypes.NodeType.MacroFullnode
-            );
+        } else if(nodeType == MinerTypes.NodeType.MacroFullnode) {
+            TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroFullnode);
             REST_POOL_AMOUNT = MACROMINER_FULLNODE_DAILY_CALC_TWO_POOL_REWARD;
-        } else if (nodeType == MinerTypes.NodeType.MacroLight) {
+        } else if(nodeType == MinerTypes.NodeType.MacroLight) {
             TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroLight);
             REST_POOL_AMOUNT = MACROMINER_LIGHT_DAILY_CALC_TWO_POOL_REWARD;
         }
-        uint256 formula = (((REST_POOL_AMOUNT /
-            (TOTAL_SUPPLY_META_POINTS *
-                (MINERS_TOTAL_ACTIVITIES / (TOTAL_NODE_COUNT * 24)))) *
-            MINER_META_POINT *
-            (MINER_ACTIVITY / 24)) / 1 hours);
+        uint256 formula = (((REST_POOL_AMOUNT / (TOTAL_SUPPLY_META_POINTS * (MINERS_TOTAL_ACTIVITIES / (TOTAL_NODE_COUNT * 24)))) * MINER_META_POINT * (MINER_ACTIVITY / 24)) / 1 hours);
         RESULT = formula;
         return (RESULT);
     }
 
     function getDate() external pure returns (uint256) {
+        return _getDate();
+    }
+
+    function _getDate() internal pure returns (uint256) {
         // calculate today date from block.timestamp and return
         return (0);
     }

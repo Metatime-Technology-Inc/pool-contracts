@@ -4,21 +4,21 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libs/MinerTypes.sol";
 import "../interfaces/IMinerList.sol";
+import "../interfaces/IMinerPool.sol";
+import "../interfaces/IMetaPoints.sol";
 import "../interfaces/IMinerFormulas.sol";
 
 contract MinerHealthCheck is Initializable {
     IMinerList public minerList;
     IMinerFormulas public minerFormulas;
+    IMinerPool public minerPool;
+    IMetaPoints public metaPoints;
     mapping(address => mapping(MinerTypes.NodeType => uint256))
         public lastUptime;
     mapping(uint256 => mapping(MinerTypes.NodeType => uint256))
         public dailyNodesActivities; // TA
     mapping(uint256 => mapping(address => mapping(MinerTypes.NodeType => uint256)))
         public dailyNodeActivity; // A
-    mapping(uint256 => mapping(MinerTypes.NodeType => uint256))
-        public totalRewardsFromFirstFormula;
-    mapping(uint256 => mapping(MinerTypes.NodeType => uint256))
-        public totalRewardsFromSecondFormula;
     uint256 public timeout;
 
     modifier isMiner(address miner, MinerTypes.NodeType nodeType) {
@@ -29,22 +29,20 @@ contract MinerHealthCheck is Initializable {
     function initialize(
         address minerListAddress,
         address minerFormulasAddress,
+        address minerPoolAddress,
+        address metaPointsAddress,
         uint256 requiredTimeout
     ) external initializer {
         minerList = IMinerList(minerListAddress);
         minerFormulas = IMinerFormulas(minerFormulasAddress);
+        minerPool = IMinerPool(minerPoolAddress);
+        metaPoints = IMetaPoints(metaPointsAddress);
         timeout = requiredTimeout;
     }
 
     function ping(
         MinerTypes.NodeType nodeType
     ) external isMiner(msg.sender, nodeType) returns (bool) {
-        // active time on day
-        // 1000 node, tx sayısı block a giren
-        // - block basan metaminer tx atıyor
-        // - block history archiveNode tx atıyor
-        // -- -- block geldi -> block check on contract if not exist send tx
-        // -- total: 2
         uint256 lastSeen = lastUptime[msg.sender][nodeType];
         uint256 maxLimit = lastSeen + timeout;
 
@@ -52,7 +50,10 @@ contract MinerHealthCheck is Initializable {
             uint256 activityTime = block.timestamp - lastSeen;
             _incrementDailyActiveTimes(msg.sender, nodeType, activityTime);
             _incrementDailyTotalActiveTimes(nodeType, activityTime);
-            _claimRewards(msg.sender, nodeType, activityTime);
+            minerPool.claim(msg.sender, nodeType, activityTime);
+            uint256 metaPointsReward = minerFormulas
+                .calculateMetaPointsReward();
+            metaPoints.mint(msg.sender, metaPointsReward * activityTime);
         }
 
         lastUptime[msg.sender][nodeType] = block.timestamp;
@@ -75,23 +76,6 @@ contract MinerHealthCheck is Initializable {
         return (true);
     }
 
-    function _claimRewards(
-        address minerAddress,
-        MinerTypes.NodeType nodeType,
-        uint256 activityTime
-    ) internal returns (bool) {
-        // for only macrominers
-        // activityTime is multiplier
-
-        // calculateDailyOnePoolReward -> hard cap example -> MACROMINER_ARCHIVE_DAILY_CALC_ONE_POOL_REWARD
-        // calculateDailyTwoPoolReward -> hard cap example -> MACROMINER_ARCHIVE_DAILY_CALC_TWO_POOL_REWARD
-
-        // claim from miner pool for both first formula and second formula, then add returned amount to for both totalRewards mapping
-        // mint (1 / 24 hours MetaPoints) * activityTime
-
-        return (true);
-    }
-
     function _incrementDailyTotalActiveTimes(
         MinerTypes.NodeType nodeType,
         uint256 activityTime
@@ -110,9 +94,4 @@ contract MinerHealthCheck is Initializable {
         ] += activityTime;
         return (true);
     }
-
-    // function _incrementTotalReward(MinerTypes.NodeType nodeType, uint256 activityTime) internal returns (bool) {
-    //     totalRewards[_getDate()][nodeType] += activityTime;
-    //     return (true);
-    // }
 }

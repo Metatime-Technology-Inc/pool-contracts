@@ -28,17 +28,19 @@ library MinerFormulas {
     uint256 public constant MACROMINER_LIGHT_DAILY_MAX_REWARD = 50;
 
     uint256 public constant MACROMINER_ARCHIVE_HARD_CAP_OF_FIRST_FORMULA =
-        60_000;
+        60_000 * 10 ** 18;
     uint256 public constant MACROMINER_ARCHIVE_HARD_CAP_OF_SECOND_FORMULA =
-        15_000;
+        15_000 * 10 ** 18;
 
     uint256 public constant MACROMINER_FULLNODE_HARD_CAP_OF_FIRST_FORMULA =
-        40_000;
+        40_000 * 10 ** 18;
     uint256 public constant MACROMINER_FULLNODE_HARD_CAP_OF_SECOND_FORMULA =
-        10_000;
+        10_000 * 10 ** 18;
 
-    uint256 public constant MACROMINER_LIGHT_HARD_CAP_OF_FIRST_FORMULA = 40_000;
-    uint256 public constant MACROMINER_LIGHT_HARD_CAP_OF_SECOND_FORMULA = 5_000;
+    uint256 public constant MACROMINER_LIGHT_HARD_CAP_OF_FIRST_FORMULA =
+        40_000 * 10 ** 18;
+    uint256 public constant MACROMINER_LIGHT_HARD_CAP_OF_SECOND_FORMULA =
+        5_000 * 10 ** 18;
 
     uint256 public constant SECONDS_IN_A_DAY = 86_400;
 
@@ -63,7 +65,6 @@ library MinerFormulas {
         uint256 TOTAL_NODE_COUNT = 0;
         uint256 DAILY_CALC_POOL_REWARD = 0;
 
-        uint256 RESULT = 0;
         if (nodeType == MinerTypes.NodeType.MacroArchive) {
             TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroArchive);
             DAILY_CALC_POOL_REWARD = MACROMINER_ARCHIVE_HARD_CAP_OF_FIRST_FORMULA;
@@ -78,8 +79,7 @@ library MinerFormulas {
         }
         uint256 formula = ((DAILY_CALC_POOL_REWARD / (24 * TOTAL_NODE_COUNT)) /
             1 hours);
-        RESULT = formula;
-        return (RESULT);
+        return (formula);
     }
 
     function calculateDailyPoolRewardsFromSecondFormula(
@@ -100,7 +100,6 @@ library MinerFormulas {
             nodeType
         );
 
-        uint256 RESULT = 0;
         if (nodeType == MinerTypes.NodeType.MacroArchive) {
             TOTAL_NODE_COUNT = METALIST.count(MinerTypes.NodeType.MacroArchive);
             REST_POOL_AMOUNT = MACROMINER_ARCHIVE_HARD_CAP_OF_SECOND_FORMULA;
@@ -118,8 +117,7 @@ library MinerFormulas {
                 (MINERS_TOTAL_ACTIVITIES / (TOTAL_NODE_COUNT * 24)))) *
             MINER_META_POINT *
             (MINER_ACTIVITY / 24)) / 1 hours);
-        RESULT = formula;
-        return (RESULT);
+        return (formula);
     }
 
     function getDate() external view returns (uint256) {

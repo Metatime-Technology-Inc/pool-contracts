@@ -91,6 +91,7 @@ contract Macrominer is Context, Initializable {
             msg.value == STAKE_AMOUNT,
             "You have to stake as required STAKE_AMOUNT."
         );
+        minerList.addMiner(_msgSender(),nodeType);
         return (true);
     }
 

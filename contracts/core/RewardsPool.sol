@@ -3,8 +3,6 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
-import "../interfaces/IMetaminer.sol";
 import "../interfaces/IMinerFormulas.sol";
 
 /**
@@ -14,7 +12,6 @@ import "../interfaces/IMinerFormulas.sol";
  */
 contract RewardsPool is Initializable, Ownable2Step {
     uint256 currentBlock = 0;
-    IMetaminer public metaminer;
     IMinerFormulas public minerFormulas;
     mapping(address => uint256) public claimedAmounts; // Total amount of tokens claimed so far
     mapping(address => bool) public managers; // Managers of the contract
@@ -36,16 +33,14 @@ contract RewardsPool is Initializable, Ownable2Step {
 
     /**
      * @dev Initializes the contract with the specified parameters.
-     * @param owner The address of the contract owner.
-     * @param metaminerAddress Address of Metaminer contract.
+     * @param ownerAddress The address of the contract owner.
+     * @param minerFormulasAddress Address of MinerFormulas contract.
      */
     function initialize(
-        address owner,
-        address metaminerAddress,
+        address ownerAddress,
         address minerFormulasAddress
     ) external initializer {
-        _transferOwnership(owner);
-        metaminer = IMetaminer(metaminerAddress);
+        _transferOwnership(ownerAddress);
         minerFormulas = IMinerFormulas(minerFormulasAddress);
     }
 

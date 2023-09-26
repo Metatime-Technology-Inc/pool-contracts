@@ -36,16 +36,14 @@ library MinerFormulas {
     uint256 public constant MACROMINER_LIGHT_DAILY_CALC_ONE_POOL_REWARD = 40_000;
     uint256 public constant MACROMINER_LIGHT_DAILY_CALC_TWO_POOL_REWARD = 5_000;
 
-    function calculateMetaminerReward(
-        uint256 metaminerCount
-    ) external pure returns (uint256) {
+    function calculateMetaminerReward() external view returns (uint256) {
         uint256 calculatedAmount = ((METAMINER_DAILY_PRIZE_POOL * 10 ** 18) /
-            metaminerCount);
+            METALIST.count(MinerTypes.NodeType.Meta));
         return
             calculatedAmount > METAMINER_DAILY_PRIZE_LIMIT
                 ? METAMINER_DAILY_PRIZE_LIMIT / METAMINER_DAILY_BLOCK_COUNT
                 : calculatedAmount /
-                    (METAMINER_DAILY_BLOCK_COUNT / metaminerCount);
+                    (METAMINER_DAILY_BLOCK_COUNT / METALIST.count(MinerTypes.NodeType.Meta));
     }
 
     function calculateDailyOnePoolReward(

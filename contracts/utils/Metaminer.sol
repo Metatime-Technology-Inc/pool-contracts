@@ -14,7 +14,6 @@ contract Metaminer is Ownable2Step, Initializable {
     uint256 constant STAKE_AMOUNT = 1_000_000 ether;
     uint256 constant ANNUAL_AMOUNT = 100_000 ether;
     uint256 constant YEAR = 31536000;
-    uint256 public minerCount;
 
     struct Share {
         uint256 sharedPercent;
@@ -66,7 +65,6 @@ contract Metaminer is Ownable2Step, Initializable {
         );
         shares[_msgSender()] = Share(0, 0);
         minerSubscription[_msgSender()] = _nextYear(_msgSender());
-        minerCount += 1;
         minerList.addMiner(_msgSender(), MinerTypes.NodeType.Meta);
         emit MinerAdded(_msgSender(), minerSubscription[_msgSender()]);
         return (true);
@@ -88,7 +86,6 @@ contract Metaminer is Ownable2Step, Initializable {
     function setValidator(address _miner) external onlyOwner returns (bool) {
         shares[_miner] = Share(0, 0);
         minerSubscription[_miner] = _nextYear(_miner);
-        minerCount += 1;
         minerList.addMiner(_miner, MinerTypes.NodeType.Meta);
         emit MinerAdded(_miner, minerSubscription[_miner]);
         return (true);
@@ -186,7 +183,6 @@ contract Metaminer is Ownable2Step, Initializable {
         require(sent, "unstake failed.");
         minerList.deleteMiner(_miner, MinerTypes.NodeType.Meta);
         minerSubscription[_miner] = 0;
-        minerCount -= 1;
         return (true);
     }
 

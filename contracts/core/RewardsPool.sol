@@ -97,9 +97,7 @@ contract RewardsPool is Initializable, Ownable2Step {
      * @return The amount of tokens claimable for the current period.
      */
     function _calculateClaimableAmount() internal view returns (uint256) {
-        uint256 metaminerCount = metaminer.minerCount();
-
-        return minerFormulas.calculateMetaminerReward(metaminerCount);
+        return minerFormulas.calculateMetaminerReward();
     }
 
     receive() external payable {

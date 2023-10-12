@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title TokenDistributorWithNoVesting
  * @dev A contract for distributing tokens during no vesting sales.
  */
-contract TokenDistributorWithNoVesting is Ownable2Step {
-    bool public initialized = false;
+contract TokenDistributorWithNoVesting is Initializable, Ownable {
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
@@ -33,7 +33,7 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
     function initialize(
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd
-    ) external {
+    ) external initializer {
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
             "TokenDistributorWithNoVesting: end time must be bigger than start time"
@@ -44,7 +44,6 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
         claimPeriodEnd = _distributionPeriodEnd + 100 days;
 
         _transferOwnership(_msgSender());
-        initialized = true;
     }
 
     /**
@@ -127,7 +126,7 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
         claimableAmounts[_msgSender()] = 0;
 
         (bool sent, ) = _msgSender().call{value: claimableAmount}("");
-        require(sent, "LiquidityPool: unable to withdraw");
+        require(sent, "TokenDistributorWithNoVesting: unable to withdraw");
 
         emit HasClaimed(_msgSender(), claimableAmount);
     }
@@ -145,7 +144,7 @@ contract TokenDistributorWithNoVesting is Ownable2Step {
         require(leftovers != 0, "TokenDistributorWithNoVesting: no leftovers");
 
         (bool sent, ) = owner().call{value: leftovers}("");
-        require(sent, "LiquidityPool: unable to withdraw");
+        require(sent, "TokenDistributorWithNoVesting: unable to withdraw");
 
         emit Swept(owner(), leftovers);
     }

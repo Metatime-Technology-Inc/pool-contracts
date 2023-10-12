@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "../libs/Trigonometry.sol";
 
 /**
  * @title StrategicPool
  * @dev A contract for managing a strategic pool of tokens.
  */
-contract StrategicPool is Ownable2Step {
+contract StrategicPool is Initializable, Ownable {
     bool public initialized = false;
     address public constant BURN_ADDRESS = address(0);
     int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
@@ -25,14 +27,8 @@ contract StrategicPool is Ownable2Step {
     /**
      * @dev Initializes the contract.
      */
-    function initialize() external {
-        require(
-            initialized == false,
-            "StrategicPool: contract has initialized before"
-        );
-
+    function initialize() external initializer {
         _transferOwnership(_msgSender());
-        initialized = true;
     }
 
     /**

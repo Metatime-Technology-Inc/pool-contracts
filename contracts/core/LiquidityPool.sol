@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title LiquidityPool
  * @dev A contract for managing a liquidity pool.
  */
-contract LiquidityPool is Ownable2Step {
-    bool public initialized = false;
-
+contract LiquidityPool is Initializable, Ownable {
     event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
@@ -20,14 +19,8 @@ contract LiquidityPool is Ownable2Step {
     /**
      * @dev Initializes the contract.
      */
-    function initialize() external {
-        require(
-            initialized == false,
-            "LiquidityPool: contract has initialized before"
-        );
-
+    function initialize() external initializer {
         _transferOwnership(_msgSender());
-        initialized = true;
     }
 
     /**

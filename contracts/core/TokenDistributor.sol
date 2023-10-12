@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title TokenDistributor
  * @dev A contract for distributing tokens among users over a specific period of time.
  */
-contract TokenDistributor is Initializable, Ownable2Step {
+contract TokenDistributor is Initializable, Ownable {
     string public poolName; // The name of the mtc distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
@@ -108,11 +108,12 @@ contract TokenDistributor is Initializable, Ownable2Step {
     /**
      * @dev Sets the claimable amounts for a list of users.
      * Only the owner can call this function before the claim period starts.
+     * @param lastClaimTimes_ An array of last claim times of addresses
      * @param users An array of user addresses
      * @param amounts An array of claimable amounts corresponding to each user
      */
     function setClaimableAmounts(
-        uint256 lastClaimTime,
+        uint256[] calldata lastClaimTimes_,
         address[] calldata users,
         uint256[] calldata amounts,
         uint256[] calldata leftAmounts
@@ -134,6 +135,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
 
             uint256 amount = amounts[i];
             uint256 leftAmount = leftAmounts[i];
+            uint256 lastClaimTime = lastClaimTimes_[i];
 
             require(
                 claimableAmounts[user] == 0,

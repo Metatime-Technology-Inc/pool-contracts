@@ -43,34 +43,34 @@ Recommended Node version is 16.0.0 and above.
 
 ```bash
 # install dependencies
-$  yarn  install
+$ yarn install
 
 # compile contracts
-$  npx  hardhat  compile
+$ npx hardhat compile
 
 # run tests
-$  npx  hardhat  test
+$ npx hardhat test
 
 # generate typechain files
-$  npx  hardhat  typechain
+$ npx hardhat typechain
 
 # compute tests coverage, run "npx hardhat typechain" before using it
-$  npx  hardhat  coverage
+$ npx hardhat coverage
 
 # deploy contracts
-$  yarn hardhat  deploy  --network  <network-name>
+$ yarn hardhat deploy --network <network-name>
 
 # run prettier formatter
-$  yarn run  prettier:solidity
+$ yarn run prettier:solidity
 
 # run linter
-$  yarn run  solhint
+$ yarn run solhint
 
 # extract deploy addresses
-$  npx  hardhat  extract-deployment-addresses  --network  <network-name>
+$ npx hardhat extract-deployment-addresses --network <network-name>
 
 # extract ABIs
-$  npx  hardhat  extract-abis  --network  <network-name>
+$ npx hardhat extract-abis --network <network-name>
 ```
 
 # Project Structure
@@ -156,7 +156,7 @@ GANACHE_URL=
 ```
 example:
 ```bash
-$  npx  hardhat  deploy  --network  ganache
+$ npx hardhat deploy --network ganache
 ```
 # CONTRACTS
 

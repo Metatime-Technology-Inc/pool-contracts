@@ -90,6 +90,11 @@ const config: HardhatUserConfig = {
       url: process.env.LOCALHOST_URL || "",
       chainId: 31337,
     },
+    internal: {
+      url: process.env.INTERNAL_URL || "",
+      chainId: CHAIN_IDS.INTERNAL,
+      accounts: [`0x${privateKey}`],
+    },
     hardhat: {
       // mining: {
       //   auto: false,

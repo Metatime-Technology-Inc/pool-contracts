@@ -3,7 +3,7 @@ interface IContracts {
   core: {
     Distributor: string;
     LiquidityPool: string;
-    MTC: string;
+    MockLiquidityPool: string;
     StrategicPool: string;
     TokenDistributor: string;
     TokenDistributorWithNoVesting: string;
@@ -11,8 +11,10 @@ interface IContracts {
   lib: {
     Trigonometry: string;
     MockTrigonometry: string;
-  },
+  };
   utils: {
+    Multicall3: string;
+    MultiSigWallet: string;
     PoolFactory: string;
   };
 }
@@ -21,7 +23,7 @@ const CONTRACTS: IContracts = {
   core: {
     Distributor: "Distributor",
     LiquidityPool: "LiquidityPool",
-    MTC: "MTC",
+    MockLiquidityPool: "MockLiquidityPool",
     StrategicPool: "StrategicPool",
     TokenDistributor: "TokenDistributor",
     TokenDistributorWithNoVesting: "TokenDistributorWithNoVesting",
@@ -31,8 +33,10 @@ const CONTRACTS: IContracts = {
     MockTrigonometry: "MockTrigonometry",
   },
   utils: {
-    PoolFactory: "PoolFactory"
-  }
+    Multicall3: "Multicall3",
+    MultiSigWallet: "MultiSigWallet",
+    PoolFactory: "PoolFactory",
+  },
 };
 
 export default CONTRACTS;

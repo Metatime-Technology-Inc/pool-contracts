@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../core/Distributor.sol";
@@ -13,15 +14,15 @@ import "../interfaces/ITokenDistributor.sol";
  * @title PoolFactory
  * @dev A contract for creating Distributor and TokenDistributor contracts.
  */
-contract PoolFactory is Ownable2Step {
+contract PoolFactory is Initializable, Ownable {
     uint256 public distributorCount; // Counter for the number of created Distributor contracts.
     uint256 public tokenDistributorCount; // Counter for the number of created TokenDistributor contracts.
 
-    mapping(uint256 => address) private _distributors; // Mapping to store Distributor contract addresses by their IDs.
-    mapping(uint256 => address) private _tokenDistributors; // Mapping to store TokenDistributor contract addresses by their IDs.
+    mapping(uint256 => address) public distributors; // Mapping to store Distributor contract addresses by their IDs.
+    mapping(uint256 => address) public tokenDistributors; // Mapping to store TokenDistributor contract addresses by their IDs.
 
-    address public immutable distributorImplementation; // Address of the implementation contract for Distributor contracts.
-    address public immutable tokenDistributorImplementation; // Address of the implementation contract for TokenDistributor contracts.
+    address public distributorImplementation; // Address of the implementation contract for Distributor contracts.
+    address public tokenDistributorImplementation; // Address of the implementation contract for TokenDistributor contracts.
 
     event DistributorCreated(
         address creatorAddress,
@@ -34,37 +35,18 @@ contract PoolFactory is Ownable2Step {
         uint256 tokenDistributorId
     ); // Event emitted when a TokenDistributor contract is created.
 
-    constructor() {
-        distributorImplementation = address(new Distributor());
-        tokenDistributorImplementation = address(new TokenDistributor());
-    }
-
     /**
-     * @dev Returns the address of a Distributor contract based on the distributor ID.
-     * @param distributorId The ID of the Distributor contract.
-     * @return The address of the Distributor contract.
+     * @dev Initializes the contract with new implementation addresses.
      */
-    function getDistributor(
-        uint256 distributorId
-    ) external view returns (address) {
-        return _distributors[distributorId];
-    }
-
-    /**
-     * @dev Returns the address of a TokenDistributor contract based on the tokenDistributor ID.
-     * @param tokenDistributorId The ID of the TokenDistributor contract.
-     * @return The address of the TokenDistributor contract.
-     */
-    function getTokenDistributor(
-        uint256 tokenDistributorId
-    ) external view returns (address) {
-        return _tokenDistributors[tokenDistributorId];
+    function initialize(address distributorImplementation_, address tokenDistributorImplementation_) external initializer {
+        _transferOwnership(_msgSender());
+        distributorImplementation = distributorImplementation_;
+        tokenDistributorImplementation = tokenDistributorImplementation_;
     }
 
     /**
      * @dev Creates a new Distributor contract.
      * @param poolName The name of the pool.
-     * @param token The address of the token contract.
      * @param startTime The start time of the distribution.
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
@@ -74,26 +56,27 @@ contract PoolFactory is Ownable2Step {
      */
     function createDistributor(
         string memory poolName,
-        address token,
         uint256 startTime,
         uint256 endTime,
         uint256 distributionRate,
         uint256 periodLength,
-        uint256 claimableAmount
+        uint256 lastClaimTime,
+        uint256 claimableAmount,
+        uint256 leftClaimableAmount
     ) external onlyOwner returns (uint256) {
-        require(token != address(0), "PoolFactory: invalid token address");
+        require(distributorImplementation != address(0), "PoolFactory: Distributor implementation not found");
 
         address newDistributorAddress = Clones.clone(distributorImplementation);
-        IDistributor newDistributor = IDistributor(newDistributorAddress);
-        newDistributor.initialize(
+        IDistributor(newDistributorAddress).initialize(
             owner(),
             poolName,
-            token,
             startTime,
             endTime,
             distributionRate,
             periodLength,
-            claimableAmount
+            lastClaimTime,
+            claimableAmount,
+            leftClaimableAmount
         );
 
         emit DistributorCreated(
@@ -102,13 +85,15 @@ contract PoolFactory is Ownable2Step {
             distributorCount
         );
 
-        return _addNewDistributor(newDistributorAddress);
+        distributors[distributorCount] = newDistributorAddress;
+        distributorCount++;
+
+        return distributorCount - 1;
     }
 
     /**
      * @dev Creates a new TokenDistributor contract.
      * @param poolName The name of the pool.
-     * @param token The address of the token contract.
      * @param startTime The start time of the distribution.
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
@@ -117,24 +102,19 @@ contract PoolFactory is Ownable2Step {
      */
     function createTokenDistributor(
         string memory poolName,
-        address token,
         uint256 startTime,
         uint256 endTime,
         uint256 distributionRate,
         uint256 periodLength
     ) external onlyOwner returns (uint256) {
-        require(token != address(0), "PoolFactory: invalid token address");
+        require(tokenDistributorImplementation != address(0), "PoolFactory: TokenDistributor implementation not found");
 
         address newTokenDistributorAddress = Clones.clone(
             tokenDistributorImplementation
         );
-        ITokenDistributor newTokenDistributor = ITokenDistributor(
-            newTokenDistributorAddress
-        );
-        newTokenDistributor.initialize(
+        ITokenDistributor(newTokenDistributorAddress).initialize(
             owner(),
             poolName,
-            token,
             startTime,
             endTime,
             distributionRate,
@@ -147,32 +127,7 @@ contract PoolFactory is Ownable2Step {
             tokenDistributorCount
         );
 
-        return _addNewTokenDistributor(newTokenDistributorAddress);
-    }
-
-    /**
-     * @dev Internal function to add a new Distributor contract address to the mapping.
-     * @param _newDistributorAddress The address of the new Distributor contract.
-     * @return The ID of the added Distributor contract.
-     */
-    function _addNewDistributor(
-        address _newDistributorAddress
-    ) internal returns (uint256) {
-        _distributors[distributorCount] = _newDistributorAddress;
-        distributorCount++;
-
-        return distributorCount - 1;
-    }
-
-    /**
-     * @dev Internal function to add a new TokenDistributor contract address to the mapping.
-     * @param _newDistributorAddress The address of the new TokenDistributor contract.
-     * @return The ID of the added TokenDistributor contract.
-     */
-    function _addNewTokenDistributor(
-        address _newDistributorAddress
-    ) internal returns (uint256) {
-        _tokenDistributors[tokenDistributorCount] = _newDistributorAddress;
+        tokenDistributors[tokenDistributorCount] = newTokenDistributorAddress;
         tokenDistributorCount++;
 
         return tokenDistributorCount - 1;

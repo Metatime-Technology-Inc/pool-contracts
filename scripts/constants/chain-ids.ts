@@ -15,6 +15,7 @@ const CHAIN_IDS = {
     OPTIMISM_KOVAN: 69,
     METACHAIN: 6382,
     ELANOR: 1967,
+    INTERNAL: 1982
 };
 
 export default CHAIN_IDS;

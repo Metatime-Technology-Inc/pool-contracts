@@ -79,12 +79,12 @@ task(
                 const sectionObj = CONTRACTS[contractSection];
                 const objKeys = Object.keys(sectionObj);
 
-                const excludedContracts =
-                    [CONTRACTS.core.Distributor, CONTRACTS.core.TokenDistributorWithNoVesting, CONTRACTS.core.TokenDistributor, CONTRACTS.lib.Trigonometry];
+                const includedContracts =
+                    [CONTRACTS.core.Distributor, CONTRACTS.core.TokenDistributor];
 
                 for (let i = 0; i < objKeys.length; i++) {
                     const innerSection = objKeys[i];
-                    if (excludedContracts.indexOf(innerSection) === 1) {
+                    if (includedContracts.indexOf(innerSection) === -1) {
                         continue;
                     }
 

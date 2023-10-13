@@ -61,6 +61,10 @@ contract Distributor is Initializable, Ownable {
         _disableInitializers();
     }
 
+    /**
+     * @dev The receive function is a special function that allows the contract to accept MTC transactions.
+     * It emits a Deposit event to record the deposit details.
+     */
     receive() external payable {
         emit Deposit(_msgSender(), msg.value, address(this).balance);
     }

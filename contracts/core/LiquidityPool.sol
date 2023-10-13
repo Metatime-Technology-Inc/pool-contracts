@@ -12,6 +12,10 @@ contract LiquidityPool is Initializable, Ownable {
     event Withdrew(uint256 amount); // Event emitted when tokens are withdrawn from the pool
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
+    /**
+     * @dev The receive function is a special function that allows the contract to accept MTC transactions.
+     * It emits a Deposit event to record the deposit details.
+     */
     receive() external payable {
         emit Deposit(_msgSender(), msg.value, address(this).balance);
     }

@@ -20,6 +20,10 @@ contract StrategicPool is Initializable, Ownable {
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
+    /**
+     * @dev The receive function is a special function that allows the contract to accept MTC transactions.
+     * It emits a Deposit event to record the deposit details.
+     */
     receive() external payable {
         emit Deposit(_msgSender(), msg.value, address(this).balance);
     }

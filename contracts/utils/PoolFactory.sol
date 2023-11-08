@@ -62,7 +62,9 @@ contract PoolFactory is Initializable, Ownable2Step {
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
      * @param periodLength The length of each distribution period.
+     * @param lastClaimTime The last claim of the contract owner.
      * @param claimableAmount The total amount claimable per period.
+     * @param leftClaimableAmount The left claimable amount in the contract.
      * @return The ID of the created Distributor contract.
      */
     function createDistributor(

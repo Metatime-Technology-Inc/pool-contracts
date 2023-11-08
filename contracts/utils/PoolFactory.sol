@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../core/Distributor.sol";
@@ -14,7 +14,7 @@ import "../interfaces/ITokenDistributor.sol";
  * @title PoolFactory
  * @dev A contract for creating Distributor and TokenDistributor contracts.
  */
-contract PoolFactory is Initializable, Ownable {
+contract PoolFactory is Initializable, Ownable2Step {
     uint256 public distributorCount; // Counter for the number of created Distributor contracts.
     uint256 public tokenDistributorCount; // Counter for the number of created TokenDistributor contracts.
 
@@ -38,8 +38,19 @@ contract PoolFactory is Initializable, Ownable {
     /**
      * @dev Initializes the contract with new implementation addresses.
      */
-    function initialize(address distributorImplementation_, address tokenDistributorImplementation_) external initializer {
+    function initialize(
+        address distributorImplementation_,
+        address tokenDistributorImplementation_
+    ) external initializer {
         _transferOwnership(_msgSender());
+        require(
+            distributorImplementation_ != address(0),
+            "PoolFactory: cannot set zero address."
+        );
+        require(
+            tokenDistributorImplementation_ != address(0),
+            "PoolFactory: cannot set zero address."
+        );
         distributorImplementation = distributorImplementation_;
         tokenDistributorImplementation = tokenDistributorImplementation_;
     }
@@ -51,7 +62,9 @@ contract PoolFactory is Initializable, Ownable {
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
      * @param periodLength The length of each distribution period.
+     * @param lastClaimTime The last claim of the contract owner.
      * @param claimableAmount The total amount claimable per period.
+     * @param leftClaimableAmount The left claimable amount in the contract.
      * @return The ID of the created Distributor contract.
      */
     function createDistributor(
@@ -64,7 +77,10 @@ contract PoolFactory is Initializable, Ownable {
         uint256 claimableAmount,
         uint256 leftClaimableAmount
     ) external onlyOwner returns (uint256) {
-        require(distributorImplementation != address(0), "PoolFactory: Distributor implementation not found");
+        require(
+            distributorImplementation != address(0),
+            "PoolFactory: Distributor implementation not found"
+        );
 
         address newDistributorAddress = Clones.clone(distributorImplementation);
         IDistributor(newDistributorAddress).initialize(
@@ -86,9 +102,8 @@ contract PoolFactory is Initializable, Ownable {
         );
 
         distributors[distributorCount] = newDistributorAddress;
-        distributorCount++;
 
-        return distributorCount - 1;
+        return distributorCount++;
     }
 
     /**
@@ -107,7 +122,10 @@ contract PoolFactory is Initializable, Ownable {
         uint256 distributionRate,
         uint256 periodLength
     ) external onlyOwner returns (uint256) {
-        require(tokenDistributorImplementation != address(0), "PoolFactory: TokenDistributor implementation not found");
+        require(
+            tokenDistributorImplementation != address(0),
+            "PoolFactory: TokenDistributor implementation not found"
+        );
 
         address newTokenDistributorAddress = Clones.clone(
             tokenDistributorImplementation
@@ -128,8 +146,7 @@ contract PoolFactory is Initializable, Ownable {
         );
 
         tokenDistributors[tokenDistributorCount] = newTokenDistributorAddress;
-        tokenDistributorCount++;
 
-        return tokenDistributorCount - 1;
+        return tokenDistributorCount++;
     }
 }

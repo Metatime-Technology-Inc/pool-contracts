@@ -88,6 +88,36 @@ describe("Distributor", function () {
       END_TIME = START_TIME + TWO_DAYS_IN_SECONDS;
     });
 
+    it("try to initialize pool factory with wrong implementation addresses", async () => {
+      const { deployer, distributor, tokenDistributor } = await loadFixture(initiateVariables);
+
+      const TestPoolFactory_ = await ethers.getContractFactory(
+        CONTRACTS.utils.PoolFactory
+      );
+      const testPoolFactory = (await TestPoolFactory_.connect(
+        deployer
+      ).deploy()) as PoolFactory;
+      await testPoolFactory.deployed();
+
+      await expect(
+        testPoolFactory
+          .connect(deployer)
+          .initialize(
+            distributor.address,
+            ethers.constants.AddressZero
+          )
+      ).to.be.revertedWith("PoolFactory: cannot set zero address.");
+      
+      await expect(
+        testPoolFactory
+          .connect(deployer)
+          .initialize(
+            ethers.constants.AddressZero,
+            tokenDistributor.address
+          )
+      ).to.be.revertedWith("PoolFactory: cannot set zero address.");
+    });
+
     it("try to create distributor from pool factory without distributor implementation and expect it to be reverted", async () => {
       const { deployer } = await loadFixture(initiateVariables);
 
@@ -133,6 +163,40 @@ describe("Distributor", function () {
             LEFT_CLAIMABLE_AMOUNT
           )
       ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("try to initialize Distributor with wrong params", async () => {
+      const { deployer, poolFactory } = await loadFixture(initiateVariables);
+
+      await expect(
+        poolFactory
+          .connect(deployer)
+          .createDistributor(
+            POOL_NAME,
+            START_TIME,
+            END_TIME,
+            DISTRIBUTION_RATE,
+            PERIOD_LENGTH,
+            LAST_CLAIM_TIME,
+            LEFT_CLAIMABLE_AMOUNT,
+            LOCKED_AMOUNT
+          )
+      ).to.be.revertedWith("Distributor: invalid amounts");
+
+      await expect(
+        poolFactory
+          .connect(deployer)
+          .createDistributor(
+            POOL_NAME,
+            START_TIME,
+            END_TIME,
+            DISTRIBUTION_RATE,
+            PERIOD_LENGTH,
+            LAST_CLAIM_TIME * 1000,
+            LOCKED_AMOUNT,
+            LEFT_CLAIMABLE_AMOUNT
+          )
+      ).to.be.revertedWith("Distributor: unexpected last claim");
     });
 
     // Try to initialize implementation and expect to be reverted
@@ -341,7 +405,7 @@ describe("Distributor", function () {
 
       await expect(
         distributorInstance.connect(deployer).claim()
-      ).to.be.revertedWith("calculateClaimableAmount: No tokens to claim");
+      ).to.be.revertedWith("calculateClaimableAmount: No coins to claim");
     });
 
     it("try to send eth to distributor pool", async () => {

@@ -45,7 +45,7 @@ describe("StrategicPool", function () {
     );
   });
 
-  it("should burn tokens using the formula", async function () {
+  it("should burn coins using the formula", async function () {
     await network.provider.send("hardhat_setBalance", [
       pool.address,
       toWei(String(STRATEGIC_POOL_BALANCE)).toHexString().replace(/0x0+/, "0x"),
@@ -82,7 +82,7 @@ describe("StrategicPool", function () {
     );
   });
 
-  it("should burn tokens without using the formula", async function () {
+  it("should burn coins without using the formula", async function () {
     await network.provider.send("hardhat_setBalance", [
       pool.address,
       toWei(String(1_500_000)).toHexString().replace(/0x0+/, "0x"),
@@ -102,7 +102,7 @@ describe("StrategicPool", function () {
     );
   });
 
-  it("should revert when burning zero tokens with the formula", async function () {
+  it("should revert when burning zero coins with the formula", async function () {
     await network.provider.send("hardhat_setBalance", [
       pool.address,
       toWei(String(1_500_000)).toHexString().replace(/0x0+/, "0x"),

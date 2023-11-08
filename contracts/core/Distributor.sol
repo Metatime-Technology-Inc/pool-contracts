@@ -2,26 +2,26 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title Distributor
- * @notice Holds tokens for users to claim.
- * @dev A contract for distributing tokens over a specified period of time.
+ * @notice Holds coins for users to claim.
+ * @dev A contract for distributing coins over a specified period of time.
  */
-contract Distributor is Initializable, Ownable {
+contract Distributor is Initializable, Ownable2Step {
     string public poolName; // Name of the mtc distribution pool
     uint256 public startTime; // Start time of the distribution
     uint256 public endTime; // End time of the distribution
     uint256 public periodLength; // Length of each distribution period
     uint256 public distributionRate; // Rate of mtc distribution per period
     uint256 public constant BASE_DIVIDER = 10_000; // Base divider for distribution rate calculation
-    uint256 public claimableAmount; // Total amount of tokens claimable per period
-    uint256 public claimedAmount; // Total amount of tokens claimed so far
+    uint256 public claimableAmount; // Total amount of coins claimable per period
+    uint256 public claimedAmount; // Total amount of coins claimed so far
     uint256 public lastClaimTime; // Timestamp of the last mtc claim
-    uint256 public leftClaimableAmount; // Remaining amount of tokens available for claiming
+    uint256 public leftClaimableAmount; // Remaining amount of coins available for claiming
 
-    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
+    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed coins
     event PoolParamsUpdated(
         uint256 newStartTime,
         uint256 newEndTime,
@@ -35,15 +35,8 @@ contract Distributor is Initializable, Ownable {
      * @dev A modifier that validates pool parameters.
      * @param _startTime Start timestamp of claim period.
      * @param _endTime End timestamp of claim period.
-     * @param _distributionRate Distribution rate of each claim.
-     * @param _periodLength Distribution duration of each claim.
      */
-    modifier isParamsValid(
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _distributionRate,
-        uint256 _periodLength
-    ) {
+    modifier isParamsValid(uint256 _startTime, uint256 _endTime) {
         require(
             _startTime < _endTime,
             "Distributor: end time must be bigger than start time"
@@ -77,7 +70,7 @@ contract Distributor is Initializable, Ownable {
      * @param _endTime The end time of the distribution.
      * @param _distributionRate The rate of mtc distribution per period.
      * @param _periodLength The length of each distribution period.
-     * @param _claimableAmount The total amount of tokens claimable per period.
+     * @param _claimableAmount The total amount of coins claimable per period.
      */
     function initialize(
         address _owner,
@@ -89,12 +82,17 @@ contract Distributor is Initializable, Ownable {
         uint256 _lastClaimTime,
         uint256 _claimableAmount,
         uint256 _leftClaimableAmount
-    )
-        external
-        initializer
-        isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
-    {
+    ) external initializer isParamsValid(_startTime, _endTime) {
         _transferOwnership(_owner);
+
+        require(
+            _claimableAmount > _leftClaimableAmount,
+            "Distributor: invalid amounts"
+        );
+        require(
+            _lastClaimTime >= _startTime && _lastClaimTime <= _endTime,
+            "Distributor: unexpected last claim"
+        );
 
         poolName = _poolName;
         startTime = _startTime;
@@ -107,7 +105,7 @@ contract Distributor is Initializable, Ownable {
     }
 
     /**
-     * @dev Claim tokens for the sender.
+     * @dev Claim coins for the sender.
      * @return A boolean indicating whether the claim was successful.
      */
     function claim() external onlyOwner returns (bool) {
@@ -144,12 +142,7 @@ contract Distributor is Initializable, Ownable {
     )
         external
         onlyOwner
-        isParamsValid(
-            newStartTime,
-            newEndTime,
-            newDistributionRate,
-            newPeriodLength
-        )
+        isParamsValid(newStartTime, newEndTime)
         returns (bool)
     {
         startTime = newStartTime;
@@ -171,8 +164,8 @@ contract Distributor is Initializable, Ownable {
     }
 
     /**
-     * @dev Calculates the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period.
+     * @dev Calculates the amount of coins claimable for the current period.
+     * @return The amount of coins claimable for the current period.
      */
     function calculateClaimableAmount() public view returns (uint256) {
         require(
@@ -180,21 +173,21 @@ contract Distributor is Initializable, Ownable {
             "Distributor: distribution has not started yet"
         );
 
-        uint256 amount = 0;
+        uint256 amount;
         if (block.timestamp > endTime) {
             amount = leftClaimableAmount;
         } else {
             amount = _calculateClaimableAmount();
         }
 
-        require(amount > 0, "calculateClaimableAmount: No tokens to claim");
+        require(amount > 0, "calculateClaimableAmount: No coins to claim");
 
         return amount;
     }
 
     /**
-     * @dev Internal function to calculate the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period.
+     * @dev Internal function to calculate the amount of coins claimable for the current period.
+     * @return The amount of coins claimable for the current period.
      */
     function _calculateClaimableAmount() internal view returns (uint256) {
         return

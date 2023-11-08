@@ -192,7 +192,7 @@ describe("TokenDistributorWithNoVesting", function () {
       await expect(
         tokenDistributorWithNoVesting.connect(user_1).claim()
       ).to.be.revertedWith(
-        "TokenDistributorWithNoVesting: tokens cannot be claimed yet"
+        "TokenDistributorWithNoVesting: coins cannot be claimed yet"
       );
 
       // Try to set addresses and their amounts after claim started and expect revert
@@ -205,10 +205,10 @@ describe("TokenDistributorWithNoVesting", function () {
         "TokenDistributorWithNoVesting: claim period has already started"
       );
 
-      // Try to claim tokens with wrong address
+      // Try to claim coins with wrong address
       await expect(
         tokenDistributorWithNoVesting.connect(user_5).claim()
-      ).to.be.revertedWith("TokenDistributorWithNoVesting: no tokens to claim");
+      ).to.be.revertedWith("TokenDistributorWithNoVesting: no coins to claim");
 
       const user1BalanceBeforeClaim =
         await tokenDistributorWithNoVesting.provider.getBalance(user_1.address);
@@ -217,7 +217,7 @@ describe("TokenDistributorWithNoVesting", function () {
       const user3BalanceClaimTxBeforeClaim =
         await tokenDistributorWithNoVesting.provider.getBalance(user_3.address);
 
-      // Try to claim tokens with true addresses
+      // Try to claim coins with true addresses
       await network.provider.send("hardhat_setCode", [
         user_4.address,
         "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220e8a0f1f97cf9b211b0a7515e0012fca8cf19406ce7f44e5db008a1d5c83b89ea64736f6c63430008100033",

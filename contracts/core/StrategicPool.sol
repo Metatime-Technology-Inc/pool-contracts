@@ -3,21 +3,21 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "../libs/Trigonometry.sol";
 
 /**
  * @title StrategicPool
- * @dev A contract for managing a strategic pool of tokens.
+ * @dev A contract for managing a strategic pool of coins.
  */
 contract StrategicPool is Initializable, Ownable {
-    bool public initialized = false;
+    bool public initialized;
     address public constant BURN_ADDRESS = address(0);
-    int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
-    int256 public lastBurnedAmount = 0;
+    int256 public totalBurnedAmount; // The total amount of coins burned from the pool
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
-    event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
+    event Burned(uint256 amount, bool withFormula); // Event emitted when coins are burned from the pool
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
     /**
@@ -36,7 +36,7 @@ contract StrategicPool is Initializable, Ownable {
     }
 
     /**
-     * @dev Burns tokens from the pool using a formula.
+     * @dev Burns coins from the pool using a formula.
      * @param currentPrice The current price used in the burn formula
      * @param blocksInTwoMonths The number of blocks in two months used in the burn formula
      */
@@ -44,14 +44,13 @@ contract StrategicPool is Initializable, Ownable {
         int256 currentPrice,
         int256 blocksInTwoMonths
     ) external onlyOwner {
-        uint256 amount = uint256(
+        uint256 amount = SafeCast.toUint256(
             calculateBurnAmount(currentPrice, blocksInTwoMonths)
         );
 
         require(amount > 0, "StrategicPool: amount must be bigger than zero");
 
         totalBurnedAmount += int256(amount);
-        lastBurnedAmount = int256(amount);
 
         (bool sent, ) = BURN_ADDRESS.call{value: amount}("");
         require(sent, "StrategicPool: unable to burn");
@@ -60,11 +59,11 @@ contract StrategicPool is Initializable, Ownable {
     }
 
     /**
-     * @dev Burns tokens from the pool without using a formula.
-     * @param burnAmount The amount of tokens to burn
+     * @dev Burns coins from the pool without using a formula.
+     * @param burnAmount The amount of coins to burn
      */
     function burn(uint256 burnAmount) external onlyOwner {
-        totalBurnedAmount += int256(burnAmount);
+        totalBurnedAmount += SafeCast.toInt256(burnAmount);
 
         (bool sent, ) = BURN_ADDRESS.call{value: burnAmount}("");
         require(sent, "StrategicPool: unable to burn");
@@ -73,10 +72,10 @@ contract StrategicPool is Initializable, Ownable {
     }
 
     /**
-     * @dev Calculates the amount of tokens to burn using a formula.
+     * @dev Calculates the amount of coins to burn using a formula.
      * @param _currentPrice The current price used in the burn formula
      * @param _blocksInTwoMonths The number of blocks in two months used in the burn formula
-     * @return The amount of tokens to burn
+     * @return The amount of coins to burn
      */
     function calculateBurnAmount(
         int256 _currentPrice,

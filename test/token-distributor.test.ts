@@ -592,7 +592,7 @@ describe("TokenDistributor", function () {
 
       await expect(
         tokenDistributorInstance.connect(user_1).claim()
-      ).to.be.revertedWith("TokenDistributor: no tokens to claim");
+      ).to.be.revertedWith("TokenDistributor: no coins to claim");
     });
 
     // Try to claim successfully

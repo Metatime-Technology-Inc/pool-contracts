@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "../libs/Trigonometry.sol";
 
@@ -43,7 +44,7 @@ contract StrategicPool is Initializable, Ownable {
         int256 currentPrice,
         int256 blocksInTwoMonths
     ) external onlyOwner {
-        uint256 amount = uint256(
+        uint256 amount = SafeCast.toUint256(
             calculateBurnAmount(currentPrice, blocksInTwoMonths)
         );
 
@@ -62,7 +63,7 @@ contract StrategicPool is Initializable, Ownable {
      * @param burnAmount The amount of tokens to burn
      */
     function burn(uint256 burnAmount) external onlyOwner {
-        totalBurnedAmount += int256(burnAmount);
+        totalBurnedAmount += SafeCast.toInt256(burnAmount);
 
         (bool sent, ) = BURN_ADDRESS.call{value: burnAmount}("");
         require(sent, "StrategicPool: unable to burn");

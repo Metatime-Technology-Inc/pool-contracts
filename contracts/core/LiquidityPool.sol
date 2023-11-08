@@ -41,12 +41,8 @@ contract LiquidityPool is Initializable, Ownable {
      * @dev Internal function to withdraw tokens from the pool.
      * @param _to The address to which the tokens will be transferred
      * @param _withdrawalAmount The amount of tokens to withdraw
-     * @return A boolean indicating whether the withdrawal was successful
      */
-    function _withdraw(
-        address _to,
-        uint256 _withdrawalAmount
-    ) internal returns (bool) {
+    function _withdraw(address _to, uint256 _withdrawalAmount) internal {
         uint256 poolBalance = address(this).balance;
         require(
             poolBalance > 0 && _withdrawalAmount <= poolBalance,
@@ -55,7 +51,5 @@ contract LiquidityPool is Initializable, Ownable {
 
         (bool sent, ) = _to.call{value: _withdrawalAmount}("");
         require(sent, "LiquidityPool: unable to withdraw");
-
-        return sent;
     }
 }

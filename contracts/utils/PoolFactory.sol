@@ -43,8 +43,14 @@ contract PoolFactory is Initializable, Ownable2Step {
         address tokenDistributorImplementation_
     ) external initializer {
         _transferOwnership(_msgSender());
-        require(distributorImplementation_ != address(0), "PoolFactory: cannot set zero address.");
-        require(tokenDistributorImplementation_ != address(0), "PoolFactory: cannot set zero address.");
+        require(
+            distributorImplementation_ != address(0),
+            "PoolFactory: cannot set zero address."
+        );
+        require(
+            tokenDistributorImplementation_ != address(0),
+            "PoolFactory: cannot set zero address."
+        );
         distributorImplementation = distributorImplementation_;
         tokenDistributorImplementation = tokenDistributorImplementation_;
     }

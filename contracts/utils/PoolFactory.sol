@@ -94,9 +94,8 @@ contract PoolFactory is Initializable, Ownable2Step {
         );
 
         distributors[distributorCount] = newDistributorAddress;
-        distributorCount++;
 
-        return distributorCount - 1;
+        return distributorCount++;
     }
 
     /**
@@ -139,8 +138,7 @@ contract PoolFactory is Initializable, Ownable2Step {
         );
 
         tokenDistributors[tokenDistributorCount] = newTokenDistributorAddress;
-        tokenDistributorCount++;
 
-        return tokenDistributorCount - 1;
+        return tokenDistributorCount++;
     }
 }

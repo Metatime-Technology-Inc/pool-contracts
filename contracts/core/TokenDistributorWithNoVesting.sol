@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title TokenDistributorWithNoVesting
- * @dev A contract for distributing tokens during no vesting sales.
+ * @dev A contract for distributing coins during no vesting sales.
  */
 contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
-    uint256 public totalAmount; // The total amount of tokens available for distribution
+    uint256 public totalAmount; // The total amount of coins available for distribution
     mapping(address => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
-    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim tokens
-    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary claims tokens
-    event Swept(address receiver, uint256 amount); // Event emitted when tokens are swept from the contract
+    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim coins
+    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary claims coins
+    event Swept(address receiver, uint256 amount); // Event emitted when coins are swept from the contract
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
 
@@ -108,12 +108,12 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Allows a beneficiary to claim their tokens.
+     * @dev Allows a beneficiary to claim their coins.
      */
     function claim() external {
         require(
             block.timestamp >= distributionPeriodStart,
-            "TokenDistributorWithNoVesting: tokens cannot be claimed yet"
+            "TokenDistributorWithNoVesting: coins cannot be claimed yet"
         );
         require(
             block.timestamp <= claimPeriodEnd,
@@ -124,7 +124,7 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
 
         require(
             claimableAmount > 0,
-            "TokenDistributorWithNoVesting: no tokens to claim"
+            "TokenDistributorWithNoVesting: no coins to claim"
         );
 
         claimableAmounts[_msgSender()] = 0;
@@ -136,7 +136,7 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Transfers remaining tokens from the contract to the owner.
+     * @dev Transfers remaining coins from the contract to the owner.
      */
     function sweep() external onlyOwner {
         require(

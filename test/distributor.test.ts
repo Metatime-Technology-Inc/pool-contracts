@@ -405,7 +405,7 @@ describe("Distributor", function () {
 
       await expect(
         distributorInstance.connect(deployer).claim()
-      ).to.be.revertedWith("calculateClaimableAmount: No tokens to claim");
+      ).to.be.revertedWith("calculateClaimableAmount: No coins to claim");
     });
 
     it("try to send eth to distributor pool", async () => {

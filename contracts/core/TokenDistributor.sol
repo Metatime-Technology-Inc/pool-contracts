@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title TokenDistributor
- * @dev A contract for distributing tokens among users over a specific period of time.
+ * @dev A contract for distributing coins among users over a specific period of time.
  */
 contract TokenDistributor is Initializable, Ownable2Step {
     string public poolName; // The name of the mtc distribution pool
@@ -23,9 +23,9 @@ contract TokenDistributor is Initializable, Ownable2Step {
     mapping(address => uint256) public leftClaimableAmounts; // Mapping of user addresses to their remaining claimable amounts
     bool private hasClaimableAmountsSet; // It is used to prevent updating pool params
 
-    event Swept(address receiver, uint256 amount); // Event emitted when the contract owner sweeps remaining tokens
-    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim tokens
-    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed tokens
+    event Swept(address receiver, uint256 amount); // Event emitted when the contract owner sweeps remaining coins
+    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim coins
+    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed coins
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
     event PoolParamsUpdated(
         uint256 newDistributionPeriodStart,
@@ -166,14 +166,14 @@ contract TokenDistributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Allows a user to claim their available tokens.
+     * @dev Allows a user to claim their available coins.
      * Tokens can only be claimed during the distribution period.
      */
     function claim() external returns (bool) {
         address sender = _msgSender();
         uint256 claimableAmount = calculateClaimableAmount(sender);
 
-        require(claimableAmount > 0, "TokenDistributor: no tokens to claim");
+        require(claimableAmount > 0, "TokenDistributor: no coins to claim");
 
         claimedAmounts[sender] = claimedAmounts[sender] + claimableAmount;
 
@@ -192,7 +192,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Allows the contract owner to sweep any remaining tokens after the claim period ends.
+     * @dev Allows the contract owner to sweep any remaining coins after the claim period ends.
      * Tokens are transferred to the contract owner's address.
      */
     function sweep() external onlyOwner {
@@ -255,10 +255,10 @@ contract TokenDistributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Calculates the claimable amount of tokens for a given user.
+     * @dev Calculates the claimable amount of coins for a given user.
      * The claimable amount depends on the number of days that have passed since the last claim.
      * @param user The address of the user
-     * @return The claimable amount of tokens for the user
+     * @return The claimable amount of coins for the user
      */
     function calculateClaimableAmount(
         address user
@@ -287,10 +287,10 @@ contract TokenDistributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Calculates the amount of tokens that can be claimed by a given address
+     * @dev Calculates the amount of coins that can be claimed by a given address
      * based on the number of days that have passed since the last claim.
      * @param user The address of the user
-     * @return The amount of tokens that can be claimed by the user
+     * @return The amount of coins that can be claimed by the user
      */
     function _calculateClaimableAmount(
         address user

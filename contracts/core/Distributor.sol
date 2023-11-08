@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title Distributor
- * @notice Holds tokens for users to claim.
- * @dev A contract for distributing tokens over a specified period of time.
+ * @notice Holds coins for users to claim.
+ * @dev A contract for distributing coins over a specified period of time.
  */
 contract Distributor is Initializable, Ownable2Step {
     string public poolName; // Name of the mtc distribution pool
@@ -16,12 +16,12 @@ contract Distributor is Initializable, Ownable2Step {
     uint256 public periodLength; // Length of each distribution period
     uint256 public distributionRate; // Rate of mtc distribution per period
     uint256 public constant BASE_DIVIDER = 10_000; // Base divider for distribution rate calculation
-    uint256 public claimableAmount; // Total amount of tokens claimable per period
-    uint256 public claimedAmount; // Total amount of tokens claimed so far
+    uint256 public claimableAmount; // Total amount of coins claimable per period
+    uint256 public claimedAmount; // Total amount of coins claimed so far
     uint256 public lastClaimTime; // Timestamp of the last mtc claim
-    uint256 public leftClaimableAmount; // Remaining amount of tokens available for claiming
+    uint256 public leftClaimableAmount; // Remaining amount of coins available for claiming
 
-    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed tokens
+    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary has claimed coins
     event PoolParamsUpdated(
         uint256 newStartTime,
         uint256 newEndTime,
@@ -70,7 +70,7 @@ contract Distributor is Initializable, Ownable2Step {
      * @param _endTime The end time of the distribution.
      * @param _distributionRate The rate of mtc distribution per period.
      * @param _periodLength The length of each distribution period.
-     * @param _claimableAmount The total amount of tokens claimable per period.
+     * @param _claimableAmount The total amount of coins claimable per period.
      */
     function initialize(
         address _owner,
@@ -105,7 +105,7 @@ contract Distributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Claim tokens for the sender.
+     * @dev Claim coins for the sender.
      * @return A boolean indicating whether the claim was successful.
      */
     function claim() external onlyOwner returns (bool) {
@@ -164,8 +164,8 @@ contract Distributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Calculates the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period.
+     * @dev Calculates the amount of coins claimable for the current period.
+     * @return The amount of coins claimable for the current period.
      */
     function calculateClaimableAmount() public view returns (uint256) {
         require(
@@ -180,14 +180,14 @@ contract Distributor is Initializable, Ownable2Step {
             amount = _calculateClaimableAmount();
         }
 
-        require(amount > 0, "calculateClaimableAmount: No tokens to claim");
+        require(amount > 0, "calculateClaimableAmount: No coins to claim");
 
         return amount;
     }
 
     /**
-     * @dev Internal function to calculate the amount of tokens claimable for the current period.
-     * @return The amount of tokens claimable for the current period.
+     * @dev Internal function to calculate the amount of coins claimable for the current period.
+     * @return The amount of coins claimable for the current period.
      */
     function _calculateClaimableAmount() internal view returns (uint256) {
         return

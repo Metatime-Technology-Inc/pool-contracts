@@ -2,13 +2,13 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title TokenDistributorWithNoVesting
  * @dev A contract for distributing tokens during no vesting sales.
  */
-contract TokenDistributorWithNoVesting is Initializable, Ownable {
+contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period

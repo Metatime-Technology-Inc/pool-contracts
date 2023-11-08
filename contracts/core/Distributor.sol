@@ -2,14 +2,14 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title Distributor
  * @notice Holds tokens for users to claim.
  * @dev A contract for distributing tokens over a specified period of time.
  */
-contract Distributor is Initializable, Ownable {
+contract Distributor is Initializable, Ownable2Step {
     string public poolName; // Name of the mtc distribution pool
     uint256 public startTime; // Start time of the distribution
     uint256 public endTime; // End time of the distribution

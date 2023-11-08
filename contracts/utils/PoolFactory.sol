@@ -2,7 +2,7 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../core/Distributor.sol";
@@ -14,7 +14,7 @@ import "../interfaces/ITokenDistributor.sol";
  * @title PoolFactory
  * @dev A contract for creating Distributor and TokenDistributor contracts.
  */
-contract PoolFactory is Initializable, Ownable {
+contract PoolFactory is Initializable, Ownable2Step {
     uint256 public distributorCount; // Counter for the number of created Distributor contracts.
     uint256 public tokenDistributorCount; // Counter for the number of created TokenDistributor contracts.
 

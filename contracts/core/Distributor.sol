@@ -35,14 +35,10 @@ contract Distributor is Initializable, Ownable {
      * @dev A modifier that validates pool parameters.
      * @param _startTime Start timestamp of claim period.
      * @param _endTime End timestamp of claim period.
-     * @param _distributionRate Distribution rate of each claim.
-     * @param _periodLength Distribution duration of each claim.
      */
     modifier isParamsValid(
         uint256 _startTime,
-        uint256 _endTime,
-        uint256 _distributionRate,
-        uint256 _periodLength
+        uint256 _endTime
     ) {
         require(
             _startTime < _endTime,
@@ -92,9 +88,12 @@ contract Distributor is Initializable, Ownable {
     )
         external
         initializer
-        isParamsValid(_startTime, _endTime, _distributionRate, _periodLength)
+        isParamsValid(_startTime, _endTime)
     {
         _transferOwnership(_owner);
+
+        require(_claimableAmount > _leftClaimableAmount, "Distributor: invalid amounts");
+        require(_lastClaimTime >= _startTime && _lastClaimTime <= _endTime, "Distributor: unexpected last claim");
 
         poolName = _poolName;
         startTime = _startTime;
@@ -146,9 +145,7 @@ contract Distributor is Initializable, Ownable {
         onlyOwner
         isParamsValid(
             newStartTime,
-            newEndTime,
-            newDistributionRate,
-            newPeriodLength
+            newEndTime
         )
         returns (bool)
     {
@@ -180,7 +177,7 @@ contract Distributor is Initializable, Ownable {
             "Distributor: distribution has not started yet"
         );
 
-        uint256 amount = 0;
+        uint256 amount;
         if (block.timestamp > endTime) {
             amount = leftClaimableAmount;
         } else {

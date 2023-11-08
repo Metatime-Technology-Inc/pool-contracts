@@ -11,10 +11,10 @@ import "../libs/Trigonometry.sol";
  * @dev A contract for managing a strategic pool of tokens.
  */
 contract StrategicPool is Initializable, Ownable {
-    bool public initialized = false;
+    bool public initialized;
     address public constant BURN_ADDRESS = address(0);
-    int256 public totalBurnedAmount = 0; // The total amount of tokens burned from the pool
-    int256 public lastBurnedAmount = 0;
+    int256 public totalBurnedAmount; // The total amount of tokens burned from the pool
+    int256 public lastBurnedAmount;
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool

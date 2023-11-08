@@ -21,7 +21,7 @@ contract TokenDistributor is Initializable, Ownable {
     mapping(address => uint256) public claimedAmounts; // Mapping of user addresses to their claimed amounts
     mapping(address => uint256) public lastClaimTimes; // Mapping of user addresses to their last claim times
     mapping(address => uint256) public leftClaimableAmounts; // Mapping of user addresses to their remaining claimable amounts
-    bool private hasClaimableAmountsSet = false; // It is used to prevent updating pool params
+    bool private hasClaimableAmountsSet; // It is used to prevent updating pool params
 
     event Swept(address receiver, uint256 amount); // Event emitted when the contract owner sweeps remaining tokens
     event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim tokens

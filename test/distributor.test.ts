@@ -135,6 +135,40 @@ describe("Distributor", function () {
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
+    it("try to initialize Distributor with wrong params", async () => {
+      const { deployer, poolFactory } = await loadFixture(initiateVariables);
+
+      await expect(
+        poolFactory
+          .connect(deployer)
+          .createDistributor(
+            POOL_NAME,
+            START_TIME,
+            END_TIME,
+            DISTRIBUTION_RATE,
+            PERIOD_LENGTH,
+            LAST_CLAIM_TIME,
+            LEFT_CLAIMABLE_AMOUNT,
+            LOCKED_AMOUNT
+          )
+      ).to.be.revertedWith("Distributor: invalid amounts");
+
+      await expect(
+        poolFactory
+          .connect(deployer)
+          .createDistributor(
+            POOL_NAME,
+            START_TIME,
+            END_TIME,
+            DISTRIBUTION_RATE,
+            PERIOD_LENGTH,
+            LAST_CLAIM_TIME * 1000,
+            LOCKED_AMOUNT,
+            LEFT_CLAIMABLE_AMOUNT
+          )
+      ).to.be.revertedWith("Distributor: unexpected last claim");
+    });
+
     // Try to initialize implementation and expect to be reverted
     it("try to initialize implementation and expect to be reverted", async () => {
       const { deployer, distributor, tokenDistributor, poolFactory } =

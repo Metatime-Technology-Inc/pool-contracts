@@ -38,7 +38,10 @@ contract PoolFactory is Initializable, Ownable {
     /**
      * @dev Initializes the contract with new implementation addresses.
      */
-    function initialize(address distributorImplementation_, address tokenDistributorImplementation_) external initializer {
+    function initialize(
+        address distributorImplementation_,
+        address tokenDistributorImplementation_
+    ) external initializer {
         _transferOwnership(_msgSender());
         distributorImplementation = distributorImplementation_;
         tokenDistributorImplementation = tokenDistributorImplementation_;
@@ -64,7 +67,10 @@ contract PoolFactory is Initializable, Ownable {
         uint256 claimableAmount,
         uint256 leftClaimableAmount
     ) external onlyOwner returns (uint256) {
-        require(distributorImplementation != address(0), "PoolFactory: Distributor implementation not found");
+        require(
+            distributorImplementation != address(0),
+            "PoolFactory: Distributor implementation not found"
+        );
 
         address newDistributorAddress = Clones.clone(distributorImplementation);
         IDistributor(newDistributorAddress).initialize(
@@ -107,7 +113,10 @@ contract PoolFactory is Initializable, Ownable {
         uint256 distributionRate,
         uint256 periodLength
     ) external onlyOwner returns (uint256) {
-        require(tokenDistributorImplementation != address(0), "PoolFactory: TokenDistributor implementation not found");
+        require(
+            tokenDistributorImplementation != address(0),
+            "PoolFactory: TokenDistributor implementation not found"
+        );
 
         address newTokenDistributorAddress = Clones.clone(
             tokenDistributorImplementation

@@ -36,10 +36,7 @@ contract Distributor is Initializable, Ownable {
      * @param _startTime Start timestamp of claim period.
      * @param _endTime End timestamp of claim period.
      */
-    modifier isParamsValid(
-        uint256 _startTime,
-        uint256 _endTime
-    ) {
+    modifier isParamsValid(uint256 _startTime, uint256 _endTime) {
         require(
             _startTime < _endTime,
             "Distributor: end time must be bigger than start time"
@@ -85,15 +82,17 @@ contract Distributor is Initializable, Ownable {
         uint256 _lastClaimTime,
         uint256 _claimableAmount,
         uint256 _leftClaimableAmount
-    )
-        external
-        initializer
-        isParamsValid(_startTime, _endTime)
-    {
+    ) external initializer isParamsValid(_startTime, _endTime) {
         _transferOwnership(_owner);
 
-        require(_claimableAmount > _leftClaimableAmount, "Distributor: invalid amounts");
-        require(_lastClaimTime >= _startTime && _lastClaimTime <= _endTime, "Distributor: unexpected last claim");
+        require(
+            _claimableAmount > _leftClaimableAmount,
+            "Distributor: invalid amounts"
+        );
+        require(
+            _lastClaimTime >= _startTime && _lastClaimTime <= _endTime,
+            "Distributor: unexpected last claim"
+        );
 
         poolName = _poolName;
         startTime = _startTime;
@@ -143,10 +142,7 @@ contract Distributor is Initializable, Ownable {
     )
         external
         onlyOwner
-        isParamsValid(
-            newStartTime,
-            newEndTime
-        )
+        isParamsValid(newStartTime, newEndTime)
         returns (bool)
     {
         startTime = newStartTime;

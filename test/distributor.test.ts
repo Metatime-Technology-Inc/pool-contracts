@@ -88,6 +88,36 @@ describe("Distributor", function () {
       END_TIME = START_TIME + TWO_DAYS_IN_SECONDS;
     });
 
+    it("try to initialize pool factory with wrong implementation addresses", async () => {
+      const { deployer, distributor, tokenDistributor } = await loadFixture(initiateVariables);
+
+      const TestPoolFactory_ = await ethers.getContractFactory(
+        CONTRACTS.utils.PoolFactory
+      );
+      const testPoolFactory = (await TestPoolFactory_.connect(
+        deployer
+      ).deploy()) as PoolFactory;
+      await testPoolFactory.deployed();
+
+      await expect(
+        testPoolFactory
+          .connect(deployer)
+          .initialize(
+            distributor.address,
+            ethers.constants.AddressZero
+          )
+      ).to.be.revertedWith("PoolFactory: cannot set zero address.");
+      
+      await expect(
+        testPoolFactory
+          .connect(deployer)
+          .initialize(
+            ethers.constants.AddressZero,
+            tokenDistributor.address
+          )
+      ).to.be.revertedWith("PoolFactory: cannot set zero address.");
+    });
+
     it("try to create distributor from pool factory without distributor implementation and expect it to be reverted", async () => {
       const { deployer } = await loadFixture(initiateVariables);
 

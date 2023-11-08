@@ -14,7 +14,6 @@ contract StrategicPool is Initializable, Ownable {
     bool public initialized;
     address public constant BURN_ADDRESS = address(0);
     int256 public totalBurnedAmount; // The total amount of tokens burned from the pool
-    int256 public lastBurnedAmount;
     int256 public constant constantValueFromFormula = 1000; // A constant value used in the formula
 
     event Burned(uint256 amount, bool withFormula); // Event emitted when tokens are burned from the pool
@@ -51,7 +50,6 @@ contract StrategicPool is Initializable, Ownable {
         require(amount > 0, "StrategicPool: amount must be bigger than zero");
 
         totalBurnedAmount += int256(amount);
-        lastBurnedAmount = int256(amount);
 
         (bool sent, ) = BURN_ADDRESS.call{value: amount}("");
         require(sent, "StrategicPool: unable to burn");

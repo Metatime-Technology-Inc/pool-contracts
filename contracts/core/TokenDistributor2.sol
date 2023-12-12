@@ -120,10 +120,7 @@ contract TokenDistributor2 is Ownable2Step {
 
         uint256 claimableAmount = claimableAmounts[_msgSender()];
 
-        require(
-            claimableAmount > 0,
-            "TokenDistributor2: no tokens to claim"
-        );
+        require(claimableAmount > 0, "TokenDistributor2: no tokens to claim");
 
         claimableAmounts[_msgSender()] = 0;
 

@@ -4,6 +4,8 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
+import "../interfaces/IAirdropList.sol";
+
 /**
  * @title AirdropPool
  * @dev A contract for distributing coins during no vesting sales.
@@ -13,8 +15,8 @@ contract AirdropPool is Initializable, Ownable2Step {
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public totalAmount; // The total amount of coins available for distribution
+    IAirdropList public airdropList; // Interface of AirdropList contract
     mapping(uint256 => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
-    mapping(address => uint256) public receivers; // Mapping of receiver addresses with related user ids
 
     event CanClaim(uint256 indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim coins
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary claims coins
@@ -38,7 +40,8 @@ contract AirdropPool is Initializable, Ownable2Step {
      */
     function initialize(
         uint256 _distributionPeriodStart,
-        uint256 _distributionPeriodEnd
+        uint256 _distributionPeriodEnd,
+        address _airdropList
     ) external initializer {
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
@@ -48,6 +51,7 @@ contract AirdropPool is Initializable, Ownable2Step {
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
         claimPeriodEnd = _distributionPeriodEnd + 100 days;
+        airdropList = IAirdropList(_airdropList);
 
         _transferOwnership(_msgSender());
     }
@@ -107,41 +111,6 @@ contract AirdropPool is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Binds the receiver address to user id for users.
-     * @param userIdsList The list of user addresses
-     * @param receiversList The list of receiver addresses
-     */
-    function setReceiverAddresses(
-        uint256[] calldata userIdsList,
-        address[] calldata receiversList
-    ) external onlyOwner {
-        uint256 usersLength = userIdsList.length;
-        require(
-            usersLength == receiversList.length,
-            "AirdropPool: user and receivers list lengths must match"
-        );
-
-        for (uint256 i = 0; i < userIdsList.length; i++) {
-            uint256 userId = userIdsList[i];
-
-            require(
-                claimableAmounts[userId] != 0,
-                "AirdropPool: no balance set before"
-            );
-
-            address receiver = receiversList[i];
-            require(
-                receivers[receiver] != 0,
-                "AirdropPool: user id bound before"
-            );
-
-            receivers[receiver] = userId;
-
-            emit ReceiverSet(userId, receiver);
-        }
-    }
-
-    /**
      * @dev Allows a beneficiary to claim their coins.
      */
     function claim() external {
@@ -154,7 +123,7 @@ contract AirdropPool is Initializable, Ownable2Step {
             "AirdropPool: claim period has ended"
         );
 
-        uint256 userId = receivers[_msgSender()];
+        uint256 userId = _getUserId(_msgSender());
         require(userId != 0, "AirdropPool: user not set before");
 
         uint256 claimableAmount = claimableAmounts[userId];
@@ -184,5 +153,13 @@ contract AirdropPool is Initializable, Ownable2Step {
         require(sent, "AirdropPool: unable to withdraw");
 
         emit Swept(owner(), leftovers);
+    }
+
+    /**
+     * @dev Get userId by provided walletAddress
+     * @param walletAddress address of related userID
+     */
+    function _getUserId(address walletAddress) view private returns(uint256 userID) {
+        userID = airdropList.addressList(walletAddress);
     }
 }

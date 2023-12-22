@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-import "../interfaces/IAirdropList.sol";
+import "../interfaces/IAddressList.sol";
 
 /**
  * @title AirdropPool
@@ -15,7 +15,7 @@ contract AirdropPool is Initializable, Ownable2Step {
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public totalAmount; // The total amount of coins available for distribution
-    IAirdropList public airdropList; // Interface of AirdropList contract
+    IAddressList public addressList; // Interface of AddressList contract
     mapping(uint256 => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
     event CanClaim(uint256 indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim coins
@@ -37,11 +37,12 @@ contract AirdropPool is Initializable, Ownable2Step {
      * @dev Initializes the contract.
      * @param _distributionPeriodStart The start time of the claim period
      * @param _distributionPeriodEnd The end time of the claim period
+     * @param _addresList Address of AddresList contract
      */
     function initialize(
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd,
-        address _airdropList
+        address _addressList
     ) external initializer {
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
@@ -51,7 +52,7 @@ contract AirdropPool is Initializable, Ownable2Step {
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
         claimPeriodEnd = _distributionPeriodEnd + 100 days;
-        airdropList = IAirdropList(_airdropList);
+        addressList = IAddressList(_addressList);
 
         _transferOwnership(_msgSender());
     }
@@ -160,6 +161,6 @@ contract AirdropPool is Initializable, Ownable2Step {
      * @param walletAddress address of related userID
      */
     function _getUserId(address walletAddress) view private returns(uint256 userID) {
-        userID = airdropList.addressList(walletAddress);
+        userID = addressList.addressList(walletAddress);
     }
 }

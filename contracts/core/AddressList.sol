@@ -21,7 +21,7 @@ contract AddressList is Initializable, Ownable2Step {
     modifier whenNotIssued(uint256 userID) {
         require(
             userList[userID] != address(0),
-            "AirdropList: userID already issued"
+            "AddressList: userID already issued"
         );
         _;
     }
@@ -63,7 +63,7 @@ contract AddressList is Initializable, Ownable2Step {
     ) external onlyOwner {
         require(
             userIDs.length != walletAddresses.length,
-            "AirdropList: Provided data incorrect"
+            "AddressList: Provided data incorrect"
         );
 
         uint8 i;
@@ -84,10 +84,10 @@ contract AddressList is Initializable, Ownable2Step {
         uint256 userID,
         address walletAddress
     ) private whenNotIssued(userID) {
-        require(userID != uint256(0), "AirdropList: Cant set to id 0");
+        require(userID != uint256(0), "AddressList: Cant set to id 0");
         require(
             walletAddress != address(0),
-            "AirdropList: Cant set zero address"
+            "AddressList: Cant set zero address"
         );
 
         userList[userID] = walletAddress;

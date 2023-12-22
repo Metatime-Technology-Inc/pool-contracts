@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-interface IAirdropList {
+interface IAddressList {
     function userList(
         uint256 userID
     ) external view returns (address walletAddress);

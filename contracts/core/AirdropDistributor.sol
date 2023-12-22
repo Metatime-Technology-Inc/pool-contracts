@@ -7,10 +7,11 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/IAddressList.sol";
 
 /**
- * @title AirdropPool
- * @dev A contract for distributing coins during no vesting sales.
+ * @title AirdropDistributor
+ * @dev A contract for airdrop coins distributing
  */
-contract AirdropPool is Initializable, Ownable2Step {
+contract AirdropDistributor is Initializable, Ownable2Step {
+    string public poolName; // The name of the airdrop distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public claimPeriodEnd; // The end time of the claim period
@@ -23,7 +24,6 @@ contract AirdropPool is Initializable, Ownable2Step {
     event Swept(address receiver, uint256 amount); // Event emitted when coins are swept from the contract
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
     event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
-    event ReceiverSet(uint256 userId, address receiver); // Event emitted when user id is bound to receiver
 
     /**
      * @dev The receive function is a special function that allows the contract to accept MTC transactions.
@@ -35,26 +35,31 @@ contract AirdropPool is Initializable, Ownable2Step {
 
     /**
      * @dev Initializes the contract.
+     * @param _owner The address of the contract owner.
+     * @param _poolName The name of the airdrop distribution pool
      * @param _distributionPeriodStart The start time of the claim period
      * @param _distributionPeriodEnd The end time of the claim period
      * @param _addresList Address of AddresList contract
      */
     function initialize(
+        address _owner,
+        string memory _poolName,
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd,
         address _addressList
     ) external initializer {
         require(
             _distributionPeriodEnd > _distributionPeriodStart,
-            "AirdropPool: end time must be bigger than start time"
+            "AirdropDistributor: end time must be bigger than start time"
         );
 
+        poolName = _poolName;
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
         claimPeriodEnd = _distributionPeriodEnd + 100 days;
         addressList = IAddressList(_addressList);
 
-        _transferOwnership(_msgSender());
+        _transferOwnership(_owner);
     }
 
     /**
@@ -63,7 +68,7 @@ contract AirdropPool is Initializable, Ownable2Step {
     modifier isSettable() {
         require(
             block.timestamp < distributionPeriodStart,
-            "AirdropPool: claim period has already started"
+            "AirdropDistributor: claim period has already started"
         );
         _;
     }
@@ -80,20 +85,20 @@ contract AirdropPool is Initializable, Ownable2Step {
         uint256 usersLength = userIds.length;
         require(
             usersLength == amounts.length,
-            "AirdropPool: user and amount list lengths must match"
+            "AirdropDistributor: user and amount list lengths must match"
         );
 
         uint256 sum = totalAmount;
         for (uint256 i = 0; i < usersLength; i++) {
             uint256 userId = userIds[i];
 
-            require(userId != 0, "AirdropPool: cannot set zero id");
+            require(userId != 0, "AirdropDistributor: cannot set zero id");
 
             uint256 amount = amounts[i];
 
             require(
                 claimableAmounts[userId] == 0,
-                "AirdropPool: amount already set"
+                "AirdropDistributor: amount already set"
             );
 
             claimableAmounts[userId] = amount;
@@ -104,7 +109,7 @@ contract AirdropPool is Initializable, Ownable2Step {
 
         require(
             address(this).balance >= sum,
-            "AirdropPool: total claimable amount does not match"
+            "AirdropDistributor: total claimable amount does not match"
         );
         totalAmount = sum;
 
@@ -117,23 +122,23 @@ contract AirdropPool is Initializable, Ownable2Step {
     function claim() external {
         require(
             block.timestamp >= distributionPeriodStart,
-            "AirdropPool: coins cannot be claimed yet"
+            "AirdropDistributor: coins cannot be claimed yet"
         );
         require(
             block.timestamp <= claimPeriodEnd,
-            "AirdropPool: claim period has ended"
+            "AirdropDistributor: claim period has ended"
         );
 
         uint256 userId = _getUserId(_msgSender());
-        require(userId != 0, "AirdropPool: user not set before");
+        require(userId != 0, "AirdropDistributor: user not set before");
 
         uint256 claimableAmount = claimableAmounts[userId];
-        require(claimableAmount > 0, "AirdropPool: no coins to claim");
+        require(claimableAmount > 0, "AirdropDistributor: no coins to claim");
 
         claimableAmounts[userId] = 0;
 
         (bool sent, ) = _msgSender().call{value: claimableAmount}("");
-        require(sent, "AirdropPool: unable to withdraw");
+        require(sent, "AirdropDistributor: unable to withdraw");
 
         emit HasClaimed(_msgSender(), claimableAmount);
     }
@@ -144,14 +149,14 @@ contract AirdropPool is Initializable, Ownable2Step {
     function sweep() external onlyOwner {
         require(
             block.timestamp > claimPeriodEnd,
-            "AirdropPool: cannot sweep before claim end time"
+            "AirdropDistributor: cannot sweep before claim end time"
         );
 
         uint256 leftovers = address(this).balance;
-        require(leftovers != 0, "AirdropPool: no leftovers");
+        require(leftovers != 0, "AirdropDistributor: no leftovers");
 
         (bool sent, ) = owner().call{value: leftovers}("");
-        require(sent, "AirdropPool: unable to withdraw");
+        require(sent, "AirdropDistributor: unable to withdraw");
 
         emit Swept(owner(), leftovers);
     }

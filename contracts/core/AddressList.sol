@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
- * @title AirdropList
+ * @title AddressList
  * @author İsmail Can Vardar github.com/icanvardar, Mehmet Rauf Oğuz github.com/mehmetraufoguz
  * @notice List of which user matched with wallet
  */
-contract AirdropList is Initializable, Ownable2Step {
+contract AddressList is Initializable, Ownable2Step {
     /// @notice userIDs matched with addresses
     mapping(uint256 => address) public userList;
     /// @notice addresses matched with userIDs

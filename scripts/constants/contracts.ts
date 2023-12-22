@@ -1,36 +1,38 @@
 interface IContracts {
   [key: string]: Object;
   core: {
+    AddressList: string;
     Distributor: string;
     LiquidityPool: string;
     MTC: string;
     StrategicPool: string;
     TokenDistributor: string;
-    TokenDistributor2: string;
   };
   lib: {
     Trigonometry: string;
     MockTrigonometry: string;
   },
   utils: {
+    AirdropFactory: string;
     PoolFactory: string;
   };
 }
 
 const CONTRACTS: IContracts = {
   core: {
+    AddressList: "AddressList",
     Distributor: "Distributor",
     LiquidityPool: "LiquidityPool",
     MTC: "MTC",
     StrategicPool: "StrategicPool",
     TokenDistributor: "TokenDistributor",
-    TokenDistributor2: "TokenDistributor2",
   },
   lib: {
     Trigonometry: "Trigonometry",
     MockTrigonometry: "MockTrigonometry",
   },
   utils: {
+    AirdropFactory: "AirdropFactory",
     PoolFactory: "PoolFactory"
   }
 };

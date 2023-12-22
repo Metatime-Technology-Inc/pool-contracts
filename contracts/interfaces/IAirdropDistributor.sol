@@ -12,7 +12,7 @@ interface IAirdropDistributor {
      * @param _poolName The name of the airdrop distribution pool
      * @param _distributionPeriodStart The start time of the claim period
      * @param _distributionPeriodEnd The end time of the claim period
-     * @param _addresList Address of AddresList contract
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         address _owner,

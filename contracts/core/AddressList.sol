@@ -20,23 +20,13 @@ contract AddressList is Initializable, Ownable2Step {
      */
     modifier whenNotIssued(uint256 userID) {
         require(
-            userList[userID] != address(0),
+            userList[userID] == address(0),
             "AddressList: userID already issued"
         );
         _;
     }
 
-    /**
-     * @dev Disables initializers
-     */
     constructor() {
-        _disableInitializers();
-    }
-
-    /**
-     * @dev Initializes the contract.
-     */
-    function initialize() external initializer {
         _transferOwnership(_msgSender());
     }
 
@@ -62,7 +52,7 @@ contract AddressList is Initializable, Ownable2Step {
         address[] memory walletAddresses
     ) external onlyOwner {
         require(
-            userIDs.length != walletAddresses.length,
+            userIDs.length == walletAddresses.length,
             "AddressList: Provided data incorrect"
         );
 

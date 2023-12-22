@@ -118,41 +118,6 @@ task("create-token-distributor", "Create a new token distributor")
         }
     });
 
-// creates TokenDistributor2 for given network
-task("create-private-sale", "Create a private sale pool")
-    .addParam("mtc", "address of mtc")
-    .addParam("start", "start timestamp of token distribution")
-    .addParam("end", "end timestamp of token distribution")
-    .setAction(async (args, hre) => {
-        try {
-            const { mtc, start, end } = args;
-
-            if (!mtc || !start || !end) {
-                throw new Error("Missing arguments!");
-            }
-
-            const mtcAddress = ethers.utils.getAddress(mtc);
-
-            const networkName = hre.network.name;
-            const { deployer } = await hre.getNamedAccounts();
-            const deployerSigner = await hre.ethers.getSigner(deployer);
-
-            const TokenDistributor2 = await hre.ethers.getContractFactory(CONTRACTS.core.TokenDistributor2);
-            const privateSaleTokenDistributor = await TokenDistributor2.connect(deployerSigner).deploy(
-                mtcAddress,
-                Number(start),
-                Number(end),
-            );
-
-            await privateSaleTokenDistributor.deployed();
-
-            console.log("NETWORK:", networkName);
-            console.log("TokenDistributor2 deployed at", privateSaleTokenDistributor.address);
-        } catch (err: any) {
-            throw new Error(err);
-        }
-    });
-
 // extracts abis for given network
 task(
     "extract-abis",
@@ -203,76 +168,6 @@ task(
         }
     }
 );
-
-// extracts contract addresses for given network
-task(
-    "extract-deployment-addresses",
-    async (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
-        try {
-            const networkName = hre.network.name;
-
-            let obj: { [key: string]: string; } = {};
-
-            const deploymentsFolder = path.resolve(__dirname, `../tmp/deployments`);
-
-            if (!fs.existsSync(deploymentsFolder)) {
-                fs.mkdirSync(deploymentsFolder);
-            }
-
-            const deploymentsFilePath = path.resolve(
-                __dirname,
-                `../tmp/deployments/${networkName}.json`
-            );
-
-            for (const contractSection in CONTRACTS) {
-                const sectionObj = CONTRACTS[contractSection];
-                const objKeys = Object.keys(sectionObj);
-
-                const excludedContracts =
-                    [CONTRACTS.core.Distributor, CONTRACTS.core.TokenDistributor2, CONTRACTS.core.TokenDistributor, CONTRACTS.lib.Trigonometry];
-
-                for (let i = 0; i < objKeys.length; i++) {
-                    const innerSection = objKeys[i];
-                    if (excludedContracts.indexOf(innerSection) === 1) {
-                        continue;
-                    }
-
-                    const originFilePath = path.resolve(
-                        __dirname,
-                        `../deployments/${networkName}/${innerSection}.json`
-                    );
-
-                    if (!fs.existsSync(originFilePath)) {
-                        console.log(originFilePath, "not found!");
-                    }
-
-                    if (fs.existsSync(originFilePath)) {
-                        const file = fs.readFileSync(originFilePath, "utf8");
-                        const abi = JSON.parse(file);
-                        obj[innerSection] = abi.address;
-                    }
-                }
-            }
-
-            fs.writeFileSync(deploymentsFilePath, JSON.stringify(obj), "utf8");
-
-            console.info(
-                "- Deployments on",
-                networkName,
-                "network were written to ./tmp/deployments/" +
-                networkName +
-                ".json file."
-            );
-
-            fs.writeFileSync(deploymentsFilePath, JSON.stringify(obj), "utf8");
-
-            console.log("Task completed!");
-        } catch (e) {
-            console.log(e);
-        }
-    }
-);
-
 
 task(
     "get-timestamp",

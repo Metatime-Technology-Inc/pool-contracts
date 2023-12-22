@@ -7,19 +7,19 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "../interfaces/IAddressList.sol";
 
 /**
- * @title AirdropVestingDistributor
+ * @title AirdropDistributorWithVesting
  * @dev A contract for distributing tokens among users over a specific period of time.
  */
-contract AirdropVestingDistributor is Initializable, Ownable2Step {
-    string public poolName; // The name of the airdrop vesting distribution pool
+contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
+    string public airdropName; // The name of the airdrop vesting distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public distributionRate; // The distribution rate (percentage)
     uint256 public periodLength; // The length of each distribution period (in seconds)
-    uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public totalClaimableAmount; // The total claimable amount that participants can claim
     uint256 public constant BASE_DIVIDER = 10_000; // The base divider used for calculations
     IAddressList public addressList; // Interface of AddressList contract
+
     mapping(uint256 => uint256) public claimableAmounts; // Mapping of user addresses to their claimable amounts
     mapping(uint256 => uint256) public claimedAmounts; // Mapping of user addresses to their claimed amounts
     mapping(uint256 => uint256) public lastClaimTimes; // Mapping of user addresses to their last claim times
@@ -27,15 +27,40 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
     bool private hasClaimableAmountsSet = false; // It is used to prevent updating pool params
 
     event Swept(address receiver, uint256 amount); // Event emitted when the contract owner sweeps remaining tokens
-    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim tokens
-    event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed tokens
+    event CanClaim(uint256 indexed beneficiary, uint256 amount); // Event emitted when a user can claim tokens
+    event HasClaimed(uint256 indexed beneficiary, uint256 amount); // Event emitted when a user has claimed tokens
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
+    event Deposit(address indexed sender, uint amount, uint balance); // Event emitted when pool received mtc
     event PoolParamsUpdated(
         uint256 newDistributionPeriodStart,
         uint256 newDistributionPeriodEnd,
         uint256 newDistributionRate,
         uint256 newPeriodLength
     ); // Event emitted when pool params are updated
+
+    /**
+     * @dev A modifier that validates pool parameters
+     * @param _distributionPeriodStart Start timestamp of claim period
+     * @param _distributionPeriodEnd End timestamp of claim period
+     */
+    modifier isParamsValid(
+        uint256 _distributionPeriodStart,
+        uint256 _distributionPeriodEnd
+    ) {
+        require(
+            _distributionPeriodEnd > _distributionPeriodStart,
+            "AirdropVestingDistributor: end time must be bigger than start time"
+        );
+        _;
+    }
+
+    /**
+     * @dev The receive function is a special function that allows the contract to accept MTC transactions.
+     * It emits a Deposit event to record the deposit details.
+     */
+    receive() external payable {
+        emit Deposit(_msgSender(), msg.value, address(this).balance);
+    }
 
     /**
      * @dev Constructor function.
@@ -48,76 +73,36 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev A modifier that validates pool parameters
-     * @param _distributionPeriodStart Start timestamp of claim period
-     * @param _distributionPeriodEnd End timestamp of claim period
-     * @param _distributionRate Distribution rate of each claim
-     * @param _periodLength Distribution duration of each claim
-     */
-    modifier isParamsValid(
-        uint256 _distributionPeriodStart,
-        uint256 _distributionPeriodEnd,
-        uint256 _distributionRate,
-        uint256 _periodLength
-    ) {
-        require(
-            _distributionPeriodEnd > _distributionPeriodStart,
-            "AirdropVestingDistributor: end time must be bigger than start time"
-        );
-
-        require(
-            (BASE_DIVIDER / _distributionRate) * _periodLength ==
-                _distributionPeriodEnd - _distributionPeriodStart,
-            "AirdropVestingDistributor: invalid parameters"
-        );
-        _;
-    }
-
-    /**
-     * @dev Controls settable status of contract while trying to set addresses and their amounts.
-     */
-    modifier isSettable() {
-        require(
-            block.timestamp < distributionPeriodStart,
-            "AirdropVestingDistributor: claim period has already started"
-        );
-        _;
-    }
-
-    /**
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner
-     * @param _poolName The name of the token distribution pool
+     * @param _airdropName The name of the token distribution pool
      * @param _distributionPeriodStart The start time of the distribution period
      * @param _distributionPeriodEnd The end time of the distribution period
      * @param _distributionRate The distribution rate (percentage)
      * @param _periodLength The length of each distribution period (in seconds)
-     * @param _addresList Address of AddresList contract
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         address _owner,
-        string memory _poolName,
+        string memory _airdropName,
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd,
         uint256 _distributionRate,
         uint256 _periodLength,
-        address _addresList
+        address _addressList
     )
         external
         initializer
         isParamsValid(
             _distributionPeriodStart,
-            _distributionPeriodEnd,
-            _distributionRate,
-            _periodLength
+            _distributionPeriodEnd
         )
     {
         _transferOwnership(_owner);
 
-        poolName = _poolName;
+        airdropName = _airdropName;
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
-        claimPeriodEnd = _distributionPeriodEnd + 100 days;
         distributionRate = _distributionRate;
         periodLength = _periodLength;
         addressList = IAddressList(_addressList);
@@ -132,7 +117,7 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
     function setClaimableAmounts(
         uint256[] calldata users,
         uint256[] calldata amounts
-    ) external onlyOwner isSettable {
+    ) external onlyOwner {
         uint256 usersLength = users.length;
         require(
             usersLength == amounts.length,
@@ -143,10 +128,7 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
         for (uint256 i = 0; i < usersLength; i++) {
             uint256 user = users[i];
 
-            require(
-                user != 0,
-                "AirdropVestingDistributor: cannot set zero id"
-            );
+            require(user != 0, "AirdropVestingDistributor: cannot set zero id");
 
             uint256 amount = amounts[i];
 
@@ -180,22 +162,27 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
      */
     function claim() external returns (bool) {
         uint256 userId = _getUserId(_msgSender());
-        uint256 claimableAmount = calculateClaimableAmount(sender);
+        require(userId != 0, "AirdropVestingDistributor: user not set before");
 
-        require(claimableAmount > 0, "AirdropVestingDistributor: no tokens to claim");
+        uint256 claimableAmount = calculateClaimableAmount(userId);
 
-        claimedAmounts[sender] = claimedAmounts[sender] + claimableAmount;
+        require(
+            claimableAmount > 0,
+            "AirdropVestingDistributor: no tokens to claim"
+        );
 
-        lastClaimTimes[sender] = block.timestamp;
+        claimedAmounts[userId] = claimedAmounts[userId] + claimableAmount;
 
-        leftClaimableAmounts[sender] =
-            leftClaimableAmounts[sender] -
+        lastClaimTimes[userId] = block.timestamp;
+
+        leftClaimableAmounts[userId] =
+            leftClaimableAmounts[userId] -
             claimableAmount;
 
         (bool sent, ) = _msgSender().call{value: claimableAmount}("");
         require(sent, "AirdropVestingDistributor: unable to withdraw");
 
-        emit HasClaimed(sender, claimableAmount);
+        emit HasClaimed(userId, claimableAmount);
 
         return true;
     }
@@ -205,12 +192,7 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
      * Tokens are transferred to the contract owner's address.
      */
     function sweep() external onlyOwner {
-        require(
-            block.timestamp > claimPeriodEnd,
-            "AirdropVestingDistributor: cannot sweep before claim period end time"
-        );
-
-        uint256 leftovers = token.balanceOf(address(this));
+        uint256 leftovers = address(this).balance;
         require(leftovers != 0, "AirdropVestingDistributor: no leftovers");
 
         (bool sent, ) = owner().call{value: leftovers}("");
@@ -234,12 +216,9 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
     )
         external
         onlyOwner
-        isSettable
         isParamsValid(
             newDistributionPeriodStart,
-            newDistributionPeriodEnd,
-            newDistributionRate,
-            newPeriodLength
+            newDistributionPeriodEnd
         )
         returns (bool)
     {
@@ -250,7 +229,6 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
 
         distributionPeriodStart = newDistributionPeriodStart;
         distributionPeriodEnd = newDistributionPeriodEnd;
-        claimPeriodEnd = newDistributionPeriodEnd + 100 days;
         distributionRate = newDistributionRate;
         periodLength = newPeriodLength;
 
@@ -274,19 +252,13 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
         uint256 user
     ) public view returns (uint256) {
         require(
-            block.timestamp <= claimPeriodEnd,
-            "AirdropVestingDistributor: claim period ended"
-        );
-
-        require(
             block.timestamp >= distributionPeriodStart,
             "AirdropVestingDistributor: distribution has not started yet"
         );
 
         uint256 claimableAmount = 0;
         if (
-            block.timestamp >= distributionPeriodEnd &&
-            block.timestamp <= claimPeriodEnd
+            block.timestamp >= distributionPeriodEnd
         ) {
             claimableAmount = leftClaimableAmounts[user];
         } else {
@@ -314,9 +286,11 @@ contract AirdropVestingDistributor is Initializable, Ownable2Step {
 
     /**
      * @dev Get userId by provided walletAddress
-     * @param walletAddress address of related userID
+     * @param walletAddress address of related userId
      */
-    function _getUserId(address walletAddress) view private returns(uint256 userID) {
-        userID = addressList.addressList(walletAddress);
+    function _getUserId(
+        address walletAddress
+    ) private view returns (uint256 userId) {
+        userId = addressList.addressList(walletAddress);
     }
 }

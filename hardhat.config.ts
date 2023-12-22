@@ -86,6 +86,8 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     hardhat: {
+      // gasPrice: 0,
+      initialBaseFeePerGas: 0,
       // mining: {
       //   auto: false,
       // },

@@ -11,10 +11,9 @@ import "../interfaces/IAddressList.sol";
  * @dev A contract for airdrop coins distributing
  */
 contract AirdropDistributor is Initializable, Ownable2Step {
-    string public poolName; // The name of the airdrop distribution pool
+    string public airdropName; // The name of the airdrop distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
-    uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public totalAmount; // The total amount of coins available for distribution
     IAddressList public addressList; // Interface of AddressList contract
     mapping(uint256 => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
@@ -34,16 +33,26 @@ contract AirdropDistributor is Initializable, Ownable2Step {
     }
 
     /**
+     * @dev Constructor function.
+     * It disables the execution of initializers in the contract, as it is not intended to be called directly.
+     * The purpose of this function is to prevent accidental execution of initializers when creating proxy instances of the contract.
+     * It is called internally during the construction of the proxy contract.
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
      * @dev Initializes the contract.
      * @param _owner The address of the contract owner.
-     * @param _poolName The name of the airdrop distribution pool
+     * @param _airdropName The name of the airdrop distribution pool
      * @param _distributionPeriodStart The start time of the claim period
      * @param _distributionPeriodEnd The end time of the claim period
-     * @param _addresList Address of AddresList contract
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         address _owner,
-        string memory _poolName,
+        string memory _airdropName,
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd,
         address _addressList
@@ -53,24 +62,12 @@ contract AirdropDistributor is Initializable, Ownable2Step {
             "AirdropDistributor: end time must be bigger than start time"
         );
 
-        poolName = _poolName;
+        airdropName = _airdropName;
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
-        claimPeriodEnd = _distributionPeriodEnd + 100 days;
         addressList = IAddressList(_addressList);
 
         _transferOwnership(_owner);
-    }
-
-    /**
-     * @dev Controls settable status of the contract while trying to set addresses and their amounts.
-     */
-    modifier isSettable() {
-        require(
-            block.timestamp < distributionPeriodStart,
-            "AirdropDistributor: claim period has already started"
-        );
-        _;
     }
 
     /**
@@ -81,7 +78,7 @@ contract AirdropDistributor is Initializable, Ownable2Step {
     function setClaimableAmounts(
         uint256[] calldata userIds,
         uint256[] calldata amounts
-    ) external onlyOwner isSettable {
+    ) external onlyOwner {
         uint256 usersLength = userIds.length;
         require(
             usersLength == amounts.length,
@@ -125,7 +122,7 @@ contract AirdropDistributor is Initializable, Ownable2Step {
             "AirdropDistributor: coins cannot be claimed yet"
         );
         require(
-            block.timestamp <= claimPeriodEnd,
+            block.timestamp <= distributionPeriodEnd,
             "AirdropDistributor: claim period has ended"
         );
 
@@ -147,11 +144,6 @@ contract AirdropDistributor is Initializable, Ownable2Step {
      * @dev Transfers remaining coins from the contract to the owner.
      */
     function sweep() external onlyOwner {
-        require(
-            block.timestamp > claimPeriodEnd,
-            "AirdropDistributor: cannot sweep before claim end time"
-        );
-
         uint256 leftovers = address(this).balance;
         require(leftovers != 0, "AirdropDistributor: no leftovers");
 
@@ -163,9 +155,11 @@ contract AirdropDistributor is Initializable, Ownable2Step {
 
     /**
      * @dev Get userId by provided walletAddress
-     * @param walletAddress address of related userID
+     * @param walletAddress address of related userId
      */
-    function _getUserId(address walletAddress) view private returns(uint256 userID) {
-        userID = addressList.addressList(walletAddress);
+    function _getUserId(
+        address walletAddress
+    ) private view returns (uint256 userId) {
+        userId = addressList.addressList(walletAddress);
     }
 }

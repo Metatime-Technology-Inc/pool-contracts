@@ -2,10 +2,10 @@
 pragma solidity 0.8.16;
 
 /**
- * @title IAirdropVestingDistributor
+ * @title IAirdropDistributorWithVesting
  * @dev Interface for a airdrop vesting distributor contract
  */
-interface IAirdropVestingDistributor {
+interface IAirdropDistributorWithVesting {
     /**
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner
@@ -14,7 +14,7 @@ interface IAirdropVestingDistributor {
      * @param _distributionPeriodEnd The end time of the distribution period
      * @param _distributionRate The distribution rate (percentage)
      * @param _periodLength The length of each distribution period (in seconds)
-     * @param _addresList Address of AddresList contract
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         address _owner,
@@ -23,8 +23,6 @@ interface IAirdropVestingDistributor {
         uint256 _distributionPeriodEnd,
         uint256 _distributionRate,
         uint256 _periodLength,
-        address _addresList
-    )
-        external
-        initializer;
+        address _addressList
+    ) external;
 }

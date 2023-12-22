@@ -5,124 +5,106 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "../core/AirdropDistributor.sol";
-import "../core/AirdropVestingDistributor.sol";
+import "../core/AirdropDistributorWithVesting.sol";
 import "../interfaces/IAirdropDistributor.sol";
-import "../interfaces/IAirdropVestingDistributor.sol";
+import "../interfaces/IAirdropDistributorWithVesting.sol";
 
 /**
  * @title AirdropFactory
- * @dev A contract for creating AirdropDistributor and AirdropVestingDistributor contracts.
+ * @dev A contract for creating AirdropDistributor and AirdropDistributorWithVesting contracts.
  */
 contract AirdropFactory is Ownable2Step {
-    uint256 public distributorCount; // Counter for the number of created AirdropDistributor contracts.
-    uint256 public vestingDistributorCount; // Counter for the number of created AirdropVestingDistributor contracts.
+    uint256 public airdropDistributorCount; // Counter for the number of created AirdropDistributor contracts.
+    uint256 public airdropDistributorWithVestingCount; // Counter for the number of created AirdropDistributorWithVesting contracts.
 
-    mapping(uint256 => address) private _distributors; // Mapping to store AirdropDistributor contract addresses by their IDs.
-    mapping(uint256 => address) private _vestingDistributors; // Mapping to store AirdropVestingDistributor contract addresses by their IDs.
+    mapping(uint256 => address) public airdropDistributors; // Mapping to store AirdropDistributor contract addresses by their IDs.
+    mapping(uint256 => address) public airdropDistributorWithVestings; // Mapping to store AirdropDistributorWithVesting contract addresses by their IDs.
 
-    address public immutable distributorImplementation; // Address of the implementation contract for AirdropDistributor contracts.
-    address public immutable vestingDistributorImplementation; // Address of the implementation contract for AirdropVestingDistributor contracts.
+    address public immutable airdropDistributorImplementation; // Address of the implementation contract for AirdropDistributor contracts.
+    address public immutable airdropDistributorWithVestingImplementation; // Address of the implementation contract for AirdropDistributorWithVesting contracts.
 
-    event DistributorCreated(
+    event AirdropDistributorCreated(
         address creatorAddress,
-        address distributorAddress,
-        uint256 distributorId
+        address airdropDistributorAddress,
+        uint256 airdropDistributorId
     ); // Event emitted when a AirdropDistributor contract is created.
-    event VestingDistributorCreated(
+    event AirdropDistributorWithVestingCreated(
         address creatorAddress,
-        address tokenDistributorAddress,
-        uint256 tokenDistributorId
-    ); // Event emitted when a AirdropVestingDistributor contract is created.
+        address airdropDistributorWithVestingAddress,
+        uint256 airdropDistributorWithVestingId
+    ); // Event emitted when a AirdropDistributorWithVesting contract is created.
 
     constructor() {
-        distributorImplementation = address(new AirdropDistributor());
-        vestingDistributorImplementation = address(new AirdropVestingDistributor());
-    }
-
-    /**
-     * @dev Returns the address of a AirdropDistributor contract based on the airdropDistributor ID.
-     * @param distributorId The ID of the AirdropDistributor contract.
-     * @return The address of the AirdropDistributor contract.
-     */
-    function getDistributor(
-        uint256 distributorId
-    ) external view returns (address) {
-        return _distributors[distributorId];
-    }
-
-    /**
-     * @dev Returns the address of a AirdropVestingDistributor contract based on the airdropVestingDistributor ID.
-     * @param vestingDistributorId The ID of the AirdropVestingDistributor contract.
-     * @return The address of the AirdropVestingDistributor contract.
-     */
-    function getVestingDistributor(
-        uint256 vestingDistributorId
-    ) external view returns (address) {
-        return _vestingDistributors[vestingDistributorId];
+        airdropDistributorImplementation = address(new AirdropDistributor());
+        airdropDistributorWithVestingImplementation = address(
+            new AirdropDistributorWithVesting()
+        );
     }
 
     /**
      * @dev Creates a new AirdropDistributor contract.
-     * @param poolName The name of the pool.
+     * @param airdropName The name of the pool.
      * @param startTime The start time of the distribution.
      * @param endTime The end time of the distribution.
      * @param addressList The AddressList contract address.
      * @return The ID of the created AirdropDistributor contract.
      */
-    function createDistributor(
-        string memory poolName,
+    function createAirdropDistributor(
+        string memory airdropName,
         uint256 startTime,
         uint256 endTime,
         address addressList
     ) external onlyOwner returns (uint256) {
-        address newDistributorAddress = Clones.clone(distributorImplementation);
-        IAirdropDistributor newDistributor = IAirdropDistributor(newDistributorAddress);
-        newDistributor.initialize(
+        address newAirdropDistributorAddress = Clones.clone(
+            airdropDistributorImplementation
+        );
+        IAirdropDistributor newAirdropDistributor = IAirdropDistributor(
+            newAirdropDistributorAddress
+        );
+        newAirdropDistributor.initialize(
             owner(),
-            poolName,
+            airdropName,
             startTime,
             endTime,
             addressList
         );
 
-        emit DistributorCreated(
+        emit AirdropDistributorCreated(
             owner(),
-            newDistributorAddress,
-            distributorCount
+            newAirdropDistributorAddress,
+            airdropDistributorCount
         );
 
-        return _addNewDistributor(newDistributorAddress);
+        return _addNewAirdropDistributor(newAirdropDistributorAddress);
     }
 
     /**
-     * @dev Creates a new AirdropVestingDistributor contract.
-     * @param poolName The name of the pool.
+     * @dev Creates a new AirdropDistributorWithVesting contract.
+     * @param airdropName The name of the pool.
      * @param startTime The start time of the distribution.
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
      * @param periodLength The length of each distribution period.
      * @param addressList The AddressList contract address.
-     * @return The ID of the created AirdropVestingDistributor contract.
+     * @return The ID of the created AirdropDistributorWithVesting contract.
      */
-    function createTokenDistributor(
-        string memory poolName,
+    function createAirdropDistributorWithVesting(
+        string memory airdropName,
         uint256 startTime,
         uint256 endTime,
         uint256 distributionRate,
         uint256 periodLength,
         address addressList
     ) external onlyOwner returns (uint256) {
-        require(token != address(0), "PoolFactory: invalid token address");
-
-        address newVestingDistributorAddress = Clones.clone(
-            tokenDistributorImplementation
+        address newAirdropDistributorWithVestingAddress = Clones.clone(
+            airdropDistributorWithVestingImplementation
         );
-        IAirdropVestingDistributor newTokenDistributor = IAirdropVestingDistributor(
-            newVestingDistributorAddress
-        );
-        newTokenDistributor.initialize(
+        IAirdropDistributorWithVesting newAirdropDistributorWithVesting = IAirdropDistributorWithVesting(
+                newAirdropDistributorWithVestingAddress
+            );
+        newAirdropDistributorWithVesting.initialize(
             owner(),
-            poolName,
+            airdropName,
             startTime,
             endTime,
             distributionRate,
@@ -130,40 +112,45 @@ contract AirdropFactory is Ownable2Step {
             addressList
         );
 
-        emit VestingDistributorCreated(
+        emit AirdropDistributorWithVestingCreated(
             owner(),
-            newVestingDistributorAddress,
-            vestingDistributorCount
+            newAirdropDistributorWithVestingAddress,
+            airdropDistributorWithVestingCount
         );
 
-        return _addNewVestingDistributor(newVestingDistributorAddress);
+        return
+            _addNewAirdropDistributorWithVesting(
+                newAirdropDistributorWithVestingAddress
+            );
     }
 
     /**
      * @dev Internal function to add a new AirdropDistributor contract address to the mapping.
-     * @param _newDistributorAddress The address of the new AirdropDistributor contract.
+     * @param _newAirdropDistributorAddress The address of the new AirdropDistributor contract.
      * @return The ID of the added AirdropDistributor contract.
      */
-    function _addNewDistributor(
-        address _newDistributorAddress
+    function _addNewAirdropDistributor(
+        address _newAirdropDistributorAddress
     ) internal returns (uint256) {
-        _distributors[distributorCount] = _newDistributorAddress;
-        distributorCount++;
+        airdropDistributors[
+            airdropDistributorCount
+        ] = _newAirdropDistributorAddress;
 
-        return distributorCount - 1;
+        return ++airdropDistributorCount;
     }
 
     /**
-     * @dev Internal function to add a new AirdropVestingDistributor contract address to the mapping.
-     * @param _newVestingDistributorAddress The address of the new AirdropVestingDistributor contract.
-     * @return The ID of the added AirdropVestingDistributor contract.
+     * @dev Internal function to add a new AirdropDistributorWithVesting contract address to the mapping.
+     * @param _newAirdropDistributorWithVestingAddress The address of the new AirdropDistributorWithVesting contract.
+     * @return The ID of the added AirdropDistributorWithVesting contract.
      */
-    function _addNewVestingDistributor(
-        address _newVestingDistributorAddress
+    function _addNewAirdropDistributorWithVesting(
+        address _newAirdropDistributorWithVestingAddress
     ) internal returns (uint256) {
-        _vestingDistributors[vestingDistributorCount] = _newVestingDistributorAddress;
-        vestingDistributorCount++;
+        airdropDistributorWithVestings[
+            airdropDistributorWithVestingCount
+        ] = _newAirdropDistributorWithVestingAddress;
 
-        return vestingDistributorCount - 1;
+        return ++airdropDistributorWithVestingCount;
     }
 }

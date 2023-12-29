@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
@@ -9,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  * @author İsmail Can Vardar github.com/icanvardar, Mehmet Rauf Oğuz github.com/mehmetraufoguz
  * @notice List of which user matched with wallet
  */
-contract AddressList is Initializable, Ownable2Step {
+contract AddressList is Ownable2Step {
     /// @notice userIDs matched with addresses
     mapping(uint256 => address) public userList;
     /// @notice addresses matched with userIDs
@@ -24,10 +23,6 @@ contract AddressList is Initializable, Ownable2Step {
             "AddressList: userID already issued"
         );
         _;
-    }
-
-    constructor() {
-        _transferOwnership(_msgSender());
     }
 
     /**

@@ -75,7 +75,7 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
     /**
      * @dev Initializes the TokenDistributor contract.
      * @param _owner The address of the contract owner
-     * @param _airdropName The name of the token distribution pool
+     * @param _airdropName The name of the airdrop reward distribution pool
      * @param _distributionPeriodStart The start time of the distribution period
      * @param _distributionPeriodEnd The end time of the distribution period
      * @param _distributionRate The distribution rate (percentage)
@@ -168,7 +168,7 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
 
         require(
             claimableAmount > 0,
-            "AirdropVestingDistributor: no tokens to claim"
+            "AirdropVestingDistributor: no coins to claim"
         );
 
         claimedAmounts[userId] = claimedAmounts[userId] + claimableAmount;
@@ -188,8 +188,7 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
     }
 
     /**
-     * @dev Allows the contract owner to sweep any remaining tokens after the claim period ends.
-     * Tokens are transferred to the contract owner's address.
+     * @dev Transfers remaining coins from the contract to the owner.
      */
     function sweep() external onlyOwner {
         uint256 leftovers = address(this).balance;

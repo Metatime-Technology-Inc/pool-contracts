@@ -79,6 +79,9 @@ describe("AirdropFactory", function () {
 
             await expect(
                 addressList.connect(deployer).setWalletAddresses([0, USER_ID], wallets)
+            ).to.be.revertedWith("AddressList: address already issued");
+            await expect(
+                addressList.connect(deployer).setWalletAddresses([0, USER_ID], ["0x0000000000000000000000000000000000000008", "0x0000000000000000000000000000000000000009"])
             ).to.be.revertedWith("AddressList: Cant set to id 0");
 
             await expect(
@@ -125,12 +128,12 @@ describe("AirdropFactory", function () {
             expect(user_1BalanceAfter).to.be.equal(user_1BalanceBefore.add(CLAIMABLE_AMOUNT));
 
             const deployerBalanceBefore = await ethers.provider.getBalance(deployer.address);
-            await distributorInstance.connect(deployer).sweep({ gasPrice: 0 });
+            await distributorInstance.connect(deployer).sweep(CLAIMABLE_AMOUNT, { gasPrice: 0 });
             const deployerBalanceAfter = await ethers.provider.getBalance(deployer.address);
             expect(deployerBalanceAfter).to.be.equal(deployerBalanceBefore.add(CLAIMABLE_AMOUNT));
 
             await expect(distributorInstance.connect(user_1).claim({ gasPrice: 0 })).to.be.revertedWith("AirdropDistributor: no coins to claim");
-            await expect(distributorInstance.connect(deployer).sweep()).to.be.revertedWith("AirdropDistributor: no leftovers");
+            await expect(distributorInstance.connect(deployer).sweep(CLAIMABLE_AMOUNT)).to.be.revertedWith("AirdropDistributor: no leftovers");
         });
 
         it("create airdrop distributor, claim on ended", async () => {
@@ -192,11 +195,11 @@ describe("AirdropFactory", function () {
             expect(user_1BalanceAfter.sub(user_1BalanceBefore)).to.be.equal(cca);
 
             const deployerBalanceBefore = await ethers.provider.getBalance(deployer.address);
-            await distributorInstance.connect(deployer).sweep({ gasPrice: 0 });
+            await distributorInstance.connect(deployer).sweep(CLAIMABLE_AMOUNT.mul(2).sub(cca), { gasPrice: 0 });
             const deployerBalanceAfter = await ethers.provider.getBalance(deployer.address);
             expect(deployerBalanceAfter).to.be.equal(deployerBalanceBefore.add(CLAIMABLE_AMOUNT.mul(2).sub(cca)));
 
-            await expect(distributorInstance.connect(deployer).sweep()).to.be.revertedWith("AirdropVestingDistributor: no leftovers");
+            await expect(distributorInstance.connect(deployer).sweep(CLAIMABLE_AMOUNT)).to.be.revertedWith("AirdropVestingDistributor: no leftovers");
 
             await incrementBlocktimestamp(ethers, SECONDS_IN_A_DAY * 5);
             await deployer.sendTransaction({
@@ -234,7 +237,7 @@ describe("AirdropFactory", function () {
                 deployer.address,
                 "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220e8a0f1f97cf9b211b0a7515e0012fca8cf19406ce7f44e5db008a1d5c83b89ea64736f6c63430008100033",
             ]);
-            await expect(distributorInstance.connect(deployer).sweep({ gasPrice: 0 })).to.be.revertedWith("AirdropDistributor: unable to withdraw");
+            await expect(distributorInstance.connect(deployer).sweep(CLAIMABLE_AMOUNT, { gasPrice: 0 })).to.be.revertedWith("AirdropDistributor: unable to withdraw");
         });
 
         it("try to claim & sweep and expect to be failed on vesting", async () => {
@@ -262,7 +265,7 @@ describe("AirdropFactory", function () {
                 deployer.address,
                 "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220e8a0f1f97cf9b211b0a7515e0012fca8cf19406ce7f44e5db008a1d5c83b89ea64736f6c63430008100033",
             ]);
-            await expect(distributorInstance.connect(deployer).sweep({ gasPrice: 0 })).to.be.revertedWith("AirdropVestingDistributor: unable to withdraw");
+            await expect(distributorInstance.connect(deployer).sweep(CLAIMABLE_AMOUNT, { gasPrice: 0 })).to.be.revertedWith("AirdropVestingDistributor: unable to withdraw");
         });
 
         // Try to update pool params after distribution period start and expect to be reverted

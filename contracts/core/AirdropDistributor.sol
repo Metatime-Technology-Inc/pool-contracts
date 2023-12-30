@@ -72,7 +72,7 @@ contract AirdropDistributor is Initializable, Ownable2Step {
 
     /**
      * @dev Sets the claimable amounts for a list of users.
-     * @param userIds The list of user addresses
+     * @param userIds The list of user ids
      * @param amounts The list of claimable amounts corresponding to each user
      */
     function setClaimableAmounts(
@@ -99,9 +99,9 @@ contract AirdropDistributor is Initializable, Ownable2Step {
             );
 
             claimableAmounts[userId] = amount;
-            emit CanClaim(userId, amount);
-
+            
             sum += amounts[i];
+            emit CanClaim(userId, amount);
         }
 
         require(
@@ -142,15 +142,17 @@ contract AirdropDistributor is Initializable, Ownable2Step {
 
     /**
      * @dev Transfers remaining coins from the contract to the owner.
+     * @param amount Requested amount
      */
-    function sweep() external onlyOwner {
+    function sweep(uint256 amount) external onlyOwner {
         uint256 leftovers = address(this).balance;
-        require(leftovers != 0, "AirdropDistributor: no leftovers");
+        
+        require(leftovers >= amount, "AirdropDistributor: no leftovers");
 
-        (bool sent, ) = owner().call{value: leftovers}("");
+        (bool sent, ) = owner().call{value: amount}("");
         require(sent, "AirdropDistributor: unable to withdraw");
 
-        emit Swept(owner(), leftovers);
+        emit Swept(owner(), amount);
     }
 
     /**

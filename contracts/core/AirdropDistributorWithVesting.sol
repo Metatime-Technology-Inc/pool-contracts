@@ -189,15 +189,16 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
 
     /**
      * @dev Transfers remaining coins from the contract to the owner.
+     * @param amount Requested amount
      */
-    function sweep() external onlyOwner {
+    function sweep(uint256 amount) external onlyOwner {
         uint256 leftovers = address(this).balance;
-        require(leftovers != 0, "AirdropVestingDistributor: no leftovers");
+        require(leftovers >= amount, "AirdropVestingDistributor: no leftovers");
 
-        (bool sent, ) = owner().call{value: leftovers}("");
+        (bool sent, ) = owner().call{value: amount}("");
         require(sent, "AirdropVestingDistributor: unable to withdraw");
 
-        emit Swept(owner(), leftovers);
+        emit Swept(owner(), amount);
     }
 
     /**

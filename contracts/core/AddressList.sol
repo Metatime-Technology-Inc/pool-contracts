@@ -17,10 +17,14 @@ contract AddressList is Ownable2Step {
     /**
      * @dev Checks provided userID, is issued before
      */
-    modifier whenNotIssued(uint256 userID) {
+    modifier whenNotIssued(uint256 userID, address walletAddress) {
         require(
             userList[userID] == address(0),
             "AddressList: userID already issued"
+        );
+        require(
+            addressList[walletAddress] == uint256(0),
+            "AddressList: address already issued"
         );
         _;
     }
@@ -68,7 +72,7 @@ contract AddressList is Ownable2Step {
     function _setWalletAddress(
         uint256 userID,
         address walletAddress
-    ) private whenNotIssued(userID) {
+    ) private whenNotIssued(userID, walletAddress) {
         require(userID != uint256(0), "AddressList: Cant set to id 0");
         require(
             walletAddress != address(0),

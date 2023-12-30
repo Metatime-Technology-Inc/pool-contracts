@@ -14,7 +14,6 @@ contract AirdropDistributor is Initializable, Ownable2Step {
     string public airdropName; // The name of the airdrop distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
-    uint256 public totalAmount; // The total amount of coins available for distribution
     IAddressList public addressList; // Interface of AddressList contract
     mapping(uint256 => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
@@ -85,7 +84,7 @@ contract AirdropDistributor is Initializable, Ownable2Step {
             "AirdropDistributor: user and amount list lengths must match"
         );
 
-        uint256 sum = totalAmount;
+        uint256 sum;
         for (uint256 i = 0; i < usersLength; i++) {
             uint256 userId = userIds[i];
 
@@ -108,9 +107,8 @@ contract AirdropDistributor is Initializable, Ownable2Step {
             address(this).balance >= sum,
             "AirdropDistributor: total claimable amount does not match"
         );
-        totalAmount = sum;
 
-        emit SetClaimableAmounts(usersLength, totalAmount);
+        emit SetClaimableAmounts(usersLength, sum);
     }
 
     /**
@@ -144,7 +142,7 @@ contract AirdropDistributor is Initializable, Ownable2Step {
      * @dev Transfers remaining coins from the contract to the owner.
      * @param amount Requested amount
      */
-    function sweep(uint256 amount) external onlyOwner {
+    function transfer(uint256 amount) external onlyOwner {
         uint256 leftovers = address(this).balance;
         
         require(leftovers >= amount, "AirdropDistributor: no leftovers");

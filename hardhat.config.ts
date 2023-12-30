@@ -99,7 +99,7 @@ const config: HardhatUserConfig = {
       // bscTestnet: process.env.BSCSCAN_API_KEY,
       // ftmTestnet: process.env.FANTOMSCAN_API_KEY,
       // optimisticKovan: process.env.OPTIMISMSCAN_API_KEY,
-      // polygonMumbai: process.env.POLYGONSCAN_API_KEY as unknown as string,
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY as unknown as string,
       // arbitrumTestnet: process.env.ARBITRUMSCAN_API_KEY,
       // avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY,
     },

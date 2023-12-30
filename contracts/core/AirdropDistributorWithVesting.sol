@@ -16,7 +16,6 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
     uint256 public distributionPeriodEnd; // The end time of the distribution period
     uint256 public distributionRate; // The distribution rate (percentage)
     uint256 public periodLength; // The length of each distribution period (in seconds)
-    uint256 public totalClaimableAmount; // The total claimable amount that participants can claim
     uint256 public constant BASE_DIVIDER = 10_000; // The base divider used for calculations
     IAddressList public addressList; // Interface of AddressList contract
 
@@ -124,7 +123,7 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
             "AirdropVestingDistributor: lists lengths must match"
         );
 
-        uint256 sum = totalClaimableAmount;
+        uint256 sum;
         for (uint256 i = 0; i < usersLength; i++) {
             uint256 user = users[i];
 
@@ -150,10 +149,9 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
             "AirdropVestingDistributor: total claimable amount does not match"
         );
 
-        totalClaimableAmount = sum;
         hasClaimableAmountsSet = true;
 
-        emit SetClaimableAmounts(usersLength, totalClaimableAmount);
+        emit SetClaimableAmounts(usersLength, sum);
     }
 
     /**
@@ -191,7 +189,7 @@ contract AirdropDistributorWithVesting is Initializable, Ownable2Step {
      * @dev Transfers remaining coins from the contract to the owner.
      * @param amount Requested amount
      */
-    function sweep(uint256 amount) external onlyOwner {
+    function transfer(uint256 amount) external onlyOwner {
         uint256 leftovers = address(this).balance;
         require(leftovers >= amount, "AirdropVestingDistributor: no leftovers");
 

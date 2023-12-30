@@ -32,6 +32,7 @@ const func: DeployFunction = async ({
 
     console.log("AddressList deployed at", addressList.address);
 
+    // for test
     const airdropDistributors = [
         [
             "March23",
@@ -63,6 +64,55 @@ const func: DeployFunction = async ({
             addressList.address
         ]
     ];
+
+    // for live
+    // const requiredVestingDay = 500;
+    // const secondsInaDay = 60 * 24 * 60;
+
+    // const startUnix = 1704067200; // 1 January 2024
+    // const endUnix = 1747267200; // 1 January 2024 + 500 day = 15 May 2025
+    // const distributionRate = 10_000 / requiredVestingDay;
+    // const distributionLength = secondsInaDay * requiredVestingDay;
+
+    // const airdropDistributors = [
+    //     [
+    //         "March23",
+    //         startUnix,
+    //         endUnix,
+    //         addressList.address,
+    //     ],
+    //     [
+    //         "April23",
+    //         startUnix,
+    //         endUnix,
+    //         addressList.address,
+    //     ],
+    //     [
+    //         "May23",
+    //         startUnix,
+    //         endUnix,
+    //         addressList.address,
+    //     ],
+    // ];
+
+    // const airdropDistributorWithVestings = [
+    //     [
+    //         "June23",
+    //         startUnix,
+    //         endUnix,
+    //         distributionRate,
+    //         distributionLength,
+    //         addressList.address
+    //     ],
+    //     [
+    //         "July23",
+    //         startUnix,
+    //         endUnix,
+    //         distributionRate,
+    //         distributionLength,
+    //         addressList.address
+    //     ]
+    // ];
 
     const airdropFactoryInstance = AirdropFactory__factory.connect(airdropFactory.address, deployerSigner);
 

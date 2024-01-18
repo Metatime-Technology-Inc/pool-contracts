@@ -1,6 +1,7 @@
 interface IContracts {
   [key: string]: Object;
   core: {
+    AddressList: string;
     Distributor: string;
     LiquidityPool: string;
     MockLiquidityPool: string;
@@ -21,6 +22,7 @@ interface IContracts {
 
 const CONTRACTS: IContracts = {
   core: {
+    AddressList: "AddressList",
     Distributor: "Distributor",
     LiquidityPool: "LiquidityPool",
     MockLiquidityPool: "MockLiquidityPool",

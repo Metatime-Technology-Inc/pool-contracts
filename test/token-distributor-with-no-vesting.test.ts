@@ -1,3 +1,4 @@
+// https://avatars.githubusercontent.com/u/88249309?v=4
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
@@ -9,13 +10,13 @@ import {
   getBlockTimestamp,
   findMarginOfDeviation,
 } from "../scripts/helpers";
-import { TokenDistributorWithNoVesting } from "../typechain-types";
+import { TokenDistributorWithNoVesting, AddressList } from "../typechain-types";
 
 const SECONDS_IN_A_DAY = 60 * 24 * 60;
 
 describe("TokenDistributorWithNoVesting", function () {
   async function initiateVariables() {
-    const [deployer, user_1, user_2, user_3, user_4, user_5, deployer_2] =
+    const [deployer, user_1, user_2, user_3, user_4, user_5, deployer_2, lemmeuser] =
       await ethers.getSigners();
 
     const currentBlockTimestamp = await getBlockTimestamp(ethers);
@@ -37,22 +38,85 @@ describe("TokenDistributorWithNoVesting", function () {
       ).deploy()) as TokenDistributorWithNoVesting;
     await tokenDistributorWithNoVesting_2.deployed();
 
+    const AddressList_ = await ethers.getContractFactory(
+        CONTRACTS.core.AddressList
+    );
+    const addressList =
+      (await AddressList_.connect(
+        deployer
+      ).deploy()) as AddressList;
+    await addressList.deployed();
+
+    await addressList.setWalletAddresses([
+        10,
+        20,
+        30,
+        40,
+        50
+    ], [
+        user_1.address,
+        user_2.address,
+        user_3.address,
+        user_4.address,
+        user_5.address
+    ]);
+
     return {
       tokenDistributorWithNoVesting,
+      addressList,
       tokenDistributorWithNoVesting_2,
       deployer,
       deployer_2,
+      lemmeuser,
       user_1,
       user_2,
       user_3,
       user_4,
       user_5,
+      user_1_id: 10,
+      user_2_id: 20,
+      user_3_id: 30,
+      user_4_id: 40,
+      user_5_id: 50,
       DISTRIBUTION_START,
       DISTRIBUTION_END,
     };
   }
 
   describe("Create TokenDistributorWithNoVesting & test claim period", async () => {
+    it("add user to address list", async () => {
+        const { user_1_id, user_1, deployer, addressList } = await loadFixture(initiateVariables);
+
+        const lemmeaddress = "0x0000000000000000000000000000000000000222";
+        const lemmeid = 123123;
+
+        await addressList.connect(deployer).setWalletAddress(lemmeid, lemmeaddress);
+
+        await expect(
+            addressList.connect(deployer).setWalletAddress(user_1_id, user_1.address)
+        ).to.be.revertedWith("AddressList: userID already issued");
+
+        const userIds = [(user_1_id + 1), (user_1_id + 2)];
+        const wallets = ["0x0000000000000000000000000000000000000001", "0x0000000000000000000000000000000000000002"];
+
+        await addressList.connect(deployer).setWalletAddresses(userIds, wallets);
+
+        await expect(
+            addressList.connect(deployer).setWalletAddresses([user_1_id], wallets)
+        ).to.be.revertedWith("AddressList: Provided data incorrect");
+
+        await expect(
+            addressList.connect(deployer).setWalletAddresses([0, user_1_id], wallets)
+        ).to.be.revertedWith("AddressList: address already issued");
+        await expect(
+            addressList.connect(deployer).setWalletAddresses([0, user_1_id], ["0x0000000000000000000000000000000000000008", "0x0000000000000000000000000000000000000009"])
+        ).to.be.revertedWith("AddressList: Cant set to id 0");
+
+        await expect(
+            addressList.connect(deployer).setWalletAddresses([3, 4], ["0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000003"])
+        ).to.be.revertedWith("AddressList: Cant set zero address");
+    });
+
     // try to receive eth
     it("try to receive eth", async () => {
       const { deployer, tokenDistributorWithNoVesting } = await loadFixture(
@@ -71,51 +135,36 @@ describe("TokenDistributorWithNoVesting", function () {
         .withArgs(deployer.address, SENT_AMOUNT, SENT_AMOUNT);
     });
 
-    // try to initialize with wrong constructor params
-    it("try to initialize with wrong constructor params", async function () {
-      const {
-        deployer,
-        tokenDistributorWithNoVesting,
-        DISTRIBUTION_START,
-        DISTRIBUTION_END,
-      } = await loadFixture(initiateVariables);
-
-      await expect(
-        tokenDistributorWithNoVesting
-          .connect(deployer)
-          .callStatic.initialize(DISTRIBUTION_END, DISTRIBUTION_START)
-      ).revertedWith(
-        "TokenDistributorWithNoVesting: end time must be bigger than start time"
-      );
-
-      await tokenDistributorWithNoVesting
-        .connect(deployer)
-        .initialize(DISTRIBUTION_START, DISTRIBUTION_END);
-    });
-
     it("should initiate pool & test claim period", async function () {
       const {
         tokenDistributorWithNoVesting,
+        addressList,
         deployer,
         user_1,
         user_2,
         user_3,
         user_4,
         user_5,
+        user_1_id,
+        user_2_id,
+        user_3_id,
+        user_4_id,
+        user_5_id,
+        lemmeuser,
         DISTRIBUTION_START,
         DISTRIBUTION_END,
       } = await loadFixture(initiateVariables);
 
       await tokenDistributorWithNoVesting
         .connect(deployer)
-        .initialize(DISTRIBUTION_START, DISTRIBUTION_END);
+        .initialize(DISTRIBUTION_START, addressList.address);
 
       // Set addresses and their amounts with no balance and expect revert
       const addrs = [
-        user_1.address,
-        user_2.address,
-        user_3.address,
-        user_4.address,
+        user_1_id,
+        user_2_id,
+        user_3_id,
+        user_4_id,
       ];
       const amounts = [
         toWei(String(10_000_000)),
@@ -171,22 +220,23 @@ describe("TokenDistributorWithNoVesting", function () {
             [toWei(String(1_000))]
           )
       ).to.be.revertedWith(
-        "TokenDistributorWithNoVesting: cannot set zero address"
+        "TokenDistributorWithNoVesting: cannot set zero"
       );
 
       const user_1ClaimableAmounts =
-        await tokenDistributorWithNoVesting.claimableAmounts(user_1.address);
+        await tokenDistributorWithNoVesting.claimableAmounts(user_1_id);
       const user_2ClaimableAmounts =
-        await tokenDistributorWithNoVesting.claimableAmounts(user_2.address);
+        await tokenDistributorWithNoVesting.claimableAmounts(user_2_id);
       const user_3ClaimableAmounts =
-        await tokenDistributorWithNoVesting.claimableAmounts(user_3.address);
+        await tokenDistributorWithNoVesting.claimableAmounts(user_3_id);
       const user_4ClaimableAmounts =
-        await tokenDistributorWithNoVesting.claimableAmounts(user_4.address);
+        await tokenDistributorWithNoVesting.claimableAmounts(user_4_id);
 
       expect(user_1ClaimableAmounts).to.be.equal(toWei(String(10_000_000)));
       expect(user_2ClaimableAmounts).to.be.equal(toWei(String(25_000_000)));
       expect(user_3ClaimableAmounts).to.be.equal(toWei(String(60_000_000)));
       expect(user_4ClaimableAmounts).to.be.equal(toWei(String(5_000_000)));
+      
 
       // Try to claim before distribution start time
       await expect(
@@ -231,6 +281,12 @@ describe("TokenDistributorWithNoVesting", function () {
       await tokenDistributorWithNoVesting.connect(user_2).claim();
       await tokenDistributorWithNoVesting.connect(user_3).claim();
 
+      await expect(
+        tokenDistributorWithNoVesting.connect(lemmeuser).claim()
+      ).to.be.revertedWith(
+        "TokenDistributor: user not set before"
+      );
+
       const user1BalanceClaimTxAfterClaim =
         await tokenDistributorWithNoVesting.provider.getBalance(user_1.address);
       const user2BalanceClaimTxAfterClaim =
@@ -257,12 +313,12 @@ describe("TokenDistributorWithNoVesting", function () {
         )
       ).to.be.lessThan(0.000001);
 
-      // try to sweep before claim period end
-      await expect(
-        tokenDistributorWithNoVesting.connect(deployer).sweep()
-      ).to.be.revertedWith(
-        "TokenDistributorWithNoVesting: cannot sweep before claim end time"
-      );
+    //   // try to sweep before claim period end
+    //   await expect(
+    //     tokenDistributorWithNoVesting.connect(deployer).sweep()
+    //   ).to.be.revertedWith(
+    //     "TokenDistributorWithNoVesting: cannot sweep before claim end time"
+    //   );
 
       // try to claim after claim period end
       await incrementBlocktimestamp(
@@ -272,7 +328,7 @@ describe("TokenDistributorWithNoVesting", function () {
       await expect(
         tokenDistributorWithNoVesting.connect(user_4).claim()
       ).to.be.revertedWith(
-        "TokenDistributorWithNoVesting: claim period has ended"
+        "TokenDistributorWithNoVesting: unable to withdraw"
       );
 
       // try to sweep after claim period end
@@ -290,11 +346,12 @@ describe("TokenDistributorWithNoVesting", function () {
         tokenDistributorWithNoVesting_2,
         DISTRIBUTION_START,
         DISTRIBUTION_END,
+        addressList
       } = await loadFixture(initiateVariables);
 
       await tokenDistributorWithNoVesting_2
         .connect(deployer_2)
-        .initialize(DISTRIBUTION_START, DISTRIBUTION_END);
+        .initialize(DISTRIBUTION_START, addressList.address);
 
       const CLAIMABLE_AMOUNT = toWei(String(50_000));
 

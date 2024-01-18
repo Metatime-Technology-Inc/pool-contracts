@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "../interfaces/IAddressList.sol";
 
 /**
  * @title TokenDistributorWithNoVesting
@@ -10,12 +11,11 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
  */
 contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
     uint256 public distributionPeriodStart; // The start time of the distribution period
-    uint256 public distributionPeriodEnd; // The end time of the distribution period
-    uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public totalAmount; // The total amount of coins available for distribution
-    mapping(address => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
+    IAddressList public addressList; // Interface of AddressList contract
+    mapping(uint256 => uint256) public claimableAmounts; // Mapping of beneficiary addresses to their claimable amounts
 
-    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim coins
+    event CanClaim(uint256 indexed beneficiary, uint256 amount); // Event emitted when a beneficiary can claim coins
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a beneficiary claims coins
     event Swept(address receiver, uint256 amount); // Event emitted when coins are swept from the contract
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
@@ -32,20 +32,14 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
     /**
      * @dev Initializes the contract.
      * @param _distributionPeriodStart The start time of the claim period
-     * @param _distributionPeriodEnd The end time of the claim period
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         uint256 _distributionPeriodStart,
-        uint256 _distributionPeriodEnd
+        address _addressList
     ) external initializer {
-        require(
-            _distributionPeriodEnd > _distributionPeriodStart,
-            "TokenDistributorWithNoVesting: end time must be bigger than start time"
-        );
-
         distributionPeriodStart = _distributionPeriodStart;
-        distributionPeriodEnd = _distributionPeriodEnd;
-        claimPeriodEnd = _distributionPeriodEnd + 100 days;
+        addressList = IAddressList(_addressList);
 
         _transferOwnership(_msgSender());
     }
@@ -67,7 +61,7 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
      * @param amounts The list of claimable amounts corresponding to each user
      */
     function setClaimableAmounts(
-        address[] calldata users,
+        uint256[] calldata users,
         uint256[] calldata amounts
     ) external onlyOwner isSettable {
         uint256 usersLength = users.length;
@@ -78,11 +72,11 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
 
         uint256 sum = totalAmount;
         for (uint256 i = 0; i < usersLength; i++) {
-            address user = users[i];
+            uint256 user = users[i];
 
             require(
-                user != address(0),
-                "TokenDistributorWithNoVesting: cannot set zero address"
+                user != 0,
+                "TokenDistributorWithNoVesting: cannot set zero"
             );
 
             uint256 amount = amounts[i];
@@ -115,19 +109,18 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
             block.timestamp >= distributionPeriodStart,
             "TokenDistributorWithNoVesting: coins cannot be claimed yet"
         );
-        require(
-            block.timestamp <= claimPeriodEnd,
-            "TokenDistributorWithNoVesting: claim period has ended"
-        );
 
-        uint256 claimableAmount = claimableAmounts[_msgSender()];
+        uint256 userId = _getUserId(_msgSender());
+        require(userId != 0, "TokenDistributor: user not set before");
+
+        uint256 claimableAmount = claimableAmounts[userId];
 
         require(
             claimableAmount > 0,
             "TokenDistributorWithNoVesting: no coins to claim"
         );
 
-        claimableAmounts[_msgSender()] = 0;
+        claimableAmounts[userId] = 0;
 
         (bool sent, ) = _msgSender().call{value: claimableAmount}("");
         require(sent, "TokenDistributorWithNoVesting: unable to withdraw");
@@ -139,11 +132,6 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
      * @dev Transfers remaining coins from the contract to the owner.
      */
     function sweep() external onlyOwner {
-        require(
-            block.timestamp > claimPeriodEnd,
-            "TokenDistributorWithNoVesting: cannot sweep before claim end time"
-        );
-
         uint256 leftovers = address(this).balance;
         require(leftovers != 0, "TokenDistributorWithNoVesting: no leftovers");
 
@@ -151,5 +139,15 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
         require(sent, "TokenDistributorWithNoVesting: unable to withdraw");
 
         emit Swept(owner(), leftovers);
+    }
+
+    /**
+     * @dev Get userId by provided walletAddress
+     * @param walletAddress address of related userId
+     */
+    function _getUserId(
+        address walletAddress
+    ) private view returns (uint256 userId) {
+        userId = addressList.addressList(walletAddress);
     }
 }

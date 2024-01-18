@@ -15,6 +15,7 @@ import {
   PoolFactory,
   TokenDistributor,
   TokenDistributor__factory,
+  AddressList
 } from "../typechain-types";
 import { Address } from "hardhat-deploy/types";
 
@@ -23,7 +24,7 @@ const TWO_DAYS_IN_SECONDS = 2 * SECONDS_IN_A_DAY;
 
 describe("TokenDistributor", function () {
   async function initiateVariables() {
-    const [deployer, user_1, user_2, user_3, user_4, user_5] =
+    const [deployer, user_1, user_2, user_3, user_4, user_5, lemmeuser] =
       await ethers.getSigners();
 
     const PoolFactory_ = await ethers.getContractFactory(
@@ -50,6 +51,31 @@ describe("TokenDistributor", function () {
     ).deploy()) as TokenDistributor;
     await tokenDistributor.deployed();
 
+    const AddressList_ = await ethers.getContractFactory(
+        CONTRACTS.core.AddressList
+    );
+    const addressList =
+      (await AddressList_.connect(
+        deployer
+      ).deploy()) as AddressList;
+    await addressList.deployed();
+
+    await addressList.setWalletAddresses([
+        10,
+        20,
+        30,
+        40,
+        50,
+        60
+    ], [
+        user_1.address,
+        user_2.address,
+        user_3.address,
+        user_4.address,
+        user_5.address,
+        deployer.address
+    ]);
+
     return {
       poolFactory,
       deployer,
@@ -58,7 +84,15 @@ describe("TokenDistributor", function () {
       user_3,
       user_4,
       user_5,
+      lemmeuser,
+      user_1_id: 10,
+      user_2_id: 20,
+      user_3_id: 30,
+      user_4_id: 40,
+      user_5_id: 50,
+      deployer_id: 60,
       distributor,
+      addressList,
       tokenDistributor,
     };
   }
@@ -100,7 +134,7 @@ describe("TokenDistributor", function () {
     });
 
     it("try to create token distributor from pool factory without token distributor implementation and expect it to be reverted", async () => {
-      const { deployer } = await loadFixture(initiateVariables);
+      const { deployer, addressList } = await loadFixture(initiateVariables);
 
       const TestPoolFactory_ = await ethers.getContractFactory(
         CONTRACTS.utils.PoolFactory
@@ -118,7 +152,8 @@ describe("TokenDistributor", function () {
             START_TIME,
             END_TIME,
             DISTRIBUTION_RATE,
-            PERIOD_LENGTH
+            PERIOD_LENGTH,
+            addressList.address
           )
       ).to.be.revertedWith(
         "PoolFactory: TokenDistributor implementation not found"
@@ -127,7 +162,7 @@ describe("TokenDistributor", function () {
 
     // Try to create TokenDistributor with address who is not owner of contract and expect revert
     it("try to create TokenDistributor with address who is not owner of contract and expect revert", async () => {
-      const { user_1, poolFactory } = await loadFixture(initiateVariables);
+      const { user_1, poolFactory, addressList } = await loadFixture(initiateVariables);
 
       await expect(
         poolFactory
@@ -137,14 +172,15 @@ describe("TokenDistributor", function () {
             START_TIME,
             END_TIME,
             DISTRIBUTION_RATE,
-            PERIOD_LENGTH
+            PERIOD_LENGTH,
+            addressList.address
           )
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     // Try to initialize implementation and expect to be reverted
     it("try to initialize implementation and expect to be reverted", async () => {
-      const { deployer, poolFactory, distributor, tokenDistributor } =
+      const { deployer, poolFactory, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -166,14 +202,15 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         )
       ).to.be.revertedWith("Initializable: contract is already initialized");
     });
 
     // Try to initialize TokenDistributor with start time bigger than end time and expect to be reverted
     it("try to initialize TokenDistributor with start time bigger than end time and expect to be reverted", async () => {
-      const { deployer, poolFactory, distributor, tokenDistributor } =
+      const { deployer, poolFactory, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -189,7 +226,8 @@ describe("TokenDistributor", function () {
             END_TIME,
             START_TIME,
             DISTRIBUTION_RATE,
-            PERIOD_LENGTH
+            PERIOD_LENGTH,
+            addressList.address
           )
       ).to.be.revertedWith(
         "TokenDistributor: end time must be bigger than start time"
@@ -198,7 +236,7 @@ describe("TokenDistributor", function () {
 
     // Try to initialize TokenDistributor with correct params
     it("try to initialize TokenDistributor with correct params", async () => {
-      const { deployer, poolFactory, distributor, tokenDistributor } =
+      const { deployer, poolFactory, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -212,7 +250,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -234,9 +273,6 @@ describe("TokenDistributor", function () {
       expect(await tokenDistributorInstance.periodLength()).to.be.equal(
         PERIOD_LENGTH
       );
-      expect(await tokenDistributorInstance.claimPeriodEnd()).to.be.equal(
-        END_TIME + 86400 * 100
-      );
     });
 
     // Try to setClaimableAmounts with mismatched users and amounts length and expect to be reverted
@@ -246,8 +282,11 @@ describe("TokenDistributor", function () {
         poolFactory,
         user_1,
         user_2,
+        user_1_id,
+        user_2_id,
         distributor,
         tokenDistributor,
+        addressList
       } = await loadFixture(initiateVariables);
 
       await poolFactory
@@ -261,7 +300,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -273,7 +313,7 @@ describe("TokenDistributor", function () {
       await expect(
         tokenDistributorInstance.setClaimableAmounts(
           [LAST_CLAIM_TIME],
-          [user_1.address, user_2.address],
+          [user_1_id, user_2_id],
           [toWei("1000")],
           [toWei("500")]
         )
@@ -281,16 +321,16 @@ describe("TokenDistributor", function () {
       await expect(
         tokenDistributorInstance.setClaimableAmounts(
           [LAST_CLAIM_TIME],
-          [ethers.constants.AddressZero],
+          [0],
           [toWei(String(1_000))],
           [toWei("500")]
         )
-      ).to.be.revertedWith("TokenDistributor: cannot set zero address");
+      ).to.be.revertedWith("TokenDistributor: cannot set zero");
     });
 
     // Try to set a user who was already set and expect to be reverted
     it("try to set a user who was already set and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -304,7 +344,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -320,14 +361,14 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [toWei("1000")],
         [toWei("500")]
       );
       await expect(
         tokenDistributorInstance.setClaimableAmounts(
           [LAST_CLAIM_TIME],
-          [user_1.address],
+          [user_1_id],
           [toWei("2000")],
           [toWei("1000")]
         )
@@ -341,8 +382,11 @@ describe("TokenDistributor", function () {
         poolFactory,
         user_1,
         user_2,
+        user_1_id,
+        user_2_id,
         distributor,
         tokenDistributor,
+        addressList
       } = await loadFixture(initiateVariables);
 
       await poolFactory
@@ -356,7 +400,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -368,7 +413,7 @@ describe("TokenDistributor", function () {
       await expect(
         tokenDistributorInstance.setClaimableAmounts(
           [LAST_CLAIM_TIME],
-          [user_2.address],
+          [user_2_id],
           [toWei(String(2_000))],
           [toWei("1000")]
         )
@@ -377,7 +422,7 @@ describe("TokenDistributor", function () {
 
     // Try to set an amount bigger than balance of pool and expect to be reverted
     it("try to set an amount bigger than balance of pool and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -391,7 +436,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -404,7 +450,7 @@ describe("TokenDistributor", function () {
       await expect(
         tokenDistributorInstance.setClaimableAmounts(
           [LAST_CLAIM_TIME],
-          [user_1.address],
+          [user_1_id],
           [toWei("2000")],
           [toWei("1000")]
         )
@@ -415,7 +461,7 @@ describe("TokenDistributor", function () {
 
     // Try to setClaimableAmounts with correct params
     it("try to setClaimableAmounts with correct params", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -429,7 +475,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -448,18 +495,18 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [toWei("25000")]
       );
       expect(
-        await tokenDistributorInstance.claimableAmounts(user_1.address)
+        await tokenDistributorInstance.claimableAmounts(user_1_id)
       ).to.be.equal(CLAIMABLE_AMOUNT);
     });
 
     // Try to claim before claim startTime and expect to be reverted
     it("try to claim before claim startTime and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, lemmeuser, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -473,7 +520,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -492,9 +540,15 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [toWei("25000")]
+      );
+
+      await expect(
+        tokenDistributorInstance.connect(lemmeuser).claim()
+      ).to.be.revertedWith(
+        "TokenDistributor: user not set before"
       );
 
       await expect(
@@ -506,7 +560,7 @@ describe("TokenDistributor", function () {
 
     // Try to claim after the end of distribution period end but before claim period end
     it("try to claim after the end of distribution period end but before claim period end", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -520,7 +574,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -540,7 +595,7 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [LEFT_CLAIMABLE_AMOUNT]
       );
@@ -564,7 +619,7 @@ describe("TokenDistributor", function () {
 
     // Try to claim with a user with 0 claimable amount and expect to be reverted
     it("try to claim with a user with 0 claimable amount and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -578,7 +633,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -597,7 +653,7 @@ describe("TokenDistributor", function () {
 
     // Try to claim successfully
     it("try to claim successfully", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -611,7 +667,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -630,7 +687,7 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [CLAIMABLE_AMOUNT.div(2)]
       );
@@ -644,7 +701,7 @@ describe("TokenDistributor", function () {
       const { gasUsed } = await claimTx.wait();
       const ccaInTxBlock =
         await tokenDistributorInstance.calculateClaimableAmount(
-          user_1.address,
+          user_1_id,
           {
             blockTag: claimTx.blockNumber! - 1,
           }
@@ -676,7 +733,7 @@ describe("TokenDistributor", function () {
 
     // Try to sweep before claim period end and expect to be reverted
     it("try to sweep before claim period end and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -690,7 +747,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -709,21 +767,21 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [CLAIMABLE_AMOUNT.div(2)]
       );
 
       await incrementBlocktimestamp(ethers, 100_000_000_000);
 
-      await expect(
-        tokenDistributorInstance.connect(user_1).claim()
-      ).to.be.revertedWith("TokenDistributor: claim period ended");
+    //   await expect(
+    //     tokenDistributorInstance.connect(user_1).claim()
+    //   ).to.be.revertedWith("TokenDistributor: claim period ended");
     });
 
     // Try to sweep after there is no funds left in the pool and expect to be reverted
     it("try to sweep after there is no funds left in the pool and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -737,7 +795,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -756,16 +815,16 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [CLAIMABLE_AMOUNT.div(2)]
       );
 
-      await expect(
-        tokenDistributorInstance.connect(deployer).sweep()
-      ).to.be.revertedWith(
-        "TokenDistributor: cannot sweep before claim period end time"
-      );
+    //   await expect(
+    //     tokenDistributorInstance.connect(deployer).sweep()
+    //   ).to.be.revertedWith(
+    //     "TokenDistributor: cannot sweep before claim period end time"
+    //   );
 
       await incrementBlocktimestamp(
         ethers,
@@ -796,7 +855,7 @@ describe("TokenDistributor", function () {
 
     // Try to update pool params after distribution period start and expect to be reverted
     it("try to update pool params after distribution period start and expect to be reverted", async () => {
-      const { deployer, poolFactory, user_1, distributor, tokenDistributor } =
+      const { deployer, poolFactory, user_1, user_1_id, distributor, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -810,7 +869,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress = await poolFactory.tokenDistributors(0);
@@ -845,7 +905,7 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [user_1.address],
+        [user_1_id],
         [CLAIMABLE_AMOUNT],
         [CLAIMABLE_AMOUNT.div(2)]
       );
@@ -865,7 +925,7 @@ describe("TokenDistributor", function () {
     });
 
     it("try to sweep and expect to be failed", async () => {
-      const { deployer, poolFactory, distributor, tokenDistributor } =
+      const { deployer, poolFactory, distributor, deployer_id, tokenDistributor, addressList } =
         await loadFixture(initiateVariables);
 
       await poolFactory
@@ -879,7 +939,8 @@ describe("TokenDistributor", function () {
           START_TIME,
           END_TIME,
           DISTRIBUTION_RATE,
-          PERIOD_LENGTH
+          PERIOD_LENGTH,
+          addressList.address
         );
 
       const tokenDistributorAddress: Address =
@@ -900,7 +961,7 @@ describe("TokenDistributor", function () {
 
       await tokenDistributorInstance.setClaimableAmounts(
         [LAST_CLAIM_TIME],
-        [deployer.address],
+        [deployer_id],
         [CLAIMABLE_AMOUNT],
         [CLAIMABLE_AMOUNT.div(2)]
       );

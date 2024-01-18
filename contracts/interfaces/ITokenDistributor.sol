@@ -14,6 +14,7 @@ interface ITokenDistributor {
      * @param _endTime The end time of the distribution period.
      * @param _distributionRate The distribution rate (percentage).
      * @param _periodLength The length of each distribution period (in seconds).
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         address _owner,
@@ -21,6 +22,7 @@ interface ITokenDistributor {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _distributionRate,
-        uint256 _periodLength
+        uint256 _periodLength,
+        address _addressList
     ) external;
 }

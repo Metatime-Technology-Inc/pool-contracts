@@ -3,6 +3,7 @@ pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import "../interfaces/IAddressList.sol";
 
 /**
  * @title TokenDistributor
@@ -12,19 +13,19 @@ contract TokenDistributor is Initializable, Ownable2Step {
     string public poolName; // The name of the mtc distribution pool
     uint256 public distributionPeriodStart; // The start time of the distribution period
     uint256 public distributionPeriodEnd; // The end time of the distribution period
-    uint256 public claimPeriodEnd; // The end time of the claim period
     uint256 public periodLength; // The length of each distribution period (in seconds)
     uint256 public distributionRate; // The distribution rate (percentage)
     uint256 public totalClaimableAmount; // The total claimable amount that participants can claim
     uint256 public constant BASE_DIVIDER = 10_000; // The base divider used for calculations
-    mapping(address => uint256) public claimableAmounts; // Mapping of user addresses to their claimable amounts
-    mapping(address => uint256) public claimedAmounts; // Mapping of user addresses to their claimed amounts
-    mapping(address => uint256) public lastClaimTimes; // Mapping of user addresses to their last claim times
-    mapping(address => uint256) public leftClaimableAmounts; // Mapping of user addresses to their remaining claimable amounts
+    IAddressList public addressList; // Interface of AddressList contract
+    mapping(uint256 => uint256) public claimableAmounts; // Mapping of user addresses to their claimable amounts
+    mapping(uint256 => uint256) public claimedAmounts; // Mapping of user addresses to their claimed amounts
+    mapping(uint256 => uint256) public lastClaimTimes; // Mapping of user addresses to their last claim times
+    mapping(uint256 => uint256) public leftClaimableAmounts; // Mapping of user addresses to their remaining claimable amounts
     bool private hasClaimableAmountsSet; // It is used to prevent updating pool params
 
     event Swept(address receiver, uint256 amount); // Event emitted when the contract owner sweeps remaining coins
-    event CanClaim(address indexed beneficiary, uint256 amount); // Event emitted when a user can claim coins
+    event CanClaim(uint256 indexed beneficiary, uint256 amount); // Event emitted when a user can claim coins
     event HasClaimed(address indexed beneficiary, uint256 amount); // Event emitted when a user has claimed coins
     event SetClaimableAmounts(uint256 usersLength, uint256 totalAmount); // Event emitted when claimable amounts are set
     event PoolParamsUpdated(
@@ -81,6 +82,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * @param _distributionPeriodEnd The end time of the distribution period
      * @param _distributionRate The distribution rate (percentage)
      * @param _periodLength The length of each distribution period (in seconds)
+     * @param _addressList Address of AddresList contract
      */
     function initialize(
         address _owner,
@@ -88,7 +90,8 @@ contract TokenDistributor is Initializable, Ownable2Step {
         uint256 _distributionPeriodStart,
         uint256 _distributionPeriodEnd,
         uint256 _distributionRate,
-        uint256 _periodLength
+        uint256 _periodLength,
+        address _addressList
     )
         external
         initializer
@@ -104,9 +107,9 @@ contract TokenDistributor is Initializable, Ownable2Step {
         poolName = _poolName;
         distributionPeriodStart = _distributionPeriodStart;
         distributionPeriodEnd = _distributionPeriodEnd;
-        claimPeriodEnd = _distributionPeriodEnd + 100 days;
         distributionRate = _distributionRate;
         periodLength = _periodLength;
+        addressList = IAddressList(_addressList);
     }
 
     /**
@@ -118,7 +121,7 @@ contract TokenDistributor is Initializable, Ownable2Step {
      */
     function setClaimableAmounts(
         uint256[] calldata lastClaimTimes_,
-        address[] calldata users,
+        uint256[] calldata users,
         uint256[] calldata amounts,
         uint256[] calldata leftAmounts
     ) external onlyOwner {
@@ -130,12 +133,9 @@ contract TokenDistributor is Initializable, Ownable2Step {
 
         uint256 sum = totalClaimableAmount;
         for (uint256 i = 0; i < usersLength; i++) {
-            address user = users[i];
+            uint256 user = users[i];
 
-            require(
-                user != address(0),
-                "TokenDistributor: cannot set zero address"
-            );
+            require(user != 0, "TokenDistributor: cannot set zero");
 
             uint256 amount = amounts[i];
             uint256 leftAmount = leftAmounts[i];
@@ -171,16 +171,20 @@ contract TokenDistributor is Initializable, Ownable2Step {
      */
     function claim() external returns (bool) {
         address sender = _msgSender();
-        uint256 claimableAmount = calculateClaimableAmount(sender);
+
+        uint256 userId = _getUserId(sender);
+        require(userId != 0, "TokenDistributor: user not set before");
+
+        uint256 claimableAmount = calculateClaimableAmount(userId);
 
         require(claimableAmount > 0, "TokenDistributor: no coins to claim");
 
-        claimedAmounts[sender] = claimedAmounts[sender] + claimableAmount;
+        claimedAmounts[userId] = claimedAmounts[userId] + claimableAmount;
 
-        lastClaimTimes[sender] = block.timestamp;
+        lastClaimTimes[userId] = block.timestamp;
 
-        leftClaimableAmounts[sender] =
-            leftClaimableAmounts[sender] -
+        leftClaimableAmounts[userId] =
+            leftClaimableAmounts[userId] -
             claimableAmount;
 
         (bool sent, ) = sender.call{value: claimableAmount}("");
@@ -196,11 +200,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * Tokens are transferred to the contract owner's address.
      */
     function sweep() external onlyOwner {
-        require(
-            block.timestamp > claimPeriodEnd,
-            "TokenDistributor: cannot sweep before claim period end time"
-        );
-
         uint256 leftovers = address(this).balance;
         require(leftovers != 0, "TokenDistributor: no leftovers");
 
@@ -240,7 +239,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
 
         distributionPeriodStart = newDistributionPeriodStart;
         distributionPeriodEnd = newDistributionPeriodEnd;
-        claimPeriodEnd = newDistributionPeriodEnd + 100 days;
         distributionRate = newDistributionRate;
         periodLength = newPeriodLength;
 
@@ -261,23 +259,15 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * @return The claimable amount of coins for the user
      */
     function calculateClaimableAmount(
-        address user
+        uint256 user
     ) public view returns (uint256) {
-        require(
-            block.timestamp <= claimPeriodEnd,
-            "TokenDistributor: claim period ended"
-        );
-
         require(
             block.timestamp >= distributionPeriodStart,
             "TokenDistributor: distribution has not started yet"
         );
 
         uint256 claimableAmount = 0;
-        if (
-            block.timestamp >= distributionPeriodEnd &&
-            block.timestamp <= claimPeriodEnd
-        ) {
+        if (block.timestamp >= distributionPeriodEnd) {
             claimableAmount = leftClaimableAmounts[user];
         } else {
             claimableAmount = _calculateClaimableAmount(user);
@@ -293,12 +283,22 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * @return The amount of coins that can be claimed by the user
      */
     function _calculateClaimableAmount(
-        address user
+        uint256 user
     ) internal view returns (uint256) {
         return
             (claimableAmounts[user] *
                 distributionRate *
                 (block.timestamp - lastClaimTimes[user]) *
                 10 ** 18) / (periodLength * BASE_DIVIDER * 10 ** 18);
+    }
+
+    /**
+     * @dev Get userId by provided walletAddress
+     * @param walletAddress address of related userId
+     */
+    function _getUserId(
+        address walletAddress
+    ) private view returns (uint256 userId) {
+        userId = addressList.addressList(walletAddress);
     }
 }

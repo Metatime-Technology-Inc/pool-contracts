@@ -113,6 +113,7 @@ contract PoolFactory is Initializable, Ownable2Step {
      * @param endTime The end time of the distribution.
      * @param distributionRate The distribution rate.
      * @param periodLength The length of each distribution period.
+     * @param addressList Address of AddresList contract
      * @return The ID of the created TokenDistributor contract.
      */
     function createTokenDistributor(
@@ -120,7 +121,8 @@ contract PoolFactory is Initializable, Ownable2Step {
         uint256 startTime,
         uint256 endTime,
         uint256 distributionRate,
-        uint256 periodLength
+        uint256 periodLength,
+        address addressList
     ) external onlyOwner returns (uint256) {
         require(
             tokenDistributorImplementation != address(0),
@@ -136,7 +138,8 @@ contract PoolFactory is Initializable, Ownable2Step {
             startTime,
             endTime,
             distributionRate,
-            periodLength
+            periodLength,
+            addressList
         );
 
         emit TokenDistributorCreated(

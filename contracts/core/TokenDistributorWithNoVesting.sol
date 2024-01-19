@@ -91,11 +91,6 @@ contract TokenDistributorWithNoVesting is Initializable, Ownable2Step {
 
             sum += amounts[i];
         }
-
-        require(
-            address(this).balance >= sum,
-            "TokenDistributorWithNoVesting: total claimable amount does not match"
-        );
         totalAmount = sum;
 
         emit SetClaimableAmounts(usersLength, totalAmount);

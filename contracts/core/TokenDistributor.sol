@@ -154,11 +154,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
             sum += leftAmounts[i];
         }
 
-        require(
-            address(this).balance >= sum,
-            "TokenDistributor: total claimable amount does not match"
-        );
-
         totalClaimableAmount = sum;
         hasClaimableAmountsSet = true;
 

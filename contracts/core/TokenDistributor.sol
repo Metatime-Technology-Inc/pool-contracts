@@ -170,6 +170,11 @@ contract TokenDistributor is Initializable, Ownable2Step {
      * Tokens can only be claimed during the distribution period.
      */
     function claim() external returns (bool) {
+        require(
+            block.timestamp >= distributionPeriodStart,
+            "TokenDistributor: distribution has not started yet"
+        );
+
         address sender = _msgSender();
 
         uint256 userId = _getUserId(sender);
@@ -261,11 +266,6 @@ contract TokenDistributor is Initializable, Ownable2Step {
     function calculateClaimableAmount(
         uint256 user
     ) public view returns (uint256) {
-        require(
-            block.timestamp >= distributionPeriodStart,
-            "TokenDistributor: distribution has not started yet"
-        );
-
         uint256 claimableAmount = 0;
         if (block.timestamp >= distributionPeriodEnd) {
             claimableAmount = leftClaimableAmounts[user];
